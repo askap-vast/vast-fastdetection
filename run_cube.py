@@ -19,21 +19,31 @@ logger.addHandler(sh)
 
 
 # the folder location with processed short images
-folder = sys.argv[-2]
+folder = sys.argv[-3]
 name = sys.argv[-1]
+beam = sys.argv[-2]
+# save folder 
+outdir = "/o9000/ASKAP/VAST/fast_test/detection_results"
 
 
 # get the imagelist with correct order
-imagelist = glob.glob(folder + 'beam??_?.fits') + glob.glob(folder + 'beam??_??.fits')
+imagelist = []
+for size in ["?", "??", "???", "????"]:
+    tmp = glob.glob(folder + f'{beam}_{size}.fits')
+    tmp.sort()
+    imagelist += tmp
+
+#imagelist = glob.glob(folder + f'{beam}_?.fits') + glob.glob(folder + f'{beam}_??.fits') + glob.glob(folder + f'{beam}_???.fits')
 #imagelist = glob.glob(folder + 'image_?.fits') + glob.glob(folder + 'image_??.fits') + glob.glob(folder + 'image_???.fits') + glob.glob(folder + 'image_????.fits')
+#imagelist.sort()
 logger.info("Loading foler {}".format(folder))
 logger.info("Processing {} images...".format(len(imagelist)))
 logger.info(imagelist)
 
 # get the psf list with correct order
-psflist = glob.glob(folder + 'beam??_?.psf.fits') + glob.glob(folder + 'beam??_??.psf.fits')
-logger.info("Processing {} psf...".format(len(psflist)))
-logger.info(psflist)
+#psflist = glob.glob(folder + 'beam??_?.psf.fits') + glob.glob(folder + 'beam??_??.psf.fits')
+#logger.info("Processing {} psf...".format(len(psflist)))
+#logger.info(psflist)
 
 # get the significance cube (do smooth with each 2d image)
 ktype = 'gaussian'
@@ -55,7 +65,7 @@ logger.info("Kernel match filter...")
 f.fmap("gaussian", width=1)
 
 logger.info("Find local maximum...")
-f.local_max(imagename=imagelist[0], sigma=3, min_distance=120)
+f.local_max(imagename=imagelist[0], sigma=5, min_distance=120)
 logger.info("===== Matched Filter =====")
 
 
@@ -64,7 +74,7 @@ logger.info("===== Matched Filter =====")
 #np.save("../test_products/{}_{}_smocube.npy".format(name, ktype), f.smocube)
 
 
-f.tofits(fitsname="../test_products/{}_{}.fits".format(name, ktype))
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype))
 logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 # get the position
