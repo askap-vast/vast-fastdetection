@@ -21,7 +21,7 @@ cube = Cube(imagelist)
 Convolve a spatial kernel with each image, to smooth the noise level and improve the detection. 
 
 ```python
-cube.icube(ktype='gaussian', nx=9, ny=9)
+cube.icube(ktype='gaussian', nx=19, ny=19)
 ```
 
 The kernel type can be modified through `ktype='gaussian'` (a 2D gaussian kernel), `ktype='psf'` (dirty beam)
@@ -43,7 +43,7 @@ f = Filter(cube.sigcube)
 Do a Gaussian (or other kernel) smooth on time axis 
 
 ```python
-f.fmap("gaussian", width=0.5)
+f.fmap("gaussian", width=1)
 ```
 
 Find the local maximum and get the sky position - need a fits file to provide wcs (can be any of FITS images from the `imagelist`)
