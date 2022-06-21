@@ -284,7 +284,7 @@ class Filter:
             kernel = self._gaussian()                
                 
         self.smocube = self._filter(kernel)
-        self.map = np.nanmax(self.smocube, axis=0) - np.nanmin(self.smocube, axis=0)
+        self.map = np.nanmax(self.smocube, axis=0) - np.nanmean(self.smocube, axis=0)
         
         
         

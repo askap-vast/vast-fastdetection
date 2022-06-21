@@ -41,7 +41,7 @@ logger.info("============")
 logger.info("Starting to build the cube...")
 
 cube = Cube(imagelist)
-cube.icube('gaussian', 9, 9)
+cube.icube('gaussian', 19, 19)
 
 logger.info(cube.sigcube.shape)
 logger.info("Finish to create the cube.")
@@ -52,7 +52,7 @@ f = Filter(cube.sigcube)
 
 logger.info("===== Matched Filter =====")
 logger.info("Kernel match filter...")
-f.fmap("gaussian", width=0.5)
+f.fmap("gaussian", width=1)
 
 logger.info("Find local maximum...")
 f.local_max(imagename=imagelist[0], sigma=3, min_distance=120)
