@@ -279,12 +279,15 @@ class Filter:
     
     def fmap(self, ktype, width=1):
         self.width = width
+
+        if ktype == "chisquare":
+            self.map = self._chimap()
+        
+        else:
+            if ktype == 'gaussian':
+                kernel = self._gaussian()
                 
-        if ktype == 'gaussian':
-            kernel = self._gaussian()                
-                
-        self.smocube = self._filter(kernel)
-        self.map = np.nanmax(self.smocube, axis=0) - np.nanmean(self.smocube, axis=0)
+            self.map = self._filter(kernel)
         
         
         
@@ -341,17 +344,38 @@ class Filter:
     def _filter(self, kernel, axis=0):
         """Convolve, get the maximum value
         """
-        # kernel = self._gaussian()
-        return np.apply_along_axis(lambda m: convolve(m, kernel), 
+        self.smocube =  np.apply_along_axis(lambda m: convolve(m, kernel), 
                                    axis=axis, arr=self.sigcube)
+
+        return np.nanmax(self.smocube, axis=0) - np.nanmean(self.smocube, axis=0)
     
+
+
+    def _chimap(self):
+        """Chi-square map
+        """
+        local_rms = np.std(self.sigcube, axis=(1, 2))
+
+        return np.apply_along_axis(lambda m: self._chisquare(m, local_rms), axis=0, arr=self.sigcube)
     
-    
+
+
     def _gaussian(self):
         return Gaussian1DKernel(stddev=self.width)
     
     
+
+    def _chisquare(self, peak_flux, local_rms, m=1):
+        mask = np.isnan(peak_flux) + np.isnan(local_rms)
+        peak_flux = np.ma.masked_array(peak_flux, mask, dtype=float)
+        local_rms = np.ma.masked_array(local_rms, mask, dtype=float)
+        # freedom
+        nu = np.sum(~mask) - m
+        mean_flux = np.average(peak_flux, weights=np.power(local_rms, -2))
     
+        return np.sum(np.power((peak_flux - mean_flux)/local_rms, 2)) / nu
+
+
     
     
         

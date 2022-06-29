@@ -51,7 +51,7 @@ logger.info("============")
 logger.info("Starting to build the cube...")
 
 cube = Cube(imagelist)
-cube.icube('gaussian', 19, 19)
+cube.icube(ktype, 19, 19)
 
 logger.info(cube.sigcube.shape)
 logger.info("Finish to create the cube.")
@@ -61,12 +61,18 @@ logger.info("============")
 f = Filter(cube.sigcube)
 
 logger.info("===== Matched Filter =====")
-logger.info("Kernel match filter...")
-f.fmap("gaussian", width=1)
+ktype = "chisquare"
+logger.info("Kernel match filter '{}'...".format(ktype))
+f.fmap(ktype, width=1)
+logger.info("Kernel match Done")
 
-logger.info("Find local maximum...")
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype))
+logger.info("Save the results to {}_{}.fits".format(name, ktype))
+
+
+logger.info("Finding local maximum...")
 f.local_max(imagename=imagelist[0], sigma=5, min_distance=120)
-logger.info("===== Matched Filter =====")
+logger.info("Finding local maximum: Done. ")
 
 
 #logger.info("Save the smooth cube...")
@@ -74,8 +80,6 @@ logger.info("===== Matched Filter =====")
 #np.save("../test_products/{}_{}_smocube.npy".format(name, ktype), f.smocube)
 
 
-f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype))
-logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 # get the position
 for i in range(len(f.coord)):
