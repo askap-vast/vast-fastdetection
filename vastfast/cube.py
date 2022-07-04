@@ -241,6 +241,7 @@ class Cube:
             if fitsfolder != None:
                 m.tofits(fitsname="{}/map_{}.fits".format(fitsfolder, i))
             
+        self.kernel = m.kernel
         self.sigcube = np.array(sigcube)
         
         
