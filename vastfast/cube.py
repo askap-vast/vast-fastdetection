@@ -274,7 +274,7 @@ class Cube:
         """Check if the input psf list is in correct format
         """
         if isinstance(psflist, list):
-            if not len(self.hdulist) == len(psflist()):
+            if not len(self.imagelist) == len(psflist):
                 raise ArgumentError('The length of image list is not '
                                     'consistent with the length of psf list. ')
             self.psflist = psflist
