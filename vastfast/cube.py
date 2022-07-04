@@ -243,7 +243,31 @@ class Cube:
             
         self.sigcube = np.array(sigcube)
         
-                    
+        
+    # save the significance cube
+    def savecube(self, savename='sigcube.npy'):
+        """Save cube to npy format. 
+        """
+        np.save(savename, self.sigcube)
+        
+        
+    # save the original fits to a cube
+    def save_oricube(self, savename=None):
+        """Save the original fits to a cube
+        """
+        oricube = []
+        
+        for i, image in enumerate(self.imagelist):
+            m = Map(image)
+            oricube.append(m.data)
+            
+        self.oricube = np.array(oricube)
+        
+        if savename != None:
+            np.save(savename, self.oricube)
+        
+        
+                
                     
     def _psf_init(self, psflist):
         """Check if the input psf list is in correct format
