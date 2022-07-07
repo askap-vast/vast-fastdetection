@@ -307,6 +307,9 @@ class Filter:
 
         if ktype == "chisquare":
             self.map = self._chimap()
+            
+        elif ktype == "peakstd":
+            self.map = self._pstdmap()
         
         else:
             if ktype == 'gaussian':
@@ -401,6 +404,11 @@ class Filter:
         return np.sum(np.power((peak_flux - mean_flux)/local_rms, 2)) / nu
 
 
+    def _pstdmap(self):
+        """Get peak / std map, sensitive to single flare event
+        """
+        
+        return (np.nanmax(self.sigcube, axis=0) - np.nanmean(self.sigcube, axis=0)) 
     
     
         
