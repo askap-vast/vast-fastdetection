@@ -66,7 +66,7 @@ logger.info("Kernel match filter '{}'...".format(ktype))
 f.fmap(ktype, width=1)
 logger.info("Kernel match Done")
 
-f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype))
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
 logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
