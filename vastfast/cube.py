@@ -382,9 +382,19 @@ class Filter:
     def _chimap(self):
         """Chi-square map
         """
-        local_rms = np.std(self.sigcube, axis=(1, 2))
-
-        return np.apply_along_axis(lambda m: self._chisquare(m, local_rms), axis=0, arr=self.sigcube)
+        # local_rms = np.std(self.sigcube, axis=(1, 2))
+        # return np.apply_along_axis(lambda m: self._chisquare(m, local_rms), axis=0, arr=self.sigcube)
+        
+        # freedom
+        nu = self.sigcube.shape[0] - 1
+        # mean, rms
+        mean = np.nanmean(self.sigcube, axis=0)
+        rms = np.nanstd(self.sigcube, axis=(1, 2))
+        # for each data point
+        data = (self.sigcube - mean).transpose() / rms
+        
+        return np.sum(np.power(data.transpose(), 2), axis=0) / nu
+        
     
 
 
