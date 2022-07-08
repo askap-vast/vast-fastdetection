@@ -310,6 +310,9 @@ class Filter:
             
         elif ktype == "peak":
             self.map = self._peakmap()
+            
+        elif ktype == "std":
+            self.map = self._stdmap()
         
         else:
             if ktype == 'gaussian':
