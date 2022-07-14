@@ -30,7 +30,7 @@ logger.setLevel(logging.INFO)
 
 
 
-def plot_slices(src_name, imagelist, radius=8, vsigma=1, name='animation'):
+def plot_slices(src_name, imagelist, radius=8, vsigma=5, name='animation'):
     """Generate a gif contains a series of images cutout in given position. 
     
     src: 
@@ -93,20 +93,21 @@ def plot_slices(src_name, imagelist, radius=8, vsigma=1, name='animation'):
                         vmax=vmax)
         
         # set the marker
-        if cutout.data[yw, xw] > 0: # half of the range
-            maker_color = 'black'
-        else:
-            maker_color = 'lightgray'
+        # if cutout.data[yw, xw] > 0: # half of the range
+        #     marker_color = 'black'
+        # else:
+        #     marker_color = 'lightgray'
+        marker_color = 'gray'
 
         sc = plt.scatter(src.ra.deg, 
                          src.dec.deg, 
                          marker='+', 
-                         c=maker_color,
+                         c=marker_color,
                          label=r'{:.2f} $\pm$ {:.2f} mJy'.format(flux, rms),
                          transform=fig.gca().get_transform('fk5')
                          )
         te = plt.text(x=0.60, y=0.95,
-                      s=r'{:.2f} $\pm$ {:.2f} mJy {}'.format(flux, rms, i),
+                      s=r'{:.2f} $\pm$ {:.2f} mJy ({})'.format(flux, rms, i),
                       backgroundcolor='w',
                       transform=fig.gca().transAxes)
 
@@ -116,7 +117,7 @@ def plot_slices(src_name, imagelist, radius=8, vsigma=1, name='animation'):
     fig.gca().set_xlabel('RA (J2000)')
     fig.gca().set_ylabel('DEC (J2000)')
     cbar = fig.colorbar(im)
-    cbar.set_label('Flux (mJy/beam)')
+    cbar.set_label('Flux density (mJy/beam)')
 
     ani = animation.ArtistAnimation(fig, ims, interval=200, 
                                     blit=True, repeat_delay=1e6)
