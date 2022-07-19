@@ -337,30 +337,30 @@ class Filter:
         
         
         
-    def local_max(self, min_distance=120, sigma=5, imagename=None):
-        '''Find the local maxium of an image
+    # def local_max(self, min_distance=30, sigma=5, imagename=None):
+    #     '''Find the local maxium of an image
         
-        sigma: identify blobs above a specfic sigma threshold
-        min_distance: pixel number of the minimal distance of two neighbours blobs
-        '''
-        rms, mean = np.nanstd(self.map), np.nanmean(self.map)
-        threshold = sigma*rms + mean
+    #     sigma: identify blobs above a specfic sigma threshold
+    #     min_distance: pixel number of the minimal distance of two neighbours blobs
+    #     '''
+    #     rms, mean = np.nanstd(self.map), np.nanmean(self.map)
+    #     threshold = sigma*rms + mean
         
-        logger.info("Threshold rms = {}, mean = {}".format(rms, mean))
-        logger.info('Threshold is {} sigma = {}'.format(sigma, threshold))
+    #     logger.info("Threshold rms = {}, mean = {}".format(rms, mean))
+    #     logger.info('Threshold is {} sigma = {}'.format(sigma, threshold))
         
-        xy = peak_local_max(self.map, min_distance=min_distance, 
-                            threshold_abs=threshold)
+    #     xy = peak_local_max(self.map, min_distance=min_distance, 
+    #                         threshold_abs=threshold)
         
-        self.xy_peak = xy
+    #     self.xy_peak = xy
         
-        # convert pixel to skycoord
-        if not hasattr(self, 'imagename'):
-            self._readfits(imagename)
+    #     # convert pixel to skycoord
+    #     if not hasattr(self, 'imagename'):
+    #         self._readfits(imagename)
         
-        yp, xp = xy[:, 0], xy[:, 1]
+    #     yp, xp = xy[:, 0], xy[:, 1]
         
-        self.coord = pixel_to_skycoord(xp, yp, wcs=self.wcs)
+    #     self.coord = pixel_to_skycoord(xp, yp, wcs=self.wcs)
         
 
 
@@ -430,101 +430,10 @@ class Filter:
         return np.nanstd(self.sigcube, axis=0)
         
     
-#     def _kernel(self, ktype, nx, ny, psf):
-#         """Create a kernel
+    
+
+
         
-#         :param ktype: name of the kernel type, 
-#             choose from ['gaussian', 'psf', 'combine']
-#         :type ktype: str
-#         nx, ny: int, number of pixel of the kernel direction, must be odd
-        
-#         """
-        
-#         # check if it's odd
-        
-#         # check which type 
-#         if ktype == 'gaussian':
-#             k = G2D(0, 0, )
-    
-    
-
-
-
-
-
-# def main(filelist, ktype='gaussian', nx=99, ny=99):
-#     # build a significance cube
-#     sigcube = []
-    
-#     for i, filename in filelist:
-#         # read the data from each FITS image
-#         data = read_fits(filename)
-#         # get the kernel 
-        
-#         kernel = 
-        
-        
-        
-        
-        
-# ==================================
-
-# def gaussian_kernel(filename, nx, ny):
-    
-
-
-
-
-# # ==================================
-
-
-# def significance_map(image, kernel):
-#     """
-#     kernal: np.array 2d, ideally the (dirty) psf of FITS image
-#     image:  np.array 2d, read from FITS image 
-    
-#     return
-#     simage: np.array 2d, significance map of the FITS image, 
-#             can get from the convolution of the kernal and the image
-#     """
-    
-#     simage = convolve(image, kernel)
-    
-#     return simage
-
-
-
-# def read_fits(filename, hdulist=0):
-#     """
-#     filename: str
-    
-#     return
-#     data: np.array 2d (squeeze to 2d)
-#     """
-    
-#     hdu = fits.open(filename)[hdulist]
-#     data = hdu.data.squeeze()
-    
-#     return data
-
-
-
-# def kernel_cutout(kernel, nx, ny):
-#     """
-#     kernel size can only be odd - reduce the size to a (nx, ny) array (from centre)
-#     kernel: np.array 2d
-#     nx:     int
-#     ny:     int
-    
-#     return: kcutout: np.array 2d 
-#     """
-    
-#     # find the central position
-#     x, y = np.where(kernel == 1)[0][0], np.where(kernel == 1)[1][0]
-#     kcutout = Cutout2D(kernel, (x, y), (ny, nx))
-    
-#     return kcutout.data
-    
 
 
 
