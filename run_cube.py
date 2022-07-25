@@ -51,14 +51,17 @@ logger.info("============")
 logger.info("Starting to build the cube...")
 
 cube = Cube(imagelist)
-cube.icube(ktype, 19, 19)
+#cube.icube(ktype, 19, 19)
+cube.save_oricube()
 
-logger.info(cube.sigcube.shape)
+#logger.info(cube.sigcube.shape)
+logger.info(cube.oricube.shape)
 logger.info("Finish to create the cube.")
 logger.info("============")
 
 # get the matched filter in time axis
-f = Filter(cube.sigcube)
+#f = Filter(cube.sigcube)
+f = Filter(cube.oricube)
 
 logger.info("===== Matched Filter =====")
 ktype = "chisquare"
@@ -73,6 +76,38 @@ logger.info("Save the results to {}_{}.fits".format(name, ktype))
 logger.info("Finding local maximum...")
 f.local_max(imagename=imagelist[0], sigma=5, min_distance=120)
 logger.info("Finding local maximum: Done. ")
+
+
+logger.info("======== Matched Filter ========")
+ktype = "peak"
+logger.info("Kernel match filter '{}'...".format(ktype))
+f.fmap(ktype, width=1)
+logger.info("Kernel match Done")
+
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
+logger.info("Save the results to {}_{}.fits".format(name, ktype))
+
+
+logger.info("Finding local maximum...")
+f.local_max(imagename=imagelist[0], sigma=5, min_distance=120)
+logger.info("Finding local maximum: Done. ")
+
+
+logger.info("======== Matched Filter ========")
+ktype = "std"
+logger.info("Kernel match filter '{}'...".format(ktype))
+f.fmap(ktype, width=1)
+logger.info("Kernel match Done")
+
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
+logger.info("Save the results to {}_{}.fits".format(name, ktype))
+
+
+logger.info("Finding local maximum...")
+f.local_max(imagename=imagelist[0], sigma=5, min_distance=120)
+logger.info("Finding local maximum: Done. ")
+
+
 
 
 #logger.info("Save the smooth cube...")
