@@ -314,7 +314,8 @@ class Cube:
         # get the rms of 
         rmslist = np.nanstd(self.sigcube, axis=(1, 2))
         # get threshold
-        threshold = np.nanmean(rmslist) + 2*np.nanstd(rmslist)
+        # threshold = np.nanmean(rmslist) + 2*np.nanstd(rmslist)
+        threshold = 2 * np.nanmedian(rmslist)
         
         logger.info("Median rms level {:.0f} uJy/beam".format(np.nanmedian(rmslist)*1e6))
         logger.info("Remove > {} sigma outliers, "
