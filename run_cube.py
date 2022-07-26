@@ -63,8 +63,8 @@ logger.info("Finish to create the cube.")
 logger.info("============")
 
 # get the matched filter in time axis
-#f = Filter(cube.sigcube)
-f = Filter(cube.oricube)
+f = Filter(cube.sigcube)
+#f = Filter(cube.oricube)
 
 logger.info("===== Matched Filter =====")
 ktype = "chisquare"
