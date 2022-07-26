@@ -48,16 +48,17 @@ logger.info(imagelist)
 #logger.info(psflist)
 
 # get the significance cube (do smooth with each 2d image)
-ktype = 'gaussian'
+#ktype = 'gaussian'
 logger.info("============")
 logger.info("Starting to build the cube...")
 
 cube = Cube(imagelist)
 #cube.icube(ktype, 19, 19)
-cube.save_oricube()
+#cube.save_oricube()
+cube.icube()
 
-#logger.info(cube.sigcube.shape)
-logger.info(cube.oricube.shape)
+logger.info(cube.sigcube.shape)
+#logger.info(cube.oricube.shape)
 logger.info("Finish to create the cube.")
 logger.info("============")
 
