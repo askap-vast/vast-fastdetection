@@ -130,6 +130,7 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     logger.info("Save image {}.gif".format(name))
     
     
+        
     
     
 def fix_aplpy_fits(aplpy_obj, dropaxis=2):

@@ -321,6 +321,7 @@ class Cube:
                     "i.e. rms above {} Jy/beam".format(sigma, threshold))
         logger.info("Bad image rms level: ")
         logger.info(rmslist[rmslist>threshold])
+        logger.info([self.imagelist[i] for i in np.where(rmslist > threshold)[0]])
         
         # remove image with rms > threshold
         self.sigcube = self.sigcube[~(rmslist>threshold)]
