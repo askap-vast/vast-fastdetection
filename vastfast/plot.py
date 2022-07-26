@@ -8,10 +8,9 @@ Created on Thu Jul 14 20:57:50 2022
 
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
-import aplpy
+#import aplpy
 from skimage.feature import peak_local_max
 
 from astropy.wcs import WCS

@@ -1,10 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import sys
 import glob
 import matplotlib.pyplot as plt
 
 from vastfast.cube import Cube, Filter
+from vastfast import plot
+from vastfast.plot import Candidates
 
 
 
@@ -51,14 +53,17 @@ logger.info("============")
 logger.info("Starting to build the cube...")
 
 cube = Cube(imagelist)
-cube.icube(ktype, 19, 19)
+#cube.icube(ktype, 19, 19)
+cube.save_oricube()
 
-logger.info(cube.sigcube.shape)
+#logger.info(cube.sigcube.shape)
+logger.info(cube.oricube.shape)
 logger.info("Finish to create the cube.")
 logger.info("============")
 
 # get the matched filter in time axis
-f = Filter(cube.sigcube)
+#f = Filter(cube.sigcube)
+f = Filter(cube.oricube)
 
 logger.info("===== Matched Filter =====")
 ktype = "chisquare"
@@ -70,20 +75,67 @@ f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imageli
 logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
-logger.info("Finding local maximum...")
-f.local_max(imagename=imagelist[0], sigma=5, min_distance=120)
-logger.info("Finding local maximum: Done. ")
+
+logger.info("======== Matched Filter ========")
+ktype = "peak"
+logger.info("Kernel match filter '{}'...".format(ktype))
+f.fmap(ktype, width=1)
+logger.info("Kernel match Done")
+
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
+logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
-#logger.info("Save the smooth cube...")
-#import numpy as np
-#np.save("../test_products/{}_{}_smocube.npy".format(name, ktype), f.smocube)
+
+logger.info("======== Matched Filter ========")
+ktype = "std"
+logger.info("Kernel match filter '{}'...".format(ktype))
+f.fmap(ktype, width=1)
+logger.info("Kernel match Done")
+
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
+logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
 
-# get the position
-for i in range(len(f.coord)):
-    print(i, f.coord[i].ra.hms, f.coord[i].dec.dms)
+logger.info("======== Select candidates ==========")
+
+# read fits
+chisq_map = "{}/{}_{}.fits".format(outdir, name, 'chisquare')
+peak_map = "{}/{}_{}.fits".format(outdir, name, 'peak')
+std_map = "{}/{}_{}.fits".format(outdir, name, 'std')
+
+c = Candidates(chisq_map, peak_map, std_map)
+
+# find local maximum
+logger.info("Find local maximum....")
+c.local_max(min_distance=30, sigma=5)
+logger.info("Find local maximum done. ")
+
+# plot a map
+#c.plot_fits(fitsname=chisq_map, imagename="{}/{}_map1".format(outdir, name))
+
+# read deep information to select candidates
+#catalogue = glob.glob(folder + "*_{}*comp.vot".format(beam))
+catalogue = sys.argv[-4]
+
+logger.info("Deep image catalogue {}".format(catalogue))
+c.select_candidates(deepcatalogue=catalogue)
+
+# save the table
+c.save_csvtable(tablename="{}/{}_cand".format(outdir, name), savevot=True)
+
+# plot a final map
+#c.plot_fits(fitsname=chisq_map, imagename="{}/{}_map2".format(outdir, name))
+
+# plot!
+for i, candname in enumerate(c.cand_name):
+    logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
+    plot.plot_slices(src_name=candname, 
+                     imagelist=imagelist, 
+                     name="{}/{}_{}".format(outdir, name, candname))
+
+
 
 logger.info("====== Finished. =====")
 
