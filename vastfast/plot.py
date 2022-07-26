@@ -35,7 +35,7 @@ class ArgumentError(Exception):
 
 
 
-def plot_slices(src_name, imagelist, radius=8, vsigma=5, name='animation'):
+def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     """Generate a gif contains a series of images cutout in given position. 
     
     src: 
