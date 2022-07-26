@@ -305,16 +305,29 @@ class Cube:
             
             
             
-    # def _get_threshold(self, sigma=2):
-    #     """Get the rms threshold, to decide which image should be ruled out 
+    def remove_bad_images(self, sigma=2):
+        """Get the rms threshold, to decide which image should be ruled out 
         
-    #     sigma: float, the outlier image rms threshod. 
-    #         images with higher rms will be ruled out
-    #     """
-    #     # get the rms of 
-    #     a = self.sigma
-            
-            
+        sigma: float, the outlier image rms threshod. 
+            images with higher rms will be ruled out
+        """
+        # get the rms of 
+        rmslist = np.nanstd(self.sigcube, axis=(1, 2))
+        # get threshold
+        threshold = np.nanmean(rmslist) + 2*np.nanstd(rmslist)
+        
+        logger.info("Median rms level {:.0f} uJy/beam".format(np.nanmedian(rmslist)*1e6))
+        logger.info("Remove > {} sigma outliers, "
+                    "i.e. rms above {} Jy/beam".format(sigma, threshold))
+        logger.info("Bad image rms level: ")
+        logger.info(rmslist[rmslist>threshold])
+        
+        # remove image with rms > threshold
+        self.sigcube = self.sigcube[~(rmslist>threshold)]
+        logger.info("Remove {} of {} images".format(sum(rmslist>threshold), 
+                                                 len(self.imagelist)))
+
+        
             
             
         

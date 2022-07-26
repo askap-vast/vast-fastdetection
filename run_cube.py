@@ -62,6 +62,10 @@ logger.info(cube.sigcube.shape)
 logger.info("Finish to create the cube.")
 logger.info("============")
 
+logger.info("Remove bad images...")
+cube.remove_bad_images()
+logger.info(cube.sigcube.shape)
+
 # get the matched filter in time axis
 f = Filter(cube.sigcube)
 #f = Filter(cube.oricube)
