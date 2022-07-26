@@ -218,17 +218,36 @@ class Cube:
             
         self.idx = idx
         self.imagelist = imagelist
-            
-            
-    def icube(self, ktype, nx, ny, psflist=None, fitsfolder=None):
         
+        
+            
+    def icube(self, ktype=None, nx=None, ny=None, psflist=None, fitsfolder=None):
+        """To generate a cube for further processing, 
+            Can be smoothed by different ktype (Gaussian, dirty beam)
+            Or simply generate a cube using original dataset
+            
+        """
+        
+        # set the original cube size 
+        sigcube = []
+        
+        if ktype == None:
+            logger.info('Save original dataset to a cube...')
+            
+            for i, image in enumerate(self.imagelist):
+                m = Map(image, self.idx)
+                sigcube.append(m.data)
+                
+            self.sigcube = np.array(sigcube)
+            
+            return None
+            
+        # ============
+        # if using smoothed function 
         if ktype != 'gaussian':
             self._psf_init(psflist)
         else:
             psflist = [None] * len(self.imagelist)
-            
-        # set the original cube size 
-        sigcube = []
             
         # build the cube using for loop
         for i, image in enumerate(self.imagelist):
@@ -245,11 +264,13 @@ class Cube:
         self.sigcube = np.array(sigcube)
         
         
+        
     # save the significance cube
     def savecube(self, savename='sigcube.npy'):
         """Save cube to npy format. 
         """
         np.save(savename, self.sigcube)
+        
         
         
     # save the original fits to a cube
@@ -267,8 +288,8 @@ class Cube:
         if savename != None:
             np.save(savename, self.oricube)
         
+            
         
-                
                     
     def _psf_init(self, psflist):
         """Check if the input psf list is in correct format
@@ -280,6 +301,19 @@ class Cube:
             self.psflist = psflist
         else:
             raise ArgumentError("Do not understand input psf list")
+            
+            
+            
+            
+    # def _get_threshold(self, sigma=2):
+    #     """Get the rms threshold, to decide which image should be ruled out 
+        
+    #     sigma: float, the outlier image rms threshod. 
+    #         images with higher rms will be ruled out
+    #     """
+    #     # get the rms of 
+    #     a = self.sigma
+            
             
             
             
