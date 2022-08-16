@@ -23,6 +23,7 @@ from astropy.wcs.utils import proj_plane_pixel_scales, pixel_to_skycoord
 from astropy.utils.exceptions import AstropyWarning, AstropyDeprecationWarning
 
 from skimage.feature import peak_local_max
+from scipy.interpolate import interp2d
 
 
 from vastfast.fastFunc import G2D
@@ -441,11 +442,13 @@ class Filter:
         nu = self.sigcube.shape[0] - 1
         # mean, rms
         mean = np.nanmean(self.sigcube, axis=0)
-        rms = np.nanstd(self.sigcube, axis=(1, 2))
-        # for each data point
-        data = (self.sigcube - mean).transpose() / rms
+        # rms = np.nanstd(self.sigcube, axis=(1, 2))
+        rms = self.cube_local_rms()
         
-        return np.sum(np.power(data.transpose(), 2), axis=0) / nu
+        # for each data point
+        data = (self.sigcube - mean) / rms
+        
+        return np.sum(np.power(data, 2), axis=0) / nu
         
     
 
@@ -477,11 +480,50 @@ class Filter:
         """Get the standard deviation map, useful for modulation index 
         """        
         return np.nanstd(self.sigcube, axis=0)
+    
+    
+    
+    def cube_local_rms(self):
+        """input: sigcube
+            output: rms cube
+        """
+        logger.info("Calculate local rms...")
         
+        rmscube = []
+        for i in range(self.sigcube.shape[0]):
+            data_image = self.sigcube[i]
+            rms_image = self.get_local_rms(data=data_image)
+            rmscube.append(rms_image)
+            
+        logger.info("Calculate local rms finished...")
+            
+        return np.array(rmscube, dtype='float32')
     
     
+    
+    def get_local_rms(self, data, window_size=99, step=19):
+        """Calculate the local rms
+            get the rms in several key pixel, and do interpolate 2d
+        """
+                
+        
+        xp = np.arange(window_size, data.shape[0]-window_size, step=step)
+        xx, yy = np.meshgrid(xp, xp)
+        
+        view_data = np.lib.stride_tricks.sliding_window_view(data, (window_size, window_size))
+        ridx = int(window_size/2)
+        
+        rms_i = np.nanstd(view_data[yy-ridx, xx-ridx], axis=(-2, -1))
 
-
+        # do interpolate
+        f = interp2d(x=xp, y=xp, z=rms_i)
+        
+        xnew = np.arange(data.shape[0])
+        rms = f(x=xnew, y=xnew)
+        rms = np.array(rms, dtype='float32')
+        
+        return rms
+        
         
 
 
