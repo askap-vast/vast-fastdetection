@@ -506,12 +506,12 @@ class Filter:
             get the rms in several key pixel, and do interpolate 2d
         """
                 
-        
-        xp = np.arange(window_size, data.shape[0]-window_size, step=step)
+        ridx = int(window_size/2)
+
+        xp = np.arange(ridx+1, data.shape[0]-ridx, step=step)
         xx, yy = np.meshgrid(xp, xp)
         
         view_data = np.lib.stride_tricks.sliding_window_view(data, (window_size, window_size))
-        ridx = int(window_size/2)
         
         rms_i = np.nanstd(view_data[yy-ridx, xx-ridx], axis=(-2, -1))
 
