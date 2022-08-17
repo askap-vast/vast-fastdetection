@@ -501,7 +501,7 @@ class Filter:
     
     
     
-    def get_local_rms(self, data, window_size=99, step=19):
+    def get_local_rms(self, data, window_size=299, step=69):
         """Calculate the local rms
             get the rms in several key pixel, and do interpolate 2d
         """
