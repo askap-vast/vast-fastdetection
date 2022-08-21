@@ -103,14 +103,29 @@ logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
 
+logger.info("======== Matched Filter ========")
+ktype = "gaussian"
+logger.info("Kernel match filter '{}'...".format(ktype))
+f.fmap(ktype, width=4)
+logger.info("Kernel match Done")
+
+f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
+logger.info("Save the results to {}_{}.fits".format(name, ktype))
+
+
+
+
 logger.info("======== Select candidates ==========")
 
 # read fits
 chisq_map = "{}/{}_{}.fits".format(outdir, name, 'chisquare')
 peak_map = "{}/{}_{}.fits".format(outdir, name, 'peak')
 std_map = "{}/{}_{}.fits".format(outdir, name, 'std')
+gaussian = "{}/{}_{}.fits".format(outdir, name, 'gaussian')
 
-c = Candidates(chisq_map, peak_map, std_map)
+# c = Candidates(chisq_map, peak_map, std_map)
+c = Candidates(chisq_map, peak_map, std_map, gaussian=gaussian)
+
 
 # find local maximum
 logger.info("Find local maximum....")

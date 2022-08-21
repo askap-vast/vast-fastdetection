@@ -272,7 +272,8 @@ class Candidates:
         '''
         if data == None:
             # data = self.chisq_map
-            data = self.peak_map
+            # data = self.peak_map
+            data = self.gaussian_map
         
         # get threshold in log space
         threshold = get_threshold_logspace(data, sigma=sigma)
