@@ -265,7 +265,8 @@ class Candidates:
         min_distance: pixel number of the minimal distance of two neighbours blobs
         '''
         if data == None:
-            data = self.chisq_map
+            # data = self.chisq_map
+            data = self.peak_map
         
         # get threshold in log space
         threshold = get_threshold_logspace(data, sigma=sigma)
