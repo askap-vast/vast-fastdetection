@@ -224,7 +224,7 @@ class Candidates:
     """Generate the vot table for final candidates
     """
     
-    def __init__(self, chisq_map, peak_map, std_map):
+    def __init__(self, chisq_map, peak_map, std_map, gaussian_map=''):
         """chisq_map: str
             chisquare map location, should be FITS file
         """
@@ -254,6 +254,12 @@ class Candidates:
         self.peak_map = fits.open(peak_map)[0].data.squeeze()
         # std map
         self.std_map = fits.open(std_map)[0].data.squeeze()
+        # gaussian map
+        if gaussian_map != '':
+            logger.info("Open Gaussian map %s" % gaussian_map)
+            self.gaussian_map = fits.open(gaussian_map)[0].data.squeeze()
+        else:
+            logger.info("No gaussian map is input")
 
         
         
