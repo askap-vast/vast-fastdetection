@@ -352,7 +352,7 @@ class Filter:
             
         
     
-    def fmap(self, ktype, width=1):
+    def fmap(self, ktype, width=4):
         self.width = width
 
         if ktype == "chisquare":
