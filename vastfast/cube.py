@@ -354,6 +354,9 @@ class Filter:
     
     def fmap(self, ktype, width=4):
         self.width = width
+        
+        # get local rms
+        self.cube_local_rms()
 
         if ktype == "chisquare":
             self.map = self._chimap()
@@ -443,10 +446,11 @@ class Filter:
         # mean, rms
         mean = np.nanmean(self.sigcube, axis=0)
         # rms = np.nanstd(self.sigcube, axis=(1, 2))
-        rms = self.cube_local_rms()
+        # rms = self.cube_local_rms()
         
         # for each data point
-        data = (self.sigcube - mean) / rms
+        # data = (self.sigcube - mean) / rms
+        data = (self.sigcube - mean) / self.rmscube
         
         return np.sum(np.power(data, 2), axis=0) / nu
         
@@ -472,8 +476,10 @@ class Filter:
     def _peakmap(self):
         """Get peak map, sensitive to single flare event
         """
+        snr = self.sigcube / self.rmscube
         
-        return (np.nanmax(self.sigcube, axis=0) - np.nanmedian(self.sigcube, axis=0)) 
+        # return (np.nanmax(self.sigcube, axis=0) - np.nanmedian(self.sigcube, axis=0)) 
+        return (np.nanmax(snr, axis=0) - np.nanmedian(snr, axis=0)) 
     
     
     def _stdmap(self):
@@ -497,7 +503,7 @@ class Filter:
             
         logger.info("Calculate local rms finished...")
             
-        return np.array(rmscube, dtype='float32')
+        self.rmscube = np.array(rmscube, dtype='float32')
     
     
     
