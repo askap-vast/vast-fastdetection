@@ -350,13 +350,14 @@ class Filter:
         else:
             raise ArgumentError('The input cube should be np.array')
             
+        # get local rms
+        self.cube_local_rms()
+            
         
     
     def fmap(self, ktype, width=4):
         self.width = width
         
-        # get local rms
-        self.cube_local_rms()
 
         if ktype == "chisquare":
             self.map = self._chimap()
