@@ -16,13 +16,18 @@ If you are interested in modifying some parameters, please see below.
 
 ## Instruction 
 
+```python
+from vastcube.cube import Cube, Filter
+from vastcube.plot import Candidates
+```
 
+### Generate a (significance) cube
 
 **Load a bunch of short images**
 
 Save the location of a series of short images into `imagelist`. Note the images should be in a correct order (e.g., with time ascending). 
 
-Generate a `Cube` class for the following processing. 
+Create a `Cube` class for the following processing. 
 
 ```python
 imagelist = glob.glob('/folder/to/your/images/*.fits')
@@ -30,9 +35,23 @@ imagelist = glob.glob('/folder/to/your/images/*.fits')
 cube = Cube(imagelist)
 ```
 
-### Generate a significance cube
+**Remove bad images**
 
-Convolve a spatial kernel with each image, to smooth the noise level and improve the detection. 
+Remove images with rms larger than two times median RMS level. 
+
+```python
+cube.remove_bad_images()
+```
+
+**generate a cube**
+
+The default way in `run_cube.py` is to form a cube directly 
+
+```python
+cube.icube()
+```
+
+If can convolve a spatial kernel with each image, to smooth the noise level and improve the detection. 
 
 ```python
 cube.icube(ktype='gaussian', nx=19, ny=19)
@@ -44,11 +63,13 @@ The kernel size can be modified through `nx` and `ny` (pixel values)
 
 The kernel HWFM will be automatically calculated through fits header information (i.e., the synthesised beam size). 
 
-The generate smoothed cube is saved in `cube.sigcube`
+Note this smooth process will take much more time (~40min). 
+
+The generate (smoothed) cube is saved in `cube.sigcube`
 
 ### Select transients candidates through a matched filter
 
-Build a Filter using the generated cube
+**Build a Filter using the generated cube**
 
 ```python
 f = Filter(cube.sigcube)
@@ -57,18 +78,48 @@ f = Filter(cube.sigcube)
 Do a Gaussian (or other kernel) smooth on time axis 
 
 ```python
-f.fmap("gaussian", width=1)
+f.fmap("gaussian", width=4)
 ```
 
-Find the local maximum and get the sky position - need a fits file to provide wcs (can be any of FITS images from the `imagelist`)
+* Chisquare map - "chisquare"
+* Gaussian map - "gaussian"
+* Peak map - "peak"
+* Standard Deviation map - "std"
+
+**Save the output map to fits file**
 
 ```python
-f.local_max(imagename=imagelist[0], sigma=3, min_distance=120)
+f.to_fits(fitsname, imagename=imagelist[0])
 ```
 
-The detection threshold can be changed using `sigma`. 
+**Find local maximum (candidates)**
+
+```python
+c = Candidates(chisq_map, peak_map, std_map)
+```
+
+Or include Gaussian map using argument `gaussian_map=<gaussian_map_name>`
+
+```python
+c.local_max(min_distance=30, sigma=5)
+```
+
+The detection threshold can be changed using `sigma` (in log space). 
 
 `min_distance` is the minimum distance (pixel) of neighouring local maximum
 
+**Remove potential artefacts**
+
+We need deep source catalogue information to removew potential artifacts - currently it supports `aegean` format table. But it can also change to `selavy` format table. 
+
+```python
+c.select_candidates(deepcatalogue)
+```
+
+**Save final results to a csv/vot table**
+
+```python
+c.save_csvtable(tablename, savevot=True)
+```
 
 
