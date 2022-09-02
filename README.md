@@ -4,14 +4,14 @@ From short model-subtracted FITS images to top transients candidates.
 
 Some flowcharts can be found in [this Google slides](https://docs.google.com/presentation/d/1ODIjt0YC_LiqUu84r6AsVh4wcZmS4R0KW523N--9PD0/edit?usp=sharing)
 
-## Requirements
+## Requirements (recommand)
 
-* numpy
-* scipy
-* astropy
-* matplotlib
-* aplpy
-* skimage
+* numpy                              (1.23.1)
+* scipy                              (1.5.2)
+* astropy                            (5.1)  
+* aplpy                              (2.1.0)   
+* matplotlib                         (3.5.2)  
+* scikit-image                       (0.19.3)      
 
 
 ## Simple usage
