@@ -2,7 +2,21 @@
 
 From short model-subtracted FITS images to top transients candidates. 
 
-## Example usage
+Some flowcharts can be found in [this Google slides](https://docs.google.com/presentation/d/1ODIjt0YC_LiqUu84r6AsVh4wcZmS4R0KW523N--9PD0/edit?usp=sharing)
+
+## Simple usage
+
+```python
+python run_cube.py <deep_source_catalog> <folder_short_fits_images> <beam_number> <output_name>
+```
+
+The `run_cube.py` scripts can automatically build a cube, generate final significance maps, select candidates and generate final products using optimised parameters. 
+
+If you are interested in modifying some parameters, please see below. 
+
+## Instruction 
+
+
 
 **Load a bunch of short images**
 
