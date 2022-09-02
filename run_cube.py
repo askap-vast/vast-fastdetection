@@ -25,7 +25,7 @@ folder = sys.argv[-3]
 name = sys.argv[-1]
 beam = sys.argv[-2]
 # save folder 
-outdir = "/o9000/ASKAP/VAST/fast_test/detection_results"
+outdir = "./detection_results"
 
 
 # get the imagelist with correct order
