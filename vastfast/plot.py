@@ -275,7 +275,9 @@ class Candidates:
             
         elif data == 'peak':
             data = self.peak_map
-            # data = self.gaussian_map
+            
+        elif data == "gaussian":
+            data = self.gaussian_map
         
         # get threshold in log space
         threshold = get_threshold_logspace(data, sigma=sigma)
