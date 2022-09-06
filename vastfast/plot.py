@@ -270,7 +270,7 @@ class Candidates:
         sigma: identify blobs above a specfic sigma threshold
         min_distance: pixel number of the minimal distance of two neighbours blobs
         '''
-        if data == None:
+        if data == None or data == 'chisquare':
             data = self.chisq_map
             
         elif data == 'peak':
