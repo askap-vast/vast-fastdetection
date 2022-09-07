@@ -19,7 +19,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle
 from astropy.wcs.utils import skycoord_to_pixel, pixel_to_skycoord
 from astropy.nddata.utils import Cutout2D
-from astropy.table import Table
+from astropy.table import Table, vstack
 import matplotlib.animation as animation
 
 import logging
@@ -220,6 +220,56 @@ def get_threshold_logspace(data, sigma=3):
 
 
 
+
+## combine two/three csv to one csv/vot
+def combine_csv(chisq_csv, peak_csv, gaussian_csv='', radius=5, 
+                tablename='final_cand', savevot=True):
+    """
+    chisq_csv: str
+        location of the chisquare csv catalogue
+    radius: float
+        the crossmatch radius between two catalogues, unit of arcsec
+    """
+    
+    chisq_csv = Table.read(chisq_csv)
+    peak_csv = Table.read(peak_csv)
+
+
+    chisq_src = SkyCoord(chisq_csv['ra'], chisq_csv['dec'], unit=u.degree)
+    peak_src = SkyCoord(peak_csv['ra'], peak_csv['dec'], unit=u.degree)
+    
+    if gaussian_csv == '': 
+        logger.info("No input Gaussian catalogue")
+        _, d2d, _ = peak_src.match_to_catalog_sky(chisq_src)
+        final_csv = vstack([ chisq_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
+        
+    else:
+        gaussian_csv = Table.read(gaussian_csv)
+        gaussian_src = SkyCoord(gaussian_csv['ra'], gaussian_csv['dec'], unit=u.degree)
+        
+        _, d2d, _ = peak_src.match_to_catalog_sky(gaussian_src)
+        comb_csv = vstack([ gaussian_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
+        comb_src = SkyCoord(comb_csv['ra'], comb_csv['dec'], unit=u.degree)
+        
+        _, d2d, _ = comb_src.match_to_catalog_sky(chisq_src)
+        final_csv = vstack([ chisq_csv, comb_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
+
+
+    # save csv table
+    final_csv.write("{}.csv".format(tablename))
+    logger.info("Save csv {}".format(tablename))
+    
+    # save vot table
+    if savevot:
+        final_csv.write("{}.vot".format(tablename), table_id="candidates", format="votable")
+        logger.info("Save vot {}".format(tablename))
+    
+
+
+
+
+
+
 class Candidates:
     """Generate the vot table for final candidates
     """
@@ -405,6 +455,16 @@ class Candidates:
         t['peak_map_sigma'] = get_sigma_logspace(self.peak_map, 
                                                  np.array(t['peak_map']))
         
+        # if there's Gaussian map 
+        if hasattr(self, 'gaussian_map'):
+            t['gaussian_map'] = self.gaussian_map[self.yp, self.xp][self.final_idx]
+            t['gaussian_map_sigma'] = get_sigma_logspace(self.gaussian_map, 
+                                                     np.array(t['gaussian_map']))
+        else:
+            t['gaussian_map']  = [np.nan] * sum(self.final_idx)
+            t['gaussian_map_sigma'] = [np.nan] * sum(self.final_idx)
+            
+        
         # read the peak value at each pixel 
         t['std_map'] = self.std_map[self.yp, self.xp][self.final_idx]
         
@@ -479,7 +539,7 @@ class Candidates:
         
         logger.info("Read deep catalogue {}...".format(catalogue))
         self.catalogue = Table.read(catalogue)
-        logger.info(self.catalogue.info)
+        # logger.info(self.catalogue.info)
         
         
         # for Aegean convention

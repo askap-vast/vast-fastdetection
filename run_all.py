@@ -4,7 +4,7 @@ import sys
 import glob
 
 from vastfast.cube import Cube, Filter
-# from vastfast import plot
+from vastfast import plot
 from vastfast.plot import Candidates
 
 
@@ -30,14 +30,19 @@ outdir = sys.argv[-2]
 ## output file name 
 name = sys.argv[-1]
 
+
+### exclude Gaussian mao 
 ## generating how many different types of map
-ktypelist = ['chisquare', 'peak', 'std'] 
-# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+# ktypelist = ['chisquare', 'peak', 'std'] 
 
 ## how many different types of map to select candidates 
 # maplist = ['chisquare']
-maplist = ['chisquare', 'peak']
-# maplist = ['chisquare', 'peak', 'gaussian']
+# maplist = ['chisquare', 'peak']
+
+### include Gaussian map
+ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+maplist = ['chisquare', 'peak', 'gaussian']
+
 
 
 ## ====================================
@@ -109,22 +114,11 @@ peak_map = "{}/{}_{}.fits".format(outdir, name, 'peak')
 std_map = "{}/{}_{}.fits".format(outdir, name, 'std')
 
 
-# if 'gaussian' in maplist:
-#     ## include Gaussian map during candidates selection 
-#     gaussian_map = "{}/{}_{}.fits".format(outdir, name, 'gaussian')
-    
-#     c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map)
-# else:
-    
-#     c = Candidates(chisquare_map, peak_map, std_map)
-
-
-
 
 ## =============== select candidates =================
 for maptype in maplist:
     
-    if maptype != 'gaussian':
+    if 'gaussian' not in maplist:
         c = Candidates(chisquare_map, peak_map, std_map)
         
     else:
@@ -152,6 +146,26 @@ for maptype in maplist:
     ## plot a final map with promising candidates 
     c.plot_fits(fitsname=vars()[maptype+'_map'], 
                 imagename="{}/{}_{}_map2".format(outdir, name, maptype))
+    
+
+    
+# =====================
+# combine those three cand list to one
+logger.info("=========Combine catalogue==========")
+
+chisquare_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'chisquare')
+peak_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'peak')
+
+if 'gaussian' not in maplist:
+    plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
+                     tablename="{}/{}_final".format(outdir, name), savevot=True)
+    
+else:
+    gaussian_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'gaussian')
+    plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
+                     gaussian_csv=gaussian_csv, 
+                     tablename="{}/{}_final".format(outdir, name), savevot=True)
+
 
 
 
