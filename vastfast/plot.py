@@ -270,12 +270,14 @@ class Candidates:
         sigma: identify blobs above a specfic sigma threshold
         min_distance: pixel number of the minimal distance of two neighbours blobs
         '''
-        if data == None:
+        if data == None or data == 'chisquare':
             data = self.chisq_map
             
         elif data == 'peak':
             data = self.peak_map
-            # data = self.gaussian_map
+            
+        elif data == "gaussian":
+            data = self.gaussian_map
         
         # get threshold in log space
         threshold = get_threshold_logspace(data, sigma=sigma)
@@ -409,6 +411,28 @@ class Candidates:
         # modulation index using deep source flux
         t['md_deep'] = self.md[self.final_idx]
         
+        # separaion to nearest deep counterpart
+        t['deep_sep_arcsec'] = self.d2d.arcsec[self.final_idx]
+        
+        # separation to beam center
+        t['beam_sep_deg'] = self.cand_src.separation(self.beam_center).degree[self.final_idx]
+        
+        # beam center coordinates
+        t['beam_ra']= self.beam_center.ra.deg
+        t['beam_dec']= self.beam_center.dec.deg
+        
+        # name of the nearest deep counterpart
+        t['deep_name'] = np.array(self.deep_name)[self.deepidx][self.final_idx]
+        
+        # coordinates for nearest deep counterpart 
+        t['deep_ra_deg'] = self.deep_src.ra.degree[self.deepidx][self.final_idx]
+        t['deep_dec_deg'] = self.deep_src.dec.degree[self.deepidx][self.final_idx]
+        
+        # flux density of the nearest deep counterpart
+        t['deep_peak_flux'] = self.deep_peak_flux[self.deepidx][self.final_idx]
+        t['deep_int_flux'] = self.deep_int_flux[self.deepidx][self.final_idx]
+        
+        
         
         # save csv table
         t.write("{}.csv".format(tablename))
@@ -469,6 +493,15 @@ class Candidates:
         
         # integrated flux
         self.deep_int_flux = np.array(self.catalogue['int_flux'])
+        
+        # get name
+        # for selavy just read the column 'col_component_name'
+        # for aegean you want to use following code to read from scratch 
+        self.deep_name = ['J' + \
+             src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
+             src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
+             for src in self.deep_src
+            ]
         
         
         
