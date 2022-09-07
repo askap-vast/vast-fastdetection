@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import os
 import glob
 import matplotlib.pyplot as plt
 
@@ -26,6 +27,9 @@ name = sys.argv[-1]
 beam = sys.argv[-2]
 # save folder 
 outdir = "./detection_results"
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
+
 
 
 # get the imagelist with correct order

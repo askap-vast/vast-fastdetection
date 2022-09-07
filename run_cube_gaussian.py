@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import glob
 import matplotlib.pyplot as plt
@@ -25,7 +26,9 @@ folder = sys.argv[-3]
 name = sys.argv[-1]
 beam = sys.argv[-2]
 # save folder 
-outdir = "/import/ada2/ywan3191/fast_pipeline/test_220905"
+outdir = "./detection_results_gaussian"
+if not os.path.exists(outdir):
+    os.mkdir(outdir)
 
 
 # get the imagelist with correct order
