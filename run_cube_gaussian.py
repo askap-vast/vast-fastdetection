@@ -30,6 +30,7 @@ outdir = "./detection_results_gaussian"
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 
+@profile
 def main():
     # get the imagelist with correct order
     imagelist = []
