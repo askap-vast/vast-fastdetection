@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ss2022b-tmurphy"
+name = "vastfast"
 version = "0.1.0"
 description = ""
 authors = ["  < >"]
@@ -26,6 +26,7 @@ gprof2dot = "^2022.7.29"
 py-spy = "^0.3.13"
 ipykernel = "^6.15.2"
 jupyter-contrib-nbextensions = "^0.5.1"
+pandas = "^1.4.4"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

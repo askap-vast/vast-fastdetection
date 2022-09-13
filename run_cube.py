@@ -30,7 +30,7 @@ outdir = "./detection_results"
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 
-@profile
+# @profile
 def main():
     # get the imagelist with correct order
     imagelist = []

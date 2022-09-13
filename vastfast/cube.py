@@ -496,15 +496,16 @@ class Filter:
         """
         logger.info("Calculate local rms...")
         
-        rmscube = []
+        rmscube = np.zeros(self.sigcube.shape, dtype=np.float32)
+        rmscube[:] = np.nan
         for i in range(self.sigcube.shape[0]):
             data_image = self.sigcube[i]
             rms_image = self.get_local_rms(data=data_image)
-            rmscube.append(rms_image)
+            rmscube[i] = rms_image
             
         logger.info("Calculate local rms finished...")
             
-        self.rmscube = np.array(rmscube, dtype='float32')
+        self.rmscube = rmscube
     
     
     
