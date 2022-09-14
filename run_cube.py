@@ -80,6 +80,10 @@ def main():
     f.fmap(ktype, width=1)
     logger.info("Kernel match Done")
 
+    fitsname = "{}/{}_{}.fits".format(outdir, name, ktype)
+    if os.path.exists(fitsname):
+        os.remove(fitsname)
+
     f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
@@ -90,6 +94,10 @@ def main():
     logger.info("Kernel match filter '{}'...".format(ktype))
     f.fmap(ktype, width=1)
     logger.info("Kernel match Done")
+
+    fitsname = "{}/{}_{}.fits".format(outdir, name, ktype)
+    if os.path.exists(fitsname):
+        os.remove(fitsname)
 
     f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
@@ -102,6 +110,10 @@ def main():
     f.fmap(ktype, width=1)
     logger.info("Kernel match Done")
 
+    fitsname = "{}/{}_{}.fits".format(outdir, name, ktype)
+    if os.path.exists(fitsname):
+        os.remove(fitsname)
+
     f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
@@ -112,6 +124,10 @@ def main():
     logger.info("Kernel match filter '{}'...".format(ktype))
     #f.fmap(ktype, width=4)
     logger.info("Kernel match Done")
+
+    fitsname = "{}/{}_{}.fits".format(outdir, name, ktype)
+    if os.path.exists(fitsname):
+        os.remove(fitsname)
 
     #f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
@@ -147,6 +163,11 @@ def main():
     c.select_candidates(deepcatalogue=catalogue)
 
     # save the table
+
+    tablename = "{}/{}_cand".format(outdir, name)
+    if os.path.exists(tablename):
+        os.remove(tablename)
+
     c.save_csvtable(tablename="{}/{}_cand".format(outdir, name), savevot=True)
 
     # plot a final map
