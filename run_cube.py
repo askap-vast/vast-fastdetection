@@ -26,7 +26,7 @@ folder = sys.argv[-3]
 name = sys.argv[-1]
 beam = sys.argv[-2]
 # save folder 
-outdir = "./detection_results"
+outdir = "./output"
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 

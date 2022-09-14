@@ -55,5 +55,9 @@ htmlcov
 .coverage
 *.log
 *.bak
-detection_results
+output
+*.npy
+profile
+
+
 

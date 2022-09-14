@@ -4,6 +4,7 @@ import os
 import sys
 import glob
 import matplotlib.pyplot as plt
+from memory_profiler import profile
 
 from vastfast.cube import Cube, Filter
 from vastfast import plot
@@ -26,7 +27,7 @@ folder = sys.argv[-3]
 name = sys.argv[-1]
 beam = sys.argv[-2]
 # save folder 
-outdir = "./detection_results_gaussian"
+outdir = "./output/gaussian"
 if not os.path.exists(outdir):
     os.mkdir(outdir)
 

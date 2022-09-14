@@ -8,7 +8,7 @@ PATH = os.path.dirname(__file__)
 RES_FILE_1 = PATH + "/fixtures/detection_results/output_cand.csv"
 
 # generated data
-RES_FILE_2 = PATH + "/../detection_results/output_cand.csv"
+RES_FILE_2 = PATH + "/../output/output_cand.csv"
 
 
 @pytest.fixture
