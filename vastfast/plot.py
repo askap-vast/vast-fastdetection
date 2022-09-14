@@ -49,8 +49,7 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     
     # get the source position 
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    logger.info("Get source position...")
-    logger.info(src)
+    logger.info("Get source position ({}, {})...".format(src.ra.degree, src.dec.degree))
     
     # generate a plot, including a bunch of single images
     fig = plt.figure()
@@ -117,7 +116,7 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
 
         ims.append([im, sc, te])
 
-    fig.gca().set_title(name)
+    fig.gca().set_title(src_name)
     fig.gca().set_xlabel('RA (J2000)')
     fig.gca().set_ylabel('DEC (J2000)')
     cbar = fig.colorbar(im)
@@ -128,6 +127,8 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     ani.save('{}.gif'.format(name), dpi=80, writer='imagemagick')
     
     logger.info("Save image {}.gif".format(name))
+    
+    
     
     
         
@@ -155,7 +156,7 @@ def plot_fits(fitsname, src=None, imagename='plot_fits'):
     """
 
     # read the image
-    f = aplpy.FITSFigure(fitsname, figsize=(10, 10), dpi=100)
+    f = aplpy.FITSFigure(fitsname, figsize=(8, 8))
     
     # fix the wcs dimension issue
     fix_aplpy_fits(f)
@@ -188,7 +189,48 @@ def plot_fits(fitsname, src=None, imagename='plot_fits'):
     
     
     # save image
-    f.savefig(filename=imagename+'.png', dpi=300)
+    f.savefig(filename=imagename+'.png', dpi=100)
+    
+    
+    
+    
+def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
+    """Plot cutout png from deep image
+    src_name: str
+        in format of "Jxxxx-xxxx"
+    fitsname: str
+        the location of the deep fits image
+    radius: float
+        cutout size, in unit of arcmin
+    vsigma: float
+        plot color range in unit of sigma
+    """
+    
+    # get the source position 
+    logger.info("Plotting source {}...".format(src_name))
+    src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
+    logger.info("Get source position...")
+    logger.info(src)
+    
+    # get deep image information 
+    f = aplpy.FITSFigure(fitsname, figsize=(5, 5))
+    
+    # fix the wcs dimension issue
+    fix_aplpy_fits(f)
+    
+    f.recenter(src.ra, src.dec, radius=radius/60)
+    f.show_grayscale()
+    
+    f.add_colorbar(log_format=True)
+    f.colorbar.set_axis_label_text("Flux Density (Jy/beam)")
+    f.colorbar.set_axis_label_pad(1)
+    
+    f.show_circles(src.ra, src.dec, radius=30/60/60, ec='orange')
+    f.set_title(src_name)
+    
+    f.savefig("{}.png".format(name))
+    logger.info("Save image {}.png".format(name))
+    
     
     
     
@@ -570,7 +612,7 @@ class Candidates:
         """
         
         # read the image
-        f = aplpy.FITSFigure(fitsname, figsize=(10, 10), dpi=100)
+        f = aplpy.FITSFigure(fitsname, figsize=(8, 8))
         
         # fix the wcs dimension issue
         fix_aplpy_fits(f)
@@ -622,12 +664,47 @@ class Candidates:
         
         
         # save image
-        f.savefig(filename=imagename+'.png', dpi=300)
+        f.savefig(filename=imagename+'.png', dpi=100)
 
 
 
 
 
+
+class Products:
+    """Generate the vot table for final candidates
+    """
+    
+    def __init__(self, final_csv):
+        """
+        final_csv: str
+            location of the csv catalogue for (final) candidates
+        """
+        
+        self.final_csv = Table.read(final_csv)
+        self.cand_name = self.final_csv['name']
+        self.cand_src = SkyCoord(self.final_csv['ra'], self.final_csv['dec'], 
+                                  unit=u.degree)
+        
+        
+        
+    def generate_cutout(self, fitsname, radius=5, savename='output'):
+        
+        # run the cutout plot one by one 
+        for src_name in self.cand_name:
+            plot_cutout(src_name, fitsname, 
+                        radius=5, 
+                        name='{}_{}'.format(savename, src_name))
+            
+            
+            
+    def generate_slices(self, imagelist, radius=5, vsigma=5, savename='output'):
+        
+        # run the slices plot one by one
+        for src_name in self.cand_name:
+            plot_slices(src_name, imagelist, 
+                        radius=5, vsigma=5, 
+                        name='{}_{}'.format(savename, src_name))
 
 
 

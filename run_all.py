@@ -5,7 +5,7 @@ import glob
 
 from vastfast.cube import Cube, Filter
 from vastfast import plot
-from vastfast.plot import Candidates
+from vastfast.plot import Candidates, Products
 
 
 import logging
@@ -19,6 +19,8 @@ logger.addHandler(sh)
 
 
 ## ========= input ================
+## deep image
+deepimage = sys.argv[-6]
 ## deep catalogue
 catalogue = sys.argv[-5]
 ## the folder location with processed short images
@@ -33,15 +35,15 @@ name = sys.argv[-1]
 
 ### exclude Gaussian mao 
 ## generating how many different types of map
-# ktypelist = ['chisquare', 'peak', 'std'] 
+ktypelist = ['chisquare', 'peak', 'std'] 
 
 ## how many different types of map to select candidates 
 # maplist = ['chisquare']
-# maplist = ['chisquare', 'peak']
+maplist = ['chisquare', 'peak']
 
 ### include Gaussian map
-ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
-maplist = ['chisquare', 'peak', 'gaussian']
+# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+# maplist = ['chisquare', 'peak', 'gaussian']
 
 
 
@@ -147,6 +149,15 @@ for maptype in maplist:
     c.plot_fits(fitsname=vars()[maptype+'_map'], 
                 imagename="{}/{}_{}_map2".format(outdir, name, maptype))
     
+    # # plot!
+    # for i, candname in enumerate(c.cand_name):
+    #     logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
+    #     plot.plot_slices(src_name=candname, 
+    #                      imagelist=imagelist, 
+    #                      name="{}/{}_{}".format(outdir, name, candname))
+    
+
+
 
     
 # =====================
@@ -168,13 +179,19 @@ else:
 
 
 
+# =====================
+# plot final candidates 
+logger.info("========= Plotting =============")
 
-# # plot!
-# for i, candname in enumerate(c.cand_name):
-#     logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
-#     plot.plot_slices(src_name=candname, 
-#                      imagelist=imagelist, 
-#                      name="{}/{}_{}".format(outdir, name, candname))
+final_csv = "{}/{}_final.csv".format(outdir, name)
+
+p = Products(final_csv)
+p.generate_slices(imagelist=imagelist, 
+                  savename='{}/{}_slices'.format(outdir, name))
+p.generate_cutout(fitsname=deepimage, 
+                  savename='{}/{}_deepcutout'.format(outdir, name))
+
+
 
 
 
