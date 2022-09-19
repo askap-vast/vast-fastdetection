@@ -9,6 +9,9 @@ Created on Thu Jul 14 20:57:50 2022
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import matplotlib.dates as mdates
+from matplotlib.ticker import MaxNLocator
 
 import aplpy
 from skimage.feature import peak_local_max
@@ -20,7 +23,8 @@ from astropy.coordinates import SkyCoord, Angle
 from astropy.wcs.utils import skycoord_to_pixel, pixel_to_skycoord
 from astropy.nddata.utils import Cutout2D
 from astropy.table import Table, vstack
-import matplotlib.animation as animation
+from astropy.time import Time
+
 
 import logging
 
@@ -207,7 +211,7 @@ def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
     """
     
     # get the source position 
-    logger.info("Plotting source {}...".format(src_name))
+    logger.info("Plotting deep cutout source {}...".format(src_name))
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
     logger.info("Get source position...")
     logger.info(src)
@@ -230,6 +234,126 @@ def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
     
     f.savefig("{}.png".format(name))
     logger.info("Save image {}.png".format(name))
+    
+    
+    
+    
+def extract_lightcurve(src_name, imagelist, deep_imagename, residual_imagename=None, 
+                    ksize=99):
+    """plot lightcurve for each source candidate 
+        ksize: kernel size for local rms calculation (square radius)
+    """
+    logger.info("Plotting lightcurve source {}...".format(src_name))
+    # get the source position
+    src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
+    
+    # get deep image pixel position xw, yw
+    deep_image = fits.open(deep_imagename)
+    deep_wcs = WCS(header=deep_image[0].header, naxis=2)
+    
+    deep_xw, deep_yw = skycoord_to_pixel(coords=src, wcs=deep_wcs) 
+    deep_xw, deep_yw = int(np.round(deep_xw)), int(np.round(deep_yw))
+    
+    # get deep flux density 
+    deep_flux = deep_image[0].data.squeeze()[deep_yw, deep_xw]
+    
+    peak_flux = []
+    local_rms = []
+    timestamp = []
+    
+    # for each short image 
+    for i, image in enumerate(imagelist):
+        
+        # open the fits
+        hdu = fits.open(image)
+        # get the fits data (drop-out extra dimensions)
+        data = hdu[0].data.squeeze()
+        # get wcs frame
+        wcs = WCS(header=hdu[0].header, naxis=2)
+        
+        xw, yw = skycoord_to_pixel(coords=src, wcs=wcs)
+        xw, yw = int(np.round(xw)), int(np.round(yw))
+        
+        peak_flux.append(data[yw, xw])
+        
+        # get observing time
+        timestamp.append(hdu[0].header['DATE-OBS'])
+        
+        # calculate local rms 
+        try:
+            rms = np.nanstd(data[yw-ksize: yw+ksize, xw-ksize: xw+ksize])
+            local_rms.append(rms)
+        except:
+            local_rms.append(np.nan)
+            
+    # covert them to np.array
+    peak_flux = np.array(peak_flux)
+    local_rms = np.array(local_rms)
+    logger.info("Get peak flux shape {}, local rms shape {}".format(
+        peak_flux.shape, local_rms.shape))
+    
+    
+    # modify the peak flux (+deep image - residual image)
+    
+    # get residual image (if there is)
+    try:
+        residual_image = fits.open(residual_imagename)
+        wcs = WCS(residual_image[0].header, naxis=2)
+        
+        xw, yw = skycoord_to_pixel(coords=src, wcs=wcs)
+        xw, yw = int(np.round(xw)), int(np.round(yw))
+        
+        residual_flux = residual_image[0].data.squeeze()[yw, xw]
+        logger.info("Use residual image information {}".format(residual_imagename))
+        
+    except:
+        residual_flux = np.nanmean(peak_flux)
+        logger.info("No available residual image. ")
+        
+    logger.info("Residual flux {} Jy/beam".format(residual_flux))
+        
+    # final peak flux density
+    peak_flux = peak_flux + deep_flux - residual_flux 
+    
+    return peak_flux, local_rms, timestamp
+    
+    
+    
+    
+
+# plot
+def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
+    
+    fig, ax = plt.subplots()
+
+    times = Time(times)
+    times.format = 'datetime64'
+    
+    flux, rms = flux*1e3, rms*1e3
+    
+    ax.errorbar(x=times.value, y=flux, yerr=rms, color='black', marker='.', alpha=0.6)
+    
+    date_form = mdates.DateFormatter("%Y-%b-%d/%H:%M")
+    ax.xaxis.set_major_formatter(date_form)
+    
+    ax.set_xlabel('Time (UTC)')
+    ax.set_ylabel('Peak Flux Density (mJy/beam)')
+    ax.set_title(title)
+    
+    # ax.set_ylim(bottom=-0.1, top=1.2*np.nanmax(np.array(flux))) 
+    
+    # set a reasonable time interval
+    time_length = ((times[-1] - times[0]).to_value('sec') + 900) / 3600
+    
+    if int(time_length/4) != 0:
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=int(time_length/4)))
+
+    fig.autofmt_xdate(rotation=15)
+    
+    fig.savefig("{}.png".format(name), bbox_inches='tight')
+    
+    
+    
     
     
     
@@ -708,4 +832,47 @@ class Products:
 
 
 
+
+    def generate_lightcurve(self, imagelist, deepname, savename='output', 
+                            savecsv=True):
+        
+        peak_flux_table = Table()
+        local_rms_table = Table()
+        
+        # run the lightucrve plot one by one
+        for i, src_name in enumerate(self.cand_name):
+            peak_flux, local_rms, timestamp = extract_lightcurve(src_name=src_name, 
+                                                      imagelist=imagelist, 
+                                                      deep_imagename=deepname)
+            
+            if i == 0:
+                peak_flux_table['Time'] = timestamp
+                local_rms_table['Time'] = timestamp
+                
+            
+            peak_flux_table[src_name] = peak_flux
+            local_rms_table[src_name] = local_rms
+            
+            # plot
+            plot_lightcurve(flux=peak_flux, 
+                            times=timestamp, 
+                            rms=local_rms, 
+                            title=src_name, 
+                            name='{}_{}'.format(savename, src_name))
+            
+        # save catalgoue 
+        if savecsv:
+            # save csv table
+            peak_flux_table.write("{}_peak_flux.csv".format(savename))
+            local_rms_table.write("{}_local_rms.csv".format(savename))
+
+            logger.info("Save csv {}".format(savename))
+            
+            
+            
+            
+            
+            
+            
+            
 
