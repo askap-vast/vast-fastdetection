@@ -19,7 +19,7 @@ from skimage.feature import peak_local_max
 from astropy.wcs import WCS
 from astropy.io import fits
 from astropy import units as u
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord, Angle, search_around_sky
 from astropy.wcs.utils import skycoord_to_pixel, pixel_to_skycoord
 from astropy.nddata.utils import Cutout2D
 from astropy.table import Table, vstack
@@ -308,7 +308,7 @@ def extract_lightcurve(src_name, imagelist, deep_imagename, residual_imagename=N
         
     except:
         residual_flux = np.nanmean(peak_flux)
-        logger.info("No available residual image. ")
+        logger.warning("No available residual image, using mean(peak_flux) instead. ")
         
     logger.info("Residual flux {} Jy/beam".format(residual_flux))
         
@@ -388,47 +388,95 @@ def get_threshold_logspace(data, sigma=3):
 
 
 ## combine two/three csv to one csv/vot
-def combine_csv(chisq_csv, peak_csv, gaussian_csv='', radius=5, 
+# def combine_csv(chisq_csv, peak_csv, gaussian_csv='', radius=5, 
+#                 tablename='final_cand', savevot=True):
+def combine_csv(namelist, radius=5, 
                 tablename='final_cand', savevot=True):
     """
-    chisq_csv: str
-        location of the chisquare csv catalogue
+    tables: list
+        a list of location of the chisquare/Gaussian/peak csv catalogue
     radius: float
         the crossmatch radius between two catalogues, unit of arcsec
     """
     
-    chisq_csv = Table.read(chisq_csv)
-    peak_csv = Table.read(peak_csv)
-
-
-    chisq_src = SkyCoord(chisq_csv['ra'], chisq_csv['dec'], unit=u.degree)
-    peak_src = SkyCoord(peak_csv['ra'], peak_csv['dec'], unit=u.degree)
+    tables = []
     
-    if gaussian_csv == '': 
-        logger.info("No input Gaussian catalogue")
-        _, d2d, _ = peak_src.match_to_catalog_sky(chisq_src)
-        final_csv = vstack([ chisq_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
+    for name in namelist:
         
-    else:
-        gaussian_csv = Table.read(gaussian_csv)
-        gaussian_src = SkyCoord(gaussian_csv['ra'], gaussian_csv['dec'], unit=u.degree)
+        try:
+            table = Table.read(name)
+            logger.info('Successfully read {}'.format(name))
+        except:
+            logger.warning('Cannot read {}'.format(name))
+            continue    
         
-        _, d2d, _ = peak_src.match_to_catalog_sky(gaussian_src)
-        comb_csv = vstack([ gaussian_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
-        comb_src = SkyCoord(comb_csv['ra'], comb_csv['dec'], unit=u.degree)
-        
-        _, d2d, _ = comb_src.match_to_catalog_sky(chisq_src)
-        final_csv = vstack([ chisq_csv, comb_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
-
+        if len(table) == 0:
+            logger.warning('Empty Table {}'.format(name))
+            continue
+        else:
+            tables.append(table)
+            
+            
+    if len(tables) == 0:
+        logger.warning('Empty final table. ')
+        return None
+    
+    stacked_table = vstack(tables, join_type='exact')
+    logger.info('Stacked table length {}'.format(len(stacked_table)))
+    
+    src = SkyCoord(stacked_table['ra'], stacked_table['dec'], unit=u.degree)
+    
+    # combine unique sources
+    idx1, idx2, sep2d, _ = search_around_sky(src, src, 
+                                             seplimit=radius*u.arcsec)
+    idx = np.full((len(stacked_table), ), True)
+    idx[np.unique(idx2[idx1 < idx2])] = False
+    
+    final_csv = stacked_table[idx]
 
     # save csv table
     final_csv.write("{}.csv".format(tablename))
-    logger.info("Save csv {}".format(tablename))
+    logger.info("Save final csv {}".format(tablename))
+    logger.info("Final table length {}".format(len(final_csv)))
     
     # save vot table
     if savevot:
         final_csv.write("{}.vot".format(tablename), table_id="candidates", format="votable")
-        logger.info("Save vot {}".format(tablename))
+        logger.info("Save final vot {}".format(tablename))
+    
+    
+    # chisq_csv = Table.read(chisq_csv)
+    # peak_csv = Table.read(peak_csv)
+
+
+    # chisq_src = SkyCoord(chisq_csv['ra'], chisq_csv['dec'], unit=u.degree)
+    # peak_src = SkyCoord(peak_csv['ra'], peak_csv['dec'], unit=u.degree)
+    
+    # if gaussian_csv == '': 
+    #     logger.info("No input Gaussian catalogue")
+    #     _, d2d, _ = peak_src.match_to_catalog_sky(chisq_src)
+    #     final_csv = vstack([ chisq_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
+        
+    # else:
+    #     gaussian_csv = Table.read(gaussian_csv)
+    #     gaussian_src = SkyCoord(gaussian_csv['ra'], gaussian_csv['dec'], unit=u.degree)
+        
+    #     _, d2d, _ = peak_src.match_to_catalog_sky(gaussian_src)
+    #     comb_csv = vstack([ gaussian_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
+    #     comb_src = SkyCoord(comb_csv['ra'], comb_csv['dec'], unit=u.degree)
+        
+    #     _, d2d, _ = comb_src.match_to_catalog_sky(chisq_src)
+    #     final_csv = vstack([ chisq_csv, comb_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
+
+
+    # # save csv table
+    # final_csv.write("{}.csv".format(tablename))
+    # logger.info("Save csv {}".format(tablename))
+    
+    # # save vot table
+    # if savevot:
+    #     final_csv.write("{}.vot".format(tablename), table_id="candidates", format="votable")
+    #     logger.info("Save vot {}".format(tablename))
     
 
 

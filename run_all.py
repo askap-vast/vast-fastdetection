@@ -164,18 +164,23 @@ for maptype in maplist:
 # combine those three cand list to one
 logger.info("=========Combine catalogue==========")
 
-chisquare_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'chisquare')
-peak_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'peak')
+# chisquare_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'chisquare')
+# peak_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'peak')
 
-if 'gaussian' not in maplist:
-    plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
-                     tablename="{}/{}_final".format(outdir, name), savevot=True)
+namelist = ['{}/{}_{}_cand.csv'.format(outdir, name, maptype) for maptype in maplist ]
+
+plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, name), 
+             savevot=True)
+
+# if 'gaussian' not in maplist:
+#     plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
+#                      tablename="{}/{}_final".format(outdir, name), savevot=True)
     
-else:
-    gaussian_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'gaussian')
-    plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
-                     gaussian_csv=gaussian_csv, 
-                     tablename="{}/{}_final".format(outdir, name), savevot=True)
+# else:
+#     gaussian_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'gaussian')
+#     plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
+#                      gaussian_csv=gaussian_csv, 
+#                      tablename="{}/{}_final".format(outdir, name), savevot=True)
 
 
 
