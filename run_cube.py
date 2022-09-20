@@ -33,12 +33,9 @@ if not os.path.exists(outdir):
 # @profile
 def main():
     # get the imagelist with correct order
-    imagelist = []
-    for size in ["?", "??", "???", "????"]:
-        tmp = glob.glob(folder + f'{beam}_{size}.fits')
-        tmp.sort()
-        imagelist += tmp
-
+    imagelist = sorted(glob.glob(folder + "beam*"))
+    
+    
     #imagelist = glob.glob(folder + f'{beam}_?.fits') + glob.glob(folder + f'{beam}_??.fits') + glob.glob(folder + f'{beam}_???.fits')
     #imagelist = glob.glob(folder + 'image_?.fits') + glob.glob(folder + 'image_??.fits') + glob.glob(folder + 'image_???.fits') + glob.glob(folder + 'image_????.fits')
     #imagelist.sort()
