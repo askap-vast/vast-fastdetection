@@ -573,6 +573,10 @@ class Candidates:
         savevot: bool
             if True, will also save a vot format table 
         """
+        
+        # if no final candidates - don't need to save csv/vot
+        
+        
         t = Table()
         
         # source id 
@@ -644,8 +648,8 @@ class Candidates:
         t['beam_sep_deg'] = self.cand_src.separation(self.beam_center).degree[self.final_idx]
         
         # beam center coordinates
-        t['beam_ra']= self.beam_center.ra.deg
-        t['beam_dec']= self.beam_center.dec.deg
+        t['beam_ra']= [self.beam_center.ra.deg] * sum(self.final_idx)
+        t['beam_dec']= [self.beam_center.dec.deg] * sum(self.final_idx)
         
         # name of the nearest deep counterpart
         t['deep_name'] = np.array(self.deep_name)[self.deepidx][self.final_idx]
