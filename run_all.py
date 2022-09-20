@@ -190,6 +190,9 @@ p.generate_slices(imagelist=imagelist,
                   savename='{}/{}_slices'.format(outdir, name))
 p.generate_cutout(fitsname=deepimage, 
                   savename='{}/{}_deepcutout'.format(outdir, name))
+p.generate_lightcurve(imagelist=imagelist, 
+                      deepname=deepimage, 
+                      savename='{}/{}_lightcurve'.format(outdir, name))
 
 
 
