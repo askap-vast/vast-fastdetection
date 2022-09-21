@@ -222,11 +222,14 @@ def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
     # fix the wcs dimension issue
     fix_aplpy_fits(f)
     
+    # change unit from Jy to mJy
+    f._data = f._data * 1e3
+    
     f.recenter(src.ra, src.dec, radius=radius/60)
     f.show_grayscale()
     
-    f.add_colorbar(log_format=True)
-    f.colorbar.set_axis_label_text("Flux Density (Jy/beam)")
+    f.add_colorbar()
+    f.colorbar.set_axis_label_text("Flux Density (mJy/beam)")
     f.colorbar.set_axis_label_pad(1)
     
     f.show_circles(src.ra, src.dec, radius=30/60/60, ec='orange')
