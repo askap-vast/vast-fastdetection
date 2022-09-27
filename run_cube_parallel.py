@@ -20,13 +20,12 @@ sh.setFormatter(formatter)
 logger.handlers.clear()
 logger.addHandler(sh)
 
-import multiprocessing as mp
-cfx = mp.get_context("fork")
-
-from dask.distributed import Client
-client = Client(n_workers=4)
-
 import dask
+dask.config.set({"multiprocessing.context": "fork"})
+from dask.distributed import Client
+
+
+
 
 
 
@@ -42,8 +41,8 @@ if not os.path.exists(outdir):
 out_prefix = "output"
 
 # @profile
-@dask.delayed
-def process_beam(input_path, beam):
+def process_beam(beam):
+    input_path = INPUT_PATH
     # input data: short images
     image_files = input_path +"/" + "beam{:02}*".format(beam)
     print("image name: ", image_files)
@@ -205,14 +204,16 @@ def process_beam(input_path, beam):
 if __name__ == "__main__":
     # process_beam(INPUT_PATH,14)
 
-    results = []
-    beams = [8,16]
-    for beam in beams:
-        results.append(process_beam(INPUT_PATH, beam))
+    # results = []
+    # beams = [8,16]
+    # for beam in beams:
+    #     results.append(process_beam(INPUT_PATH, beam))
 
-    dask.compute(results)
-
-
+    # dask.compute(results)
+    client = Client(n_workers=4)
+    ll = client.map(process_beam,[8,16])
+    # print(type(ll[0]))
+    client.gather(ll)
 
 
 
