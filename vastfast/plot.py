@@ -233,6 +233,8 @@ def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
     f.colorbar.set_axis_label_pad(1)
     
     f.show_circles(src.ra, src.dec, radius=30/60/60, ec='orange')
+    f.show_markers(src.ra, src.dec, c='red', marker='+', alpha=0.2)
+
     f.set_title(src_name)
     
     f.savefig("{}.png".format(name))
@@ -391,9 +393,7 @@ def get_threshold_logspace(data, sigma=3):
 
 
 ## combine two/three csv to one csv/vot
-# def combine_csv(chisq_csv, peak_csv, gaussian_csv='', radius=5, 
-#                 tablename='final_cand', savevot=True):
-def combine_csv(namelist, radius=5, 
+def combine_csv(namelist, radius=10, 
                 tablename='final_cand', savevot=True):
     """
     tables: list
@@ -438,48 +438,17 @@ def combine_csv(namelist, radius=5,
     final_csv = stacked_table[idx]
 
     # save csv table
-    final_csv.write("{}.csv".format(tablename))
+    final_csv.write("{}.csv".format(tablename), overwrite=True)
     logger.info("Save final csv {}".format(tablename))
     logger.info("Final table length {}".format(len(final_csv)))
     
     # save vot table
     if savevot:
-        final_csv.write("{}.vot".format(tablename), table_id="candidates", format="votable")
+        final_csv.write("{}.vot".format(tablename), 
+                        table_id="candidates", 
+                        format="votable", 
+                        overwrite=True)
         logger.info("Save final vot {}".format(tablename))
-    
-    
-    # chisq_csv = Table.read(chisq_csv)
-    # peak_csv = Table.read(peak_csv)
-
-
-    # chisq_src = SkyCoord(chisq_csv['ra'], chisq_csv['dec'], unit=u.degree)
-    # peak_src = SkyCoord(peak_csv['ra'], peak_csv['dec'], unit=u.degree)
-    
-    # if gaussian_csv == '': 
-    #     logger.info("No input Gaussian catalogue")
-    #     _, d2d, _ = peak_src.match_to_catalog_sky(chisq_src)
-    #     final_csv = vstack([ chisq_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
-        
-    # else:
-    #     gaussian_csv = Table.read(gaussian_csv)
-    #     gaussian_src = SkyCoord(gaussian_csv['ra'], gaussian_csv['dec'], unit=u.degree)
-        
-    #     _, d2d, _ = peak_src.match_to_catalog_sky(gaussian_src)
-    #     comb_csv = vstack([ gaussian_csv, peak_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
-    #     comb_src = SkyCoord(comb_csv['ra'], comb_csv['dec'], unit=u.degree)
-        
-    #     _, d2d, _ = comb_src.match_to_catalog_sky(chisq_src)
-    #     final_csv = vstack([ chisq_csv, comb_csv[~(d2d<5*u.arcsec)] ], join_type='exact')
-
-
-    # # save csv table
-    # final_csv.write("{}.csv".format(tablename))
-    # logger.info("Save csv {}".format(tablename))
-    
-    # # save vot table
-    # if savevot:
-    #     final_csv.write("{}.vot".format(tablename), table_id="candidates", format="votable")
-    #     logger.info("Save vot {}".format(tablename))
     
 
 
@@ -566,7 +535,8 @@ class Candidates:
         
         
     def select_candidates(self, deepcatalogue, deepimage=None, 
-                          sep=30, mdlim=0.05, extlim=1.5, beamlim=1.2):
+                          sep=30, mdlim=0.05, extlim=1.5, beamlim=1.2, 
+                          bright=0.05):
         """Select high priority candidates using deep image information
         
         deepimage: str
@@ -579,6 +549,8 @@ class Candidates:
             lower limit of modulation index to select candidates
         extlim: float
             upper limit to select compact sources
+        bright: float
+            flux density threshold of bright sources, unit of Jy 
         """
         
         # read deep image 
@@ -613,6 +585,20 @@ class Candidates:
         # 3. or have a countpart with md > 0.05 and ext < 1.5
         self.final_idx = beamidx & ((self.d2d.arcsec > sep) | ((self.md > mdlim) & (ext < extlim)))
         logger.info("Final candidates: {}".format(sum(self.final_idx)))
+        
+        # check number of close deep conterparts within 30 arcsec 
+        idx1, _, _, _ = search_around_sky(coords1=self.cand_src, 
+                                 coords2=self.deep_src, 
+                                 seplimit=sep*u.arcsec)
+        unique_idx, unique_counts = np.unique(idx1, return_counts=True)
+        num_deep_close = np.zeros_like(self.cand_src, dtype=np.int)
+        num_deep_close[unique_idx] = unique_counts
+        self.deep_num = num_deep_close
+        
+        # check separation with bright deep sources
+        deep_bright = self.deep_src[self.deep_int_flux > bright]
+        _, d2d, _ = self.cand_src.match_to_catalog_sky(deep_bright)
+        self.bright_sep_arcmin = d2d.arcmin
         
         
     
@@ -695,6 +681,12 @@ class Candidates:
         # separaion to nearest deep counterpart
         t['deep_sep_arcsec'] = self.d2d.arcsec[self.final_idx]
         
+        # number of close deep sources
+        t['deep_num'] = self.deep_num[self.final_idx]
+        
+        # separation to bright deep source
+        t['bright_sep_arcmin'] = self.bright_sep_arcmin[self.final_idx]
+        
         # separation to beam center
         t['beam_sep_deg'] = self.cand_src.separation(self.beam_center).degree[self.final_idx]
         
@@ -716,12 +708,15 @@ class Candidates:
         
         
         # save csv table
-        t.write("{}.csv".format(tablename))
+        t.write("{}.csv".format(tablename), overwrite=True)
         logger.info("Save csv {}".format(tablename))
         
         # save vot table
         if savevot:
-            t.write("{}.vot".format(tablename), table_id="candidates", format="votable")
+            t.write("{}.vot".format(tablename), 
+                    table_id="candidates", 
+                    format="votable", 
+                    overwrite=True)
             logger.info("Save vot {}".format(tablename))
         
         

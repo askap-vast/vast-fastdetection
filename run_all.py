@@ -62,6 +62,7 @@ logger.info("Processing {} images...".format(len(imagelist)))
 logger.info(imagelist)
 
 
+"""
 ## ===================================
 ## get the psf list with correct order
 # psflist = glob.glob(folder + 'beam??_?.psf.fits') + glob.glob(folder + 'beam??_??.psf.fits')
@@ -105,7 +106,7 @@ for ktype in ktypelist:
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
-
+"""
 
 
 logger.info("======== Select candidates ==========")
@@ -164,26 +165,14 @@ for maptype in maplist:
 # combine those three cand list to one
 logger.info("=========Combine catalogue==========")
 
-# chisquare_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'chisquare')
-# peak_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'peak')
 
 namelist = ['{}/{}_{}_cand.csv'.format(outdir, name, maptype) for maptype in maplist ]
 
 plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, name), 
              savevot=True)
 
-# if 'gaussian' not in maplist:
-#     plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
-#                      tablename="{}/{}_final".format(outdir, name), savevot=True)
-    
-# else:
-#     gaussian_csv = "{}/{}_{}_cand.csv".format(outdir, name, 'gaussian')
-#     plot.combine_csv(chisq_csv=chisquare_csv, peak_csv=peak_csv, 
-#                      gaussian_csv=gaussian_csv, 
-#                      tablename="{}/{}_final".format(outdir, name), savevot=True)
 
-
-
+"""
 # =====================
 # plot final candidates 
 logger.info("========= Plotting =============")
@@ -200,7 +189,7 @@ p.generate_lightcurve(imagelist=imagelist,
                       savename='{}/{}_lightcurve'.format(outdir, name))
 
 
-
+"""
 
 
 logger.info("====== Finished. =====")
