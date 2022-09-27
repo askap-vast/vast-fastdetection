@@ -37,7 +37,7 @@ if not os.path.exists(outdir):
 # output file prefix
 out_prefix = "output"
 
-beam = sys.argv[-1]
+# beam = sys.argv[-1]
 
 # @profile
 def process_beam(beam):
@@ -182,7 +182,10 @@ def process_beam(beam):
     if os.path.exists(tablename):
         os.remove(tablename)
 
-    c.save_csvtable(tablename="{}/{}_cand".format(outdir, name), savevot=True)
+    try:
+        c.save_csvtable(tablename="{}/{}_cand".format(outdir, name), savevot=True)
+    except TypeError:
+        print("no candidates") 
 
     # plot a final map
     #c.plot_fits(fitsname=chisq_map, imagename="{}/{}_map2".format(outdir, name))
@@ -201,8 +204,8 @@ def process_beam(beam):
 
 
 if __name__ == "__main__":
-    print("process beam: ", beam)
-    process_beam(0)
+    for i in range(36):
+        process_beam(i)
 
 
 
