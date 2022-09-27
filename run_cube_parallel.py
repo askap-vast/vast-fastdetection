@@ -182,19 +182,22 @@ def process_beam(beam):
     tablename = "{}/{}_cand".format(outdir, name)
     if os.path.exists(tablename):
         os.remove(tablename)
+    try:
+        c.save_csvtable(tablename="{}/{}_cand".format(outdir, name), savevot=True)
+        for i, candname in enumerate(c.cand_name):
+            logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
+            plot.plot_slices(src_name=candname, 
+                        imagelist=imagelist, 
+                        name="{}/{}_{}".format(outdir, name, candname))
 
-    c.save_csvtable(tablename="{}/{}_cand".format(outdir, name), savevot=True)
+    except TypeError:
+        logger.info("no candidates found")
 
     # plot a final map
     #c.plot_fits(fitsname=chisq_map, imagename="{}/{}_map2".format(outdir, name))
 
     # plot!
-    for i, candname in enumerate(c.cand_name):
-        logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
-        plot.plot_slices(src_name=candname, 
-                        imagelist=imagelist, 
-                        name="{}/{}_{}".format(outdir, name, candname))
-
+    
 
 
     logger.info("====== Finished. =====")
@@ -210,7 +213,7 @@ if __name__ == "__main__":
     #     results.append(process_beam(INPUT_PATH, beam))
 
     # dask.compute(results)
-    client = Client(n_workers=18)
+    client = Client(n_workers=8)
     ll = client.map(process_beam, list(range(35)))
     # print(type(ll[0]))
     client.gather(ll)
