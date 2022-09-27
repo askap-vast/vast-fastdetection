@@ -20,9 +20,11 @@ sh.setFormatter(formatter)
 logger.handlers.clear()
 logger.addHandler(sh)
 
-import dask
-dask.config.set({"multiprocessing.context": "fork"})
-from dask.distributed import Client
+# import dask
+# dask.config.set({"multiprocessing.context": "fork"})
+# from dask.distributed import Client
+
+import multiprocessing
 
 
 
@@ -213,11 +215,10 @@ if __name__ == "__main__":
     #     results.append(process_beam(INPUT_PATH, beam))
 
     # dask.compute(results)
-    client = Client(n_workers=8)
-    ll = client.map(process_beam, list(range(35)))
+    pool = multiprocessing.Pool(processes=8)
+    pool.map(process_beam, list(range(35)), chunksize=5)
     # print(type(ll[0]))
-    client.gather(ll)
-
+   
 
 
 
