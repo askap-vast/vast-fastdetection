@@ -210,8 +210,8 @@ if __name__ == "__main__":
     #     results.append(process_beam(INPUT_PATH, beam))
 
     # dask.compute(results)
-    client = Client(n_workers=4)
-    ll = client.map(process_beam,[8,16])
+    client = Client(n_workers=18)
+    ll = client.map(process_beam, list(range(35)))
     # print(type(ll[0]))
     client.gather(ll)
 
