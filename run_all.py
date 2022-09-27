@@ -35,15 +35,15 @@ name = sys.argv[-1]
 
 ### exclude Gaussian mao 
 ## generating how many different types of map
-ktypelist = ['chisquare', 'peak', 'std'] 
+#ktypelist = ['chisquare', 'peak', 'std'] 
 
 ## how many different types of map to select candidates 
 # maplist = ['chisquare']
-maplist = ['chisquare', 'peak']
+#maplist = ['chisquare', 'peak']
 
 ### include Gaussian map
-# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
-# maplist = ['chisquare', 'peak', 'gaussian']
+ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+maplist = ['chisquare', 'peak', 'gaussian']
 
 
 
@@ -136,8 +136,8 @@ for maptype in maplist:
     logger.info("Find local maximum done. ")
     
     ## plot a map with all of candidates above the threshold 
-    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
+#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+#                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
         
     
     logger.info("Deep image catalogue {}".format(catalogue))
@@ -147,8 +147,8 @@ for maptype in maplist:
     c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir, name, maptype), savevot=True)
     
     ## plot a final map with promising candidates 
-    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
+#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+#                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
     
     # # plot!
     # for i, candname in enumerate(c.cand_name):
