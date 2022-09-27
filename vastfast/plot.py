@@ -597,8 +597,11 @@ class Candidates:
         
         # check separation with bright deep sources
         deep_bright = self.deep_src[self.deep_int_flux > bright]
-        _, d2d, _ = self.cand_src.match_to_catalog_sky(deep_bright)
-        self.bright_sep_arcmin = d2d.arcmin
+        if sum(self.deep_int_flux > bright) == 0:
+            self.bright_sep_arcmin = np.full_like(self.cand_src, 999)
+        else:
+            _, d2d, _ = self.cand_src.match_to_catalog_sky(deep_bright)
+            self.bright_sep_arcmin = d2d.arcmin
         
         
     
@@ -712,7 +715,7 @@ class Candidates:
         logger.info("Save csv {}".format(tablename))
         
         # save vot table
-        if savevot:
+        if savevot and len(t) != 0:
             t.write("{}.vot".format(tablename), 
                     table_id="candidates", 
                     format="votable", 
