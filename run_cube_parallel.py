@@ -215,8 +215,8 @@ if __name__ == "__main__":
     #     results.append(process_beam(INPUT_PATH, beam))
 
     # dask.compute(results)
-    pool = multiprocessing.Pool(processes=8)
-    pool.map(process_beam, list(range(35)), chunksize=5)
+    pool = multiprocessing.Pool(processes=4)
+    pool.map(process_beam, list(range(36)), chunksize=9)
     # print(type(ll[0]))
    
 
