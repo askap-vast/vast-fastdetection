@@ -13,6 +13,7 @@ Generate a significance cube for transients detection
 import logging
 import warnings
 import numpy as np
+import dask.array as da
 
 from astropy.io import fits
 from astropy import units as u
@@ -442,18 +443,24 @@ class Filter:
         # local_rms = np.std(self.sigcube, axis=(1, 2))
         # return np.apply_along_axis(lambda m: self._chisquare(m, local_rms), axis=0, arr=self.sigcube)
         
+        # covert cubes into dask array
+        da_sig = da.from_array(self.sigcube)
+        da_rms = da.from_array(self.rmscube)
+
         # freedom
-        nu = self.sigcube.shape[0] - 1
+        nu = da_sig.shape[0] - 1
         # mean, rms
-        mean = np.nanmean(self.sigcube, axis=0)
+        mean = da.nanmean(da_sig, axis=0)
         # rms = np.nanstd(self.sigcube, axis=(1, 2))
         # rms = self.cube_local_rms()
         
         # for each data point
         # data = (self.sigcube - mean) / rms
-        data = (self.sigcube - mean) / self.rmscube
+        data = (da_sig - mean) / da_rms
         
-        return np.sum(np.power(data, 2), axis=0) / nu
+        res = da.sum(da.square(data), axis=0) / nu
+        nres = res.compute()
+        return nres
         
     
 
@@ -477,16 +484,26 @@ class Filter:
     def _peakmap(self):
         """Get peak map, sensitive to single flare event
         """
-        snr = self.sigcube / self.rmscube
+
+        # convert cubes to dask array
+        da_sig = da.from_array(self.sigcube)
+        da_rms = da.from_array(self.rmscube)
+        snr = da_sig / da_rms
         
         # return (np.nanmax(self.sigcube, axis=0) - np.nanmedian(self.sigcube, axis=0)) 
-        return (np.nanmax(snr, axis=0) - np.nanmedian(snr, axis=0)) 
+        res = (da.nanmax(snr, axis=0) - da.nanmedian(snr, axis=0)) 
+        nres = res.compute()
+        return nres
     
     
     def _stdmap(self):
         """Get the standard deviation map, useful for modulation index 
         """        
-        return np.nanstd(self.sigcube, axis=0)
+        # convert cubes to dask array
+        da_sig = da.from_array(self.sigcube)
+        res = da.nanstd(da_sig, axis=0)
+        nres = res.compute()
+        return nres
     
     
     
