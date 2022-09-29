@@ -27,8 +27,9 @@ logger.addHandler(sh)
 
 
 # input data
-# INPUT_PATH = "../test_data/SB9596_beam14_casa/"
-INPUT_PATH = "../test_data/SB12704/"
+INPUT_PATH = "../test_data/SB9596_beam14_casa/"
+# INPUT_PATH = "../test_data/SB12704/"
+
 # output folder
 outdir = "./output"
 if not os.path.exists(outdir):
@@ -133,18 +134,18 @@ def process_beam(beam):
 
 
 
-    logger.info("======== Matched Filter ========")
-    ktype = "gaussian"
-    logger.info("Kernel match filter '{}'...".format(ktype))
-    #f.fmap(ktype, width=4)
-    logger.info("Kernel match Done")
+    # logger.info("======== Matched Filter ========")
+    # ktype = "gaussian"
+    # logger.info("Kernel match filter '{}'...".format(ktype))
+    # #f.fmap(ktype, width=4)
+    # logger.info("Kernel match Done")
 
-    fitsname = "{}/{}_{}.fits".format(outdir, name, ktype)
-    if os.path.exists(fitsname):
-        os.remove(fitsname)
+    # fitsname = "{}/{}_{}.fits".format(outdir, name, ktype)
+    # if os.path.exists(fitsname):
+    #     os.remove(fitsname)
 
-    #f.tofits(fitsname=fitsname, imagename=imagelist[0])
-    logger.info("Save the results to {}_{}.fits".format(name, ktype))
+    # #f.tofits(fitsname=fitsname, imagename=imagelist[0])
+    # logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
 
@@ -204,8 +205,7 @@ def process_beam(beam):
 
 
 if __name__ == "__main__":
-    for i in range(36):
-        process_beam(i)
+    process_beam(14)
 
 
 

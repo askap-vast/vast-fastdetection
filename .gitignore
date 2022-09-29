@@ -50,6 +50,7 @@ _build
 
 #Miscillaneous
 .install*
+.ipynb
 .ipynb_checkpoints
 htmlcov
 .coverage
