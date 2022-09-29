@@ -9,6 +9,9 @@ Created on Thu Jul 14 20:57:50 2022
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import matplotlib.dates as mdates
+from matplotlib.ticker import MaxNLocator
 
 import aplpy
 from skimage.feature import peak_local_max
@@ -16,11 +19,12 @@ from skimage.feature import peak_local_max
 from astropy.wcs import WCS
 from astropy.io import fits
 from astropy import units as u
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord, Angle, search_around_sky
 from astropy.wcs.utils import skycoord_to_pixel, pixel_to_skycoord
 from astropy.nddata.utils import Cutout2D
-from astropy.table import Table
-import matplotlib.animation as animation
+from astropy.table import Table, vstack
+from astropy.time import Time
+
 
 import logging
 
@@ -49,8 +53,7 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     
     # get the source position 
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    logger.info("Get source position...")
-    logger.info(src)
+    logger.info("Get source position ({}, {})...".format(src.ra.degree, src.dec.degree))
     
     # generate a plot, including a bunch of single images
     fig = plt.figure()
@@ -117,7 +120,7 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
 
         ims.append([im, sc, te])
 
-    fig.gca().set_title(name)
+    fig.gca().set_title(src_name)
     fig.gca().set_xlabel('RA (J2000)')
     fig.gca().set_ylabel('DEC (J2000)')
     cbar = fig.colorbar(im)
@@ -128,6 +131,8 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     ani.save('{}.gif'.format(name), dpi=80, writer='imagemagick')
     
     logger.info("Save image {}.gif".format(name))
+    
+    
     
     
         
@@ -155,7 +160,7 @@ def plot_fits(fitsname, src=None, imagename='plot_fits'):
     """
 
     # read the image
-    f = aplpy.FITSFigure(fitsname, figsize=(10, 10), dpi=100)
+    f = aplpy.FITSFigure(fitsname, figsize=(8, 8))
     
     # fix the wcs dimension issue
     fix_aplpy_fits(f)
@@ -188,7 +193,173 @@ def plot_fits(fitsname, src=None, imagename='plot_fits'):
     
     
     # save image
-    f.savefig(filename=imagename+'.png', dpi=300)
+    f.savefig(filename=imagename+'.png', dpi=100)
+    
+    
+    
+    
+def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
+    """Plot cutout png from deep image
+    src_name: str
+        in format of "Jxxxx-xxxx"
+    fitsname: str
+        the location of the deep fits image
+    radius: float
+        cutout size, in unit of arcmin
+    vsigma: float
+        plot color range in unit of sigma
+    """
+    
+    # get the source position 
+    logger.info("Plotting deep cutout source {}...".format(src_name))
+    src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
+    logger.info("Get source position...")
+    logger.info(src)
+    
+    # get deep image information 
+    f = aplpy.FITSFigure(fitsname, figsize=(5, 5))
+    
+    # fix the wcs dimension issue
+    fix_aplpy_fits(f)
+    
+    # change unit from Jy to mJy
+    f._data = f._data * 1e3
+    
+    f.recenter(src.ra, src.dec, radius=radius/60)
+    f.show_grayscale()
+    
+    f.add_colorbar()
+    f.colorbar.set_axis_label_text("Flux Density (mJy/beam)")
+    f.colorbar.set_axis_label_pad(1)
+    
+    f.show_circles(src.ra, src.dec, radius=30/60/60, ec='orange')
+    f.show_markers(src.ra, src.dec, c='red', marker='+', alpha=0.2)
+
+    f.set_title(src_name)
+    
+    f.savefig("{}.png".format(name))
+    logger.info("Save image {}.png".format(name))
+    
+    
+    
+    
+def extract_lightcurve(src_name, imagelist, deep_imagename, residual_imagename=None, 
+                    ksize=99):
+    """plot lightcurve for each source candidate 
+        ksize: kernel size for local rms calculation (square radius)
+    """
+    logger.info("Plotting lightcurve source {}...".format(src_name))
+    # get the source position
+    src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
+    
+    # get deep image pixel position xw, yw
+    deep_image = fits.open(deep_imagename)
+    deep_wcs = WCS(header=deep_image[0].header, naxis=2)
+    
+    deep_xw, deep_yw = skycoord_to_pixel(coords=src, wcs=deep_wcs) 
+    deep_xw, deep_yw = int(np.round(deep_xw)), int(np.round(deep_yw))
+    
+    # get deep flux density 
+    deep_flux = deep_image[0].data.squeeze()[deep_yw, deep_xw]
+    
+    peak_flux = []
+    local_rms = []
+    timestamp = []
+    
+    # for each short image 
+    for i, image in enumerate(imagelist):
+        
+        # open the fits
+        hdu = fits.open(image)
+        # get the fits data (drop-out extra dimensions)
+        data = hdu[0].data.squeeze()
+        # get wcs frame
+        wcs = WCS(header=hdu[0].header, naxis=2)
+        
+        xw, yw = skycoord_to_pixel(coords=src, wcs=wcs)
+        xw, yw = int(np.round(xw)), int(np.round(yw))
+        
+        peak_flux.append(data[yw, xw])
+        
+        # get observing time
+        timestamp.append(hdu[0].header['DATE-OBS'])
+        
+        # calculate local rms 
+        try:
+            rms = np.nanstd(data[yw-ksize: yw+ksize, xw-ksize: xw+ksize])
+            local_rms.append(rms)
+        except:
+            local_rms.append(np.nan)
+            
+    # covert them to np.array
+    peak_flux = np.array(peak_flux)
+    local_rms = np.array(local_rms)
+    logger.info("Get peak flux shape {}, local rms shape {}".format(
+        peak_flux.shape, local_rms.shape))
+    
+    
+    # modify the peak flux (+deep image - residual image)
+    
+    # get residual image (if there is)
+    try:
+        residual_image = fits.open(residual_imagename)
+        wcs = WCS(residual_image[0].header, naxis=2)
+        
+        xw, yw = skycoord_to_pixel(coords=src, wcs=wcs)
+        xw, yw = int(np.round(xw)), int(np.round(yw))
+        
+        residual_flux = residual_image[0].data.squeeze()[yw, xw]
+        logger.info("Use residual image information {}".format(residual_imagename))
+        
+    except:
+        residual_flux = np.nanmean(peak_flux)
+        logger.warning("No available residual image, using mean(peak_flux) instead. ")
+        
+    logger.info("Residual flux {} Jy/beam".format(residual_flux))
+        
+    # final peak flux density
+    peak_flux = peak_flux + deep_flux - residual_flux 
+    
+    return peak_flux, local_rms, timestamp
+    
+    
+    
+    
+
+# plot
+def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
+    
+    fig, ax = plt.subplots()
+
+    times = Time(times)
+    times.format = 'datetime64'
+    
+    flux, rms = flux*1e3, rms*1e3
+    
+    ax.errorbar(x=times.value, y=flux, yerr=rms, color='black', marker='.', alpha=0.6)
+    
+    date_form = mdates.DateFormatter("%Y-%b-%d/%H:%M")
+    ax.xaxis.set_major_formatter(date_form)
+    
+    ax.set_xlabel('Time (UTC)')
+    ax.set_ylabel('Peak Flux Density (mJy/beam)')
+    ax.set_title(title)
+    
+    # ax.set_ylim(bottom=-0.1, top=1.2*np.nanmax(np.array(flux))) 
+    
+    # set a reasonable time interval
+    time_length = ((times[-1] - times[0]).to_value('sec') + 900) / 3600
+    
+    if int(time_length/4) != 0:
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=int(time_length/4)))
+
+    fig.autofmt_xdate(rotation=15)
+    
+    fig.savefig("{}.png".format(name), bbox_inches='tight')
+    
+    
+    
+    
     
     
     
@@ -216,6 +387,71 @@ def get_threshold_logspace(data, sigma=3):
     logger.info('Threshold log space is {} sigma = {}'.format(sigma, threshold))
 
     return threshold
+
+
+
+
+
+## combine two/three csv to one csv/vot
+def combine_csv(namelist, radius=10, 
+                tablename='final_cand', savevot=True):
+    """
+    tables: list
+        a list of location of the chisquare/Gaussian/peak csv catalogue
+    radius: float
+        the crossmatch radius between two catalogues, unit of arcsec
+    """
+    
+    tables = []
+    
+    for name in namelist:
+        
+        try:
+            table = Table.read(name)
+            logger.info('Successfully read {}'.format(name))
+        except:
+            logger.warning('Cannot read {}'.format(name))
+            continue    
+        
+        if len(table) == 0:
+            logger.warning('Empty Table {}'.format(name))
+            continue
+        else:
+            tables.append(table)
+            
+            
+    if len(tables) == 0:
+        logger.warning('Empty final table. ')
+        return None
+    
+    stacked_table = vstack(tables, join_type='exact')
+    logger.info('Stacked table length {}'.format(len(stacked_table)))
+    
+    src = SkyCoord(stacked_table['ra'], stacked_table['dec'], unit=u.degree)
+    
+    # combine unique sources
+    idx1, idx2, sep2d, _ = search_around_sky(src, src, 
+                                             seplimit=radius*u.arcsec)
+    idx = np.full((len(stacked_table), ), True)
+    idx[np.unique(idx2[idx1 < idx2])] = False
+    
+    final_csv = stacked_table[idx]
+
+    # save csv table
+    final_csv.write("{}.csv".format(tablename), overwrite=True)
+    logger.info("Save final csv {}".format(tablename))
+    logger.info("Final table length {}".format(len(final_csv)))
+    
+    # save vot table
+    if savevot:
+        final_csv.write("{}.vot".format(tablename), 
+                        table_id="candidates", 
+                        format="votable", 
+                        overwrite=True)
+        logger.info("Save final vot {}".format(tablename))
+    
+
+
 
 
 
@@ -299,7 +535,8 @@ class Candidates:
         
         
     def select_candidates(self, deepcatalogue, deepimage=None, 
-                          sep=30, mdlim=0.05, extlim=1.5, beamlim=1.2):
+                          sep=30, mdlim=0.05, extlim=1.5, beamlim=1.2, 
+                          bright=0.05):
         """Select high priority candidates using deep image information
         
         deepimage: str
@@ -312,6 +549,8 @@ class Candidates:
             lower limit of modulation index to select candidates
         extlim: float
             upper limit to select compact sources
+        bright: float
+            flux density threshold of bright sources, unit of Jy 
         """
         
         # read deep image 
@@ -347,6 +586,23 @@ class Candidates:
         self.final_idx = beamidx & ((self.d2d.arcsec > sep) | ((self.md > mdlim) & (ext < extlim)))
         logger.info("Final candidates: {}".format(sum(self.final_idx)))
         
+        # check number of close deep conterparts within 30 arcsec 
+        idx1, _, _, _ = search_around_sky(coords1=self.cand_src, 
+                                 coords2=self.deep_src, 
+                                 seplimit=sep*u.arcsec)
+        unique_idx, unique_counts = np.unique(idx1, return_counts=True)
+        num_deep_close = np.zeros_like(self.cand_src, dtype=np.int)
+        num_deep_close[unique_idx] = unique_counts
+        self.deep_num = num_deep_close
+        
+        # check separation with bright deep sources
+        deep_bright = self.deep_src[self.deep_int_flux > bright]
+        if sum(self.deep_int_flux > bright) == 0:
+            self.bright_sep_arcmin = np.full_like(self.cand_src, 999)
+        else:
+            _, d2d, _ = self.cand_src.match_to_catalog_sky(deep_bright)
+            self.bright_sep_arcmin = d2d.arcmin
+        
         
     
     def save_csvtable(self, tablename="cand_catalogue", savevot=False):
@@ -357,6 +613,10 @@ class Candidates:
         savevot: bool
             if True, will also save a vot format table 
         """
+        
+        # if no final candidates - don't need to save csv/vot
+        
+        
         t = Table()
         
         # source id 
@@ -405,6 +665,16 @@ class Candidates:
         t['peak_map_sigma'] = get_sigma_logspace(self.peak_map, 
                                                  np.array(t['peak_map']))
         
+        # if there's Gaussian map 
+        if hasattr(self, 'gaussian_map'):
+            t['gaussian_map'] = self.gaussian_map[self.yp, self.xp][self.final_idx]
+            t['gaussian_map_sigma'] = get_sigma_logspace(self.gaussian_map, 
+                                                     np.array(t['gaussian_map']))
+        else:
+            t['gaussian_map']  = [np.nan] * sum(self.final_idx)
+            t['gaussian_map_sigma'] = [np.nan] * sum(self.final_idx)
+            
+        
         # read the peak value at each pixel 
         t['std_map'] = self.std_map[self.yp, self.xp][self.final_idx]
         
@@ -414,12 +684,18 @@ class Candidates:
         # separaion to nearest deep counterpart
         t['deep_sep_arcsec'] = self.d2d.arcsec[self.final_idx]
         
+        # number of close deep sources
+        t['deep_num'] = self.deep_num[self.final_idx]
+        
+        # separation to bright deep source
+        t['bright_sep_arcmin'] = self.bright_sep_arcmin[self.final_idx]
+        
         # separation to beam center
         t['beam_sep_deg'] = self.cand_src.separation(self.beam_center).degree[self.final_idx]
         
         # beam center coordinates
-        t['beam_ra']= self.beam_center.ra.deg
-        t['beam_dec']= self.beam_center.dec.deg
+        t['beam_ra']= [self.beam_center.ra.deg] * sum(self.final_idx)
+        t['beam_dec']= [self.beam_center.dec.deg] * sum(self.final_idx)
         
         # name of the nearest deep counterpart
         t['deep_name'] = np.array(self.deep_name)[self.deepidx][self.final_idx]
@@ -435,12 +711,15 @@ class Candidates:
         
         
         # save csv table
-        t.write("{}.csv".format(tablename))
+        t.write("{}.csv".format(tablename), overwrite=True)
         logger.info("Save csv {}".format(tablename))
         
         # save vot table
-        if savevot:
-            t.write("{}.vot".format(tablename), table_id="candidates", format="votable")
+        if savevot and len(t) != 0:
+            t.write("{}.vot".format(tablename), 
+                    table_id="candidates", 
+                    format="votable", 
+                    overwrite=True)
             logger.info("Save vot {}".format(tablename))
         
         
@@ -479,7 +758,7 @@ class Candidates:
         
         logger.info("Read deep catalogue {}...".format(catalogue))
         self.catalogue = Table.read(catalogue)
-        logger.info(self.catalogue.info)
+        # logger.info(self.catalogue.info)
         
         
         # for Aegean convention
@@ -510,7 +789,7 @@ class Candidates:
         """
         
         # read the image
-        f = aplpy.FITSFigure(fitsname, figsize=(10, 10), dpi=100)
+        f = aplpy.FITSFigure(fitsname, figsize=(8, 8))
         
         # fix the wcs dimension issue
         fix_aplpy_fits(f)
@@ -562,13 +841,91 @@ class Candidates:
         
         
         # save image
-        f.savefig(filename=imagename+'.png', dpi=300)
+        f.savefig(filename=imagename+'.png', dpi=100)
 
 
 
 
 
 
+class Products:
+    """Generate the vot table for final candidates
+    """
+    
+    def __init__(self, final_csv):
+        """
+        final_csv: str
+            location of the csv catalogue for (final) candidates
+        """
+        
+        self.final_csv = Table.read(final_csv)
+        self.cand_name = self.final_csv['name']
+        self.cand_src = SkyCoord(self.final_csv['ra'], self.final_csv['dec'], 
+                                  unit=u.degree)
+        
+        
+        
+    def generate_cutout(self, fitsname, radius=5, savename='output'):
+        
+        # run the cutout plot one by one 
+        for src_name in self.cand_name:
+            plot_cutout(src_name, fitsname, 
+                        radius=5, 
+                        name='{}_{}'.format(savename, src_name))
+            
+            
+            
+    def generate_slices(self, imagelist, radius=5, vsigma=5, savename='output'):
+        
+        # run the slices plot one by one
+        for src_name in self.cand_name:
+            plot_slices(src_name, imagelist, 
+                        radius=5, vsigma=5, 
+                        name='{}_{}'.format(savename, src_name))
 
 
+
+
+    def generate_lightcurve(self, imagelist, deepname, savename='output', 
+                            savecsv=True):
+        
+        peak_flux_table = Table()
+        local_rms_table = Table()
+        
+        # run the lightucrve plot one by one
+        for i, src_name in enumerate(self.cand_name):
+            peak_flux, local_rms, timestamp = extract_lightcurve(src_name=src_name, 
+                                                      imagelist=imagelist, 
+                                                      deep_imagename=deepname)
+            
+            if i == 0:
+                peak_flux_table['Time'] = timestamp
+                local_rms_table['Time'] = timestamp
+                
+            
+            peak_flux_table[src_name] = peak_flux
+            local_rms_table[src_name] = local_rms
+            
+            # plot
+            plot_lightcurve(flux=peak_flux, 
+                            times=timestamp, 
+                            rms=local_rms, 
+                            title=src_name, 
+                            name='{}_{}'.format(savename, src_name))
+            
+        # save catalgoue 
+        if savecsv:
+            # save csv table
+            peak_flux_table.write("{}_peak_flux.csv".format(savename))
+            local_rms_table.write("{}_local_rms.csv".format(savename))
+
+            logger.info("Save csv {}".format(savename))
+            
+            
+            
+            
+            
+            
+            
+            
 

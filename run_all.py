@@ -4,8 +4,8 @@ import sys
 import glob
 
 from vastfast.cube import Cube, Filter
-# from vastfast import plot
-from vastfast.plot import Candidates
+from vastfast import plot
+from vastfast.plot import Candidates, Products
 
 
 import logging
@@ -19,6 +19,8 @@ logger.addHandler(sh)
 
 
 ## ========= input ================
+## deep image
+deepimage = sys.argv[-6]
 ## deep catalogue
 catalogue = sys.argv[-5]
 ## the folder location with processed short images
@@ -30,14 +32,19 @@ outdir = sys.argv[-2]
 ## output file name 
 name = sys.argv[-1]
 
+
+### exclude Gaussian mao 
 ## generating how many different types of map
-ktypelist = ['chisquare', 'peak', 'std'] 
-# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+#ktypelist = ['chisquare', 'peak', 'std'] 
 
 ## how many different types of map to select candidates 
 # maplist = ['chisquare']
-maplist = ['chisquare', 'peak']
-# maplist = ['chisquare', 'peak', 'gaussian']
+#maplist = ['chisquare', 'peak']
+
+### include Gaussian map
+ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+maplist = ['chisquare', 'peak', 'gaussian']
+
 
 
 ## ====================================
@@ -55,6 +62,7 @@ logger.info("Processing {} images...".format(len(imagelist)))
 logger.info(imagelist)
 
 
+"""
 ## ===================================
 ## get the psf list with correct order
 # psflist = glob.glob(folder + 'beam??_?.psf.fits') + glob.glob(folder + 'beam??_??.psf.fits')
@@ -98,7 +106,7 @@ for ktype in ktypelist:
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
-
+"""
 
 
 logger.info("======== Select candidates ==========")
@@ -109,22 +117,11 @@ peak_map = "{}/{}_{}.fits".format(outdir, name, 'peak')
 std_map = "{}/{}_{}.fits".format(outdir, name, 'std')
 
 
-# if 'gaussian' in maplist:
-#     ## include Gaussian map during candidates selection 
-#     gaussian_map = "{}/{}_{}.fits".format(outdir, name, 'gaussian')
-    
-#     c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map)
-# else:
-    
-#     c = Candidates(chisquare_map, peak_map, std_map)
-
-
-
 
 ## =============== select candidates =================
 for maptype in maplist:
     
-    if maptype != 'gaussian':
+    if 'gaussian' not in maplist:
         c = Candidates(chisquare_map, peak_map, std_map)
         
     else:
@@ -139,8 +136,8 @@ for maptype in maplist:
     logger.info("Find local maximum done. ")
     
     ## plot a map with all of candidates above the threshold 
-    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
+#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+#                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
         
     
     logger.info("Deep image catalogue {}".format(catalogue))
@@ -150,18 +147,49 @@ for maptype in maplist:
     c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir, name, maptype), savevot=True)
     
     ## plot a final map with promising candidates 
-    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
+#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+#                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
+    
+    # # plot!
+    # for i, candname in enumerate(c.cand_name):
+    #     logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
+    #     plot.plot_slices(src_name=candname, 
+    #                      imagelist=imagelist, 
+    #                      name="{}/{}_{}".format(outdir, name, candname))
+    
 
 
 
-# # plot!
-# for i, candname in enumerate(c.cand_name):
-#     logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
-#     plot.plot_slices(src_name=candname, 
-#                      imagelist=imagelist, 
-#                      name="{}/{}_{}".format(outdir, name, candname))
+    
+# =====================
+# combine those three cand list to one
+logger.info("=========Combine catalogue==========")
 
+
+namelist = ['{}/{}_{}_cand.csv'.format(outdir, name, maptype) for maptype in maplist ]
+
+plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, name), 
+             savevot=True)
+
+
+"""
+# =====================
+# plot final candidates 
+logger.info("========= Plotting =============")
+
+final_csv = "{}/{}_final.csv".format(outdir, name)
+
+p = Products(final_csv)
+p.generate_slices(imagelist=imagelist, 
+                  savename='{}/{}_slices'.format(outdir, name))
+p.generate_cutout(fitsname=deepimage, 
+                  savename='{}/{}_deepcutout'.format(outdir, name))
+p.generate_lightcurve(imagelist=imagelist, 
+                      deepname=deepimage, 
+                      savename='{}/{}_lightcurve'.format(outdir, name))
+
+
+"""
 
 
 logger.info("====== Finished. =====")
