@@ -5,12 +5,12 @@ from pandas.testing import assert_frame_equal
 
 # result file to compare with
 PATH = os.path.dirname(__file__)
-RES_FILE_1a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_chisquare_cand.csv"
-RES_FILE_2a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_peak_cand.csv"
-RES_FILE_3a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_gaussian_cand.csv"
-RES_FILE_4a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_final.csv"
-RES_FILE_5a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_lightcurve_local_rms.csv"
-RES_FILE_6a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_lightcurve_peak_flux.csv"
+RES_FILE_1a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_chisquare_cand.csv"
+RES_FILE_2a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_peak_cand.csv"
+RES_FILE_3a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_gaussian_cand.csv"
+RES_FILE_4a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_final.csv"
+RES_FILE_5a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_lightcurve_local_rms.csv"
+RES_FILE_6a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_lightcurve_peak_flux.csv"
 
 # generated data
 RES_FILE_1b = PATH + "/../output/gaussian/output_chisquare_cand.csv"
