@@ -198,6 +198,7 @@ def plot_fits(fitsname, src=None, imagename='plot_fits'):
     
     # save image
     f.savefig(filename=imagename+'.png', dpi=100)
+    f.close()
     
     
     
@@ -242,6 +243,7 @@ def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
     f.set_title(src_name)
     
     f.savefig("{}.png".format(name))
+    f.close()
     logger.info("Save image {}.png".format(name))
     
     
@@ -360,6 +362,8 @@ def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
     fig.autofmt_xdate(rotation=15)
     
     fig.savefig("{}.png".format(name), bbox_inches='tight')
+    plt.close(fig)
+    gc.collect()
     
     
     
@@ -846,6 +850,7 @@ class Candidates:
         
         # save image
         f.savefig(filename=imagename+'.png', dpi=100)
+        f.close()
 
 
 
