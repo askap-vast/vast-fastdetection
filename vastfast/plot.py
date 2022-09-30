@@ -28,6 +28,8 @@ from astropy.time import Time
 
 import logging
 
+import gc
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -129,6 +131,8 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     ani = animation.ArtistAnimation(fig, ims, interval=200, 
                                     blit=True, repeat_delay=1e6)
     ani.save('{}.gif'.format(name), dpi=80, writer='imagemagick')
+    plt.close(fig)
+    gc.collect()
     
     logger.info("Save image {}.gif".format(name))
     
