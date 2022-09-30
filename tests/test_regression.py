@@ -16,7 +16,7 @@ def result_df():
     df = pd.read_csv(RES_FILE_1)
     return df 
 
-def test_regression(result_df) -> None:
+def test_regression_run_cube(result_df) -> None:
     df_new = pd.read_csv(RES_FILE_2)
     assert_frame_equal(result_df, df_new)
 

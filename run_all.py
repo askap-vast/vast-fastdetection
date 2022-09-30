@@ -42,20 +42,23 @@ name = sys.argv[-1]
 #maplist = ['chisquare', 'peak']
 
 ### include Gaussian map
-ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
-maplist = ['chisquare', 'peak', 'gaussian']
+# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+ktypelist = ['chisquare', 'peak', 'std']
+# maplist = ['chisquare', 'peak', 'gaussian']
+maplist = ['chisquare', 'peak']
 
 
 
 ## ====================================
 ## get the imagelist with correct order
-imagelist = []
-for size in ["?", "??", "???", "????"]:
-    tmp = glob.glob(folder + f'{beam}_{size}.fits')
-    # tmp = glob.glob(folder + f'image_{size}.fits') # for FRB field 
-    tmp.sort()
-    imagelist += tmp
+# imagelist = []
+# for size in ["?", "??", "???", "????"]:
+#     tmp = glob.glob(folder + f'{beam}_{size}.fits')
+#     # tmp = glob.glob(folder + f'image_{size}.fits') # for FRB field 
+#     tmp.sort()
+#     imagelist += tmp
 
+imagelist = sorted(glob.glob(folder + "beam*"))
 
 logger.info("Loading foler {}".format(folder))
 logger.info("Processing {} images...".format(len(imagelist)))
@@ -136,8 +139,8 @@ for maptype in maplist:
     logger.info("Find local maximum done. ")
     
     ## plot a map with all of candidates above the threshold 
-#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-#                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
+    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+               imagename="{}/{}_{}_map1".format(outdir, name, maptype))
         
     
     logger.info("Deep image catalogue {}".format(catalogue))
@@ -147,8 +150,8 @@ for maptype in maplist:
     c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir, name, maptype), savevot=True)
     
     ## plot a final map with promising candidates 
-#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-#                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
+    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+               imagename="{}/{}_{}_map2".format(outdir, name, maptype))
     
     # # plot!
     # for i, candname in enumerate(c.cand_name):
