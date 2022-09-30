@@ -31,25 +31,11 @@ if not os.path.exists(outdir):
 # output file prefix
 out_prefix = "output"
 
-## deep image
-# deepimage = sys.argv[-6]
-## deep catalogue
-# catalogue = sys.argv[-5]
-## the folder location with processed short images
-# folder = sys.argv[-4]
-## beam number - format of "beam00"
-# beam = sys.argv[-3]
-## output folder 
-# outdir = sys.argv[-2]
-## output file name 
-# name = sys.argv[-1]
-
-
 ### include Gaussian map
-ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
-# ktypelist = ['chisquare', 'peak', 'std']
-maplist = ['chisquare', 'peak', 'gaussian']
-# maplist = ['chisquare', 'peak']
+# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+ktypelist = ['chisquare', 'peak', 'std']
+# maplist = ['chisquare', 'peak', 'gaussian']
+maplist = ['chisquare', 'peak']
 
 
 
@@ -72,8 +58,9 @@ def process_beam(beam):
     deepimage_file = input_path + "/" + "*beam{:02}*.tt0.fits".format(beam)
     deepimage = glob.glob(deepimage_file)[0]
    
-
-    # 
+    # output file prefix
+    name = out_prefix +"_beam{:02}".format(beam)
+    
 
 
     ## ===================================
@@ -115,8 +102,8 @@ def process_beam(beam):
         f.fmap(ktype, width=4)
         logger.info("Kernel match Done")
         
-        f.tofits(fitsname="{}/{}_{}.fits".format(outdir, out_prefix, ktype), imagename=imagelist[0])
-        logger.info("Save the results to {}_{}.fits".format(out_prefix, ktype))
+        f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
+        logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
 
@@ -125,9 +112,9 @@ def process_beam(beam):
     logger.info("======== Select candidates ==========")
 
     # read fits
-    chisquare_map = "{}/{}_{}.fits".format(outdir, out_prefix, 'chisquare')
-    peak_map = "{}/{}_{}.fits".format(outdir, out_prefix, 'peak')
-    std_map = "{}/{}_{}.fits".format(outdir, out_prefix, 'std')
+    chisquare_map = "{}/{}_{}.fits".format(outdir, name, 'chisquare')
+    peak_map = "{}/{}_{}.fits".format(outdir, name, 'peak')
+    std_map = "{}/{}_{}.fits".format(outdir, name, 'std')
 
 
 
@@ -139,7 +126,7 @@ def process_beam(beam):
             
         else:
             ## include Gaussian map during candidates selection 
-            gaussian_map = "{}/{}_{}.fits".format(outdir, out_prefix, 'gaussian')
+            gaussian_map = "{}/{}_{}.fits".format(outdir, name, 'gaussian')
             c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map)
             
 
@@ -150,18 +137,18 @@ def process_beam(beam):
         
         ## plot a map with all of candidates above the threshold 
         c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map1".format(outdir, out_prefix, maptype))
+                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
             
         
         logger.info("Deep image catalogue {}".format(catalogue))
         c.select_candidates(deepcatalogue=catalogue)
         
         # save the table
-        c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir, out_prefix, maptype), savevot=True)
+        c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir, name, maptype), savevot=True)
         
         ## plot a final map with promising candidates 
         c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map2".format(outdir, out_prefix, maptype))
+                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
         
         # # plot!
         # for i, candname in enumerate(c.cand_name):
@@ -179,9 +166,9 @@ def process_beam(beam):
     logger.info("=========Combine catalogue==========")
 
 
-    namelist = ['{}/{}_{}_cand.csv'.format(outdir, out_prefix, maptype) for maptype in maplist ]
+    namelist = ['{}/{}_{}_cand.csv'.format(outdir, name, maptype) for maptype in maplist ]
 
-    plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, out_prefix), 
+    plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, name), 
                 savevot=True)
 
 
@@ -190,16 +177,16 @@ def process_beam(beam):
     # plot final candidates 
     logger.info("========= Plotting =============")
 
-    final_csv = "{}/{}_final.csv".format(outdir, out_prefix)
+    final_csv = "{}/{}_final.csv".format(outdir, name)
 
     p = Products(final_csv)
     p.generate_slices(imagelist=imagelist, 
-                    savename='{}/{}_slices'.format(outdir, out_prefix))
+                    savename='{}/{}_slices'.format(outdir, name))
     p.generate_cutout(fitsname=deepimage, 
-                    savename='{}/{}_deepcutout'.format(outdir, out_prefix))
+                    savename='{}/{}_deepcutout'.format(outdir, name))
     p.generate_lightcurve(imagelist=imagelist, 
                         deepname=deepimage, 
-                        savename='{}/{}_lightcurve'.format(outdir, out_prefix))
+                        savename='{}/{}_lightcurve'.format(outdir, name))
 
 
 
