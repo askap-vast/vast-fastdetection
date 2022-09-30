@@ -62,7 +62,7 @@ logger.info("Processing {} images...".format(len(imagelist)))
 logger.info(imagelist)
 
 
-"""
+
 ## ===================================
 ## get the psf list with correct order
 # psflist = glob.glob(folder + 'beam??_?.psf.fits') + glob.glob(folder + 'beam??_??.psf.fits')
@@ -106,7 +106,7 @@ for ktype in ktypelist:
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
-"""
+
 
 
 logger.info("======== Select candidates ==========")
@@ -172,7 +172,7 @@ plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, name),
              savevot=True)
 
 
-"""
+
 # =====================
 # plot final candidates 
 logger.info("========= Plotting =============")
@@ -189,7 +189,7 @@ p.generate_lightcurve(imagelist=imagelist,
                       savename='{}/{}_lightcurve'.format(outdir, name))
 
 
-"""
+
 
 
 logger.info("====== Finished. =====")
