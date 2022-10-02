@@ -62,7 +62,7 @@ logger.info("Processing {} images...".format(len(imagelist)))
 logger.info(imagelist)
 
 
-"""
+
 ## ===================================
 ## get the psf list with correct order
 # psflist = glob.glob(folder + 'beam??_?.psf.fits') + glob.glob(folder + 'beam??_??.psf.fits')
@@ -106,7 +106,7 @@ for ktype in ktypelist:
     logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
-"""
+
 
 
 logger.info("======== Select candidates ==========")
@@ -136,8 +136,8 @@ for maptype in maplist:
     logger.info("Find local maximum done. ")
     
     ## plot a map with all of candidates above the threshold 
-#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-#                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
+    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
         
     
     logger.info("Deep image catalogue {}".format(catalogue))
@@ -147,8 +147,8 @@ for maptype in maplist:
     c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir, name, maptype), savevot=True)
     
     ## plot a final map with promising candidates 
-#    c.plot_fits(fitsname=vars()[maptype+'_map'], 
-#                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
+    c.plot_fits(fitsname=vars()[maptype+'_map'], 
+                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
     
     # # plot!
     # for i, candname in enumerate(c.cand_name):
@@ -172,7 +172,7 @@ plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, name),
              savevot=True)
 
 
-"""
+
 # =====================
 # plot final candidates 
 logger.info("========= Plotting =============")
@@ -189,7 +189,7 @@ p.generate_lightcurve(imagelist=imagelist,
                       savename='{}/{}_lightcurve'.format(outdir, name))
 
 
-"""
+
 
 
 logger.info("====== Finished. =====")
