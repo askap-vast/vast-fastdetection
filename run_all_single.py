@@ -20,8 +20,8 @@ logger.addHandler(sh)
 
 
 ## ========= input ================
-INPUT_PATH = "../test_data/SB9596_beam14_casa/"
-# INPUT_PATH = "../test_data/SB12704/"
+# INPUT_PATH = "../test_data/SB9596_beam14_casa/"
+INPUT_PATH = "../test_data/SB12704/"
 
 # output folder
 outdir = "./output"
@@ -179,14 +179,15 @@ def process_beam(beam):
 
     final_csv = "{}/{}_final.csv".format(outdir, name)
 
-    p = Products(final_csv)
-    p.generate_slices(imagelist=imagelist, 
-                    savename='{}/{}_slices'.format(outdir, name))
-    p.generate_cutout(fitsname=deepimage, 
-                    savename='{}/{}_deepcutout'.format(outdir, name))
-    p.generate_lightcurve(imagelist=imagelist, 
-                        deepname=deepimage, 
-                        savename='{}/{}_lightcurve'.format(outdir, name))
+    if os.path.exists(final_csv):
+        p = Products(final_csv)
+        p.generate_slices(imagelist=imagelist, 
+                        savename='{}/{}_slices'.format(outdir, name))
+        p.generate_cutout(fitsname=deepimage, 
+                        savename='{}/{}_deepcutout'.format(outdir, name))
+        p.generate_lightcurve(imagelist=imagelist, 
+                            deepname=deepimage, 
+                            savename='{}/{}_lightcurve'.format(outdir, name))
 
 
 
@@ -195,7 +196,9 @@ def process_beam(beam):
     logger.info("====== Finished. =====")
 
 if __name__ == "__main__":
-    process_beam(14)
+    # process_beam(14)
+    for i in range(36):
+        process_beam(i)
 
 
 
