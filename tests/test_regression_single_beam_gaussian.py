@@ -13,12 +13,12 @@ RES_FILE_5a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_lightcurve_loca
 RES_FILE_6a = PATH + "/fixtures/beam14/gaussian/SB9596_beam14_v1_lightcurve_peak_flux.csv"
 
 # generated data
-RES_FILE_1b = PATH + "/../output/gaussian/output_chisquare_cand.csv"
-RES_FILE_2b = PATH + "/../output/gaussian/output_peak_cand.csv"
-RES_FILE_3b = PATH + "/../output/gaussian/output_gaussian_cand.csv"
-RES_FILE_4b = PATH + "/../output/gaussian/output_final.csv"
-RES_FILE_5b = PATH + "/../output/gaussian/output_lightcurve_local_rms.csv"
-RES_FILE_6b = PATH + "/../output/gaussian/output_lightcurve_peak_flux.csv"
+RES_FILE_1b = PATH + "/../output/gaussian/output_beam14_chisquare_cand.csv"
+RES_FILE_2b = PATH + "/../output/gaussian/output_beam14_peak_cand.csv"
+RES_FILE_3b = PATH + "/../output/gaussian/output_beam14_gaussian_cand.csv"
+RES_FILE_4b = PATH + "/../output/gaussian/output_beam14_final.csv"
+RES_FILE_5b = PATH + "/../output/gaussian/output_beam14_lightcurve_local_rms.csv"
+RES_FILE_6b = PATH + "/../output/gaussian/output_beam14_lightcurve_peak_flux.csv"
 
 
 @pytest.fixture

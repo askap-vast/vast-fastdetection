@@ -8,6 +8,7 @@ from vastfast.cube import Cube, Filter
 from vastfast import plot
 from vastfast.plot import Candidates, Products
 
+import multiprocessing
 
 import logging
 logger = logging.getLogger()
@@ -20,8 +21,8 @@ logger.addHandler(sh)
 
 
 ## ========= input ================
-INPUT_PATH = "../test_data/SB9596_beam14_casa/"
-# INPUT_PATH = "../test_data/SB12704/"
+# INPUT_PATH = "../test_data/SB9596_beam14_casa/"
+INPUT_PATH = "../test_data/SB12704/"
 
 # output folder
 outdir = "./output"
@@ -32,10 +33,10 @@ if not os.path.exists(outdir):
 out_prefix = "output"
 
 ### include Gaussian map
-ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
-# ktypelist = ['chisquare', 'peak', 'std']
-maplist = ['chisquare', 'peak', 'gaussian']
-# maplist = ['chisquare', 'peak']
+# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+ktypelist = ['chisquare', 'peak', 'std']
+# maplist = ['chisquare', 'peak', 'gaussian']
+maplist = ['chisquare', 'peak']
 
 
 
@@ -196,9 +197,9 @@ def process_beam(beam):
     logger.info("====== Finished. =====")
 
 if __name__ == "__main__":
-    process_beam(14)
-    # for i in range(36):
-        # process_beam(i)
+    pool = multiprocessing.Pool(processes=4)
+    pool.map(process_beam, list(range(36)), chunksize=9)
+
 
 
 
