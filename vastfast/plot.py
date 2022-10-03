@@ -30,6 +30,8 @@ import logging
 
 import gc
 
+from memory_profiler import profile
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -158,7 +160,7 @@ def fix_aplpy_fits(aplpy_obj, dropaxis=2):
 
 
     
-    
+@profile  
 def plot_fits(fitsname, src=None, imagename='plot_fits'):
     """Plot the fits and marker with given src
     """
@@ -851,6 +853,7 @@ class Candidates:
         # save image
         f.savefig(filename=imagename+'.png', dpi=100)
         f.close()
+        gc.collect()
 
 
 
