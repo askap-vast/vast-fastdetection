@@ -7,7 +7,8 @@ import glob
 from vastfast.cube import Cube, Filter
 from vastfast import plot
 from vastfast.plot import Candidates, Products
-
+from vastfast.input import *
+from vastfast.exceptions import *
 
 import logging
 logger = logging.getLogger()
@@ -41,18 +42,21 @@ maplist = ['chisquare', 'peak']
 
 def process_beam(beam):
     input_path = INPUT_PATH
-    # input data: short images
-    image_files = input_path +"/" + "beam{:02}*".format(beam)
-    print("image name: ", image_files)
-    imagelist = sorted(glob.glob(image_files))
 
-    logger.info("Loading foler {}".format(input_path))
-    logger.info("Processing {} images...".format(len(imagelist)))
-    logger.info(imagelist)
+    # input data: short images
+    try:
+        imagelist = read_shortimage(input_path, beam)
+    except NoInputError:
+        logger.warning("Images are not available; skip the beam{:02}...".format(beam))
+        return -1
     
     # input data: catalogue
-    catalogue_file = input_path + "/" + "*beam{:02}*.vot".format(beam)
-    catalogue = glob.glob(catalogue_file)[0]
+    try:
+        catalogue = read_deepcat(input_path, beam)
+    except NoInputError:
+        logger.warning("Deep catalogue is not available; skip the beam{:02}...".format(beam))
+        return -1
+
 
     # input data: deep image
     deepimage_file = input_path + "/" + "*beam{:02}*.tt0.fits".format(beam)
