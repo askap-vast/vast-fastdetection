@@ -32,10 +32,10 @@ if not os.path.exists(outdir):
 out_prefix = "output"
 
 ### include Gaussian map
-ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
-# ktypelist = ['chisquare', 'peak', 'std']
-maplist = ['chisquare', 'peak', 'gaussian']
-# maplist = ['chisquare', 'peak']
+# ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+ktypelist = ['chisquare', 'peak', 'std']
+# maplist = ['chisquare', 'peak', 'gaussian']
+maplist = ['chisquare', 'peak']
 
 
 

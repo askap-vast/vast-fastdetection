@@ -446,6 +446,8 @@ class Filter:
         # covert cubes into dask array
         da_sig = da.from_array(self.sigcube)
         da_rms = da.from_array(self.rmscube)
+        logger.info("chimap calculation -- sigcube chunksize: {}".format(da_sig.chunksize))
+        logger.info("chimap calculation -- rmscube chunksize: {}".format(da_rms.chunksize))
 
         # freedom
         nu = da_sig.shape[0] - 1
@@ -459,6 +461,7 @@ class Filter:
         data = (da_sig - mean) / da_rms
         
         res = da.sum(da.square(data), axis=0) / nu
+        logger.info("chi map res chunksize: {}".format(res.chunksize))
         nres = res.compute()
         return nres
         
@@ -488,10 +491,14 @@ class Filter:
         # convert cubes to dask array
         da_sig = da.from_array(self.sigcube)
         da_rms = da.from_array(self.rmscube)
+        logger.info("peakmap calculation -- sigcube chunksize: {}".format(da_sig.chunksize))
+        logger.info("peakmap calculation -- rmscube chunksize: {}".format(da_rms.chunksize))
+
         snr = da_sig / da_rms
         
         # return (np.nanmax(self.sigcube, axis=0) - np.nanmedian(self.sigcube, axis=0)) 
         res = (da.nanmax(snr, axis=0) - da.nanmedian(snr, axis=0)) 
+        logger.info("peak map res chunksize: {}".format(res.chunksize))
         nres = res.compute()
         return nres
     
@@ -501,7 +508,10 @@ class Filter:
         """        
         # convert cubes to dask array
         da_sig = da.from_array(self.sigcube)
+        logger.info("chimap calculation -- sigcube chunksize: {}".format(da_sig.chunksize))
+
         res = da.nanstd(da_sig, axis=0)
+        logger.info("std map res chunksize: {}".format(res.chunksize))
         nres = res.compute()
         return nres
     
