@@ -13,8 +13,10 @@ FILE_0 = "tests/fixtures/sigcube.npy"
 
 
 sigcube = np.load(FILE_0)
+sigcube_t = sigcube.transpose(1,2,0).copy(order="C")
 
 da_sigcube = da.from_array(sigcube)
+da_sigcube_t = da.from_array(sigcube_t)
 
 def get_smocube(sigcube):
     kernel = Gaussian1DKernel(stddev=4)
@@ -48,7 +50,7 @@ def get_smocube_2(sigcube):
 def run_block(arr1, block_info=None):
     print(block_info)
     arr2 = Gaussian1DKernel(stddev=4)
-    return np.apply_along_axis(lambda m: convolve(m, arr2), axis=0, arr=arr1)
+    return np.apply_along_axis(lambda m: convolve(m, arr2), axis=2, arr=arr1)
 
 def get_smocube_3(sigcube):
     tt = da.map_blocks(run_block, sigcube)
@@ -64,7 +66,7 @@ if __name__ == "__main__":
     # print("generate gmap: ", end - mid)
     # print("total: ", end - start)
     start = time.time()
-    da_smocube = get_smocube_3(da_sigcube)
+    da_smocube = get_smocube_3(da_sigcube_t)
     print("da_smocube shape: ", da_smocube.shape)
     print("chunksize: ", da_smocube.chunksize)
     smocube = da_smocube.compute()
