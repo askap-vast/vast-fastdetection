@@ -13,6 +13,7 @@ Generate a significance cube for transients detection
 import logging
 import warnings
 import numpy as np
+from functools import partial
 import dask.array as da
 
 from astropy.io import fits
@@ -26,6 +27,8 @@ from astropy.utils.exceptions import AstropyWarning, AstropyDeprecationWarning
 from skimage.feature import peak_local_max
 from scipy.interpolate import interp2d
 
+import multiprocessing as mp
+from multiprocessing.managers import SharedMemoryManager
 
 from vastfast.fastFunc import G2D
 
@@ -40,6 +43,7 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+ctx = mp.get_context('fork')
 
 class ArgumentError(Exception):
     pass
@@ -368,12 +372,16 @@ class Filter:
             
         elif ktype == "std":
             self.map = self._stdmap()
+
+        elif ktype == "gaussian":
+            self.map = self._gmap()
         
-        else:
-            if ktype == 'gaussian':
-                kernel = self._gaussian()
+        # else:
+        #     if ktype == 'gaussian':
+        #         kernel = self._gaussian()
                 
-            self.map = self._filter(kernel)
+        #     self.map = self._filter(kernel)
+        
         
         
         
@@ -470,6 +478,43 @@ class Filter:
 
     def _gaussian(self):
         return Gaussian1DKernel(stddev=self.width)
+
+    def _block(self, data, resm, iter_id):
+        """generating one block of gaussian map"""
+        kernel = self._gaussian()
+        arr = data[iter_id]
+        arr_res = np.apply_along_axis(lambda m:convolve(m, kernel), 
+                                        axis=1, arr=arr)
+        res = np.nanmax(arr_res, axis=1) - np.nanmean(arr_res, axis=1)
+        result = np.ndarray(self.gmap.shape, self.gmap.dtype, buffer=resm.buf)
+        result[iter_id] = res[:]
+        print("process pix: ", iter_id)
+
+    def _gmap(self, nprocess=4):
+        """Gaussian map"""
+        st = self.sigcube.transpose(1,2,0).copy(order="C")
+        axis_x, axis_y = st.shape[0], st.shape[1]
+        chunksize = int(np.ceil(axis_x/nprocess))
+        logger.info("chunksize: {}".format(chunksize))
+        self.gmap = np.zeros((axis_x, axis_y), dtype=np.float32)
+        self.gmap[:] = np.nan
+        with SharedMemoryManager() as smm:
+            print("shared memory context")
+            shm_dd = smm.SharedMemory(size=st.nbytes)
+            shm_r = smm.SharedMemory(size=self.gmap.nbytes)
+            sdd = np.ndarray(st.shape, dtype=st.dtype, buffer=shm_dd.buf)
+            sdd[:] = st[:]
+            sr = np.ndarray(self.gmap.shape, dtype=self.gmap.dtype, buffer=shm_r.buf)
+            sr[:] = self.gmap[:]
+            logger.info("start pooling")
+            pool = ctx.Pool(processes=nprocess)
+            pool.map(partial(self._block, sdd, shm_r), range(axis_x), chunksize=chunksize)
+            logger.info("end pool")
+
+        self.gmap[:] = sr[:]
+        np.save("gres", self.gmap)    
+        return self.gmap
+
     
     
 
