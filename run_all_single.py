@@ -8,6 +8,7 @@ from vastfast.cube import Cube, Filter
 from vastfast import plot
 from vastfast.plot import Candidates, Products
 from vastfast.input import *
+from vastfast.procedures import *
 from vastfast.exceptions import *
 
 import logging
@@ -47,55 +48,51 @@ def process_beam(beam):
     try:
         imagelist = read_shortimage(input_path, beam)
     except NoInputError:
-        logger.warning("Images are not available; skip the beam{:02}...".format(beam))
+        logger.error("Images are not available; skip the beam{:02}...".format(beam))
         return -1
     
     # input data: catalogue
     try:
         catalogue = read_deepcat(input_path, beam)
     except NoInputError:
-        logger.warning("Deep catalogue is not available; skip the beam{:02}...".format(beam))
+        logger.error("Deep catalogue is not available; skip the beam{:02}...".format(beam))
         return -1
 
 
     # input data: deep image
     deepimage_file = input_path + "/" + "*beam{:02}*.tt0.fits".format(beam)
     deepimage = glob.glob(deepimage_file)[0]
-   
-    # output file prefix
-    name = out_prefix +"_beam{:02}".format(beam)
     
+    # output beam dir
+    outdir_beam = outdir + "/output_beam{:02}".format(beam)
+    # output file prefix
+    name = out_prefix + "_beam{:02}".format(beam)
+    # output tar file
+    tar_name = outdir + "/output_beam{:02}.tar.gz".format(beam)
+    
+    # logger.info("============")
+    # logger.info("Starting to build the cube...")
+    # cube = Cube(imagelist)
 
 
-    ## ===================================
-    ## get the psf list with correct order
-    # psflist = glob.glob(folder + 'beam??_?.psf.fits') + glob.glob(folder + 'beam??_??.psf.fits')
-    # logger.info("Processing {} psf...".format(len(psflist)))
-    # logger.info(psflist)
-    ## ===================================
+    # cube.icube()
+    # logger.info(cube.sigcube.shape)
+    # logger.info("Finish to create the cube.")
+    # logger.info("============")
 
+    # logger.info("Remove bad images...")
+    # cube.remove_bad_images()
+    # logger.info(cube.sigcube.shape)
+    try:
+        sigcube = get_sigcube(imagelist)
+    except Exception:
+        logger.error("Fail to generate sugcube; skip the beam{:02}".format(beam))
+        return -1
 
-    logger.info("============")
-    logger.info("Starting to build the cube...")
-    cube = Cube(imagelist)
-
-    ## get the significance cube (do smooth with each 2d image)
-    # ktype = 'gaussian' # 'psf'
-    # cube.icube(ktype, 19, 19)
-
-    cube.icube()
-    logger.info(cube.sigcube.shape)
-    logger.info("Finish to create the cube.")
-    logger.info("============")
-
-    logger.info("Remove bad images...")
-    cube.remove_bad_images()
-    logger.info(cube.sigcube.shape)
-
-
-    ## ====================================
-    ## get the matched filter in time axis
-    f = Filter(cube.sigcube)
+    
+    # ====================================
+    # get the matched filter in time axis
+    f = Filter(sigcube)
 
 
 
@@ -106,19 +103,19 @@ def process_beam(beam):
         f.fmap(ktype, width=4)
         logger.info("Kernel match Done")
         
-        f.tofits(fitsname="{}/{}_{}.fits".format(outdir, name, ktype), imagename=imagelist[0])
+        f.tofits(fitsname="{}/{}_{}.fits".format(outdir_beam, name, ktype), imagename=imagelist[0])
         logger.info("Save the results to {}_{}.fits".format(name, ktype))
 
 
-
+    # get_map(sigcube, ktypelist, imagelist)
 
 
     logger.info("======== Select candidates ==========")
 
     # read fits
-    chisquare_map = "{}/{}_{}.fits".format(outdir, name, 'chisquare')
-    peak_map = "{}/{}_{}.fits".format(outdir, name, 'peak')
-    std_map = "{}/{}_{}.fits".format(outdir, name, 'std')
+    chisquare_map = "{}/{}_{}.fits".format(outdir_beam, name, 'chisquare')
+    peak_map = "{}/{}_{}.fits".format(outdir_beam, name, 'peak')
+    std_map = "{}/{}_{}.fits".format(outdir_beam, name, 'std')
 
 
 
@@ -130,7 +127,7 @@ def process_beam(beam):
             
         else:
             ## include Gaussian map during candidates selection 
-            gaussian_map = "{}/{}_{}.fits".format(outdir, name, 'gaussian')
+            gaussian_map = "{}/{}_{}.fits".format(outdir_beam, name, 'gaussian')
             c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map)
             
 
@@ -141,25 +138,25 @@ def process_beam(beam):
         
         ## plot a map with all of candidates above the threshold 
         c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map1".format(outdir, name, maptype))
+                imagename="{}/{}_{}_map1".format(outdir_beam, name, maptype))
             
         
         logger.info("Deep image catalogue {}".format(catalogue))
         c.select_candidates(deepcatalogue=catalogue)
         
         # save the table
-        c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir, name, maptype), savevot=True)
+        c.save_csvtable(tablename="{}/{}_{}_cand".format(outdir_beam, name, maptype), savevot=True)
         
         ## plot a final map with promising candidates 
         c.plot_fits(fitsname=vars()[maptype+'_map'], 
-                imagename="{}/{}_{}_map2".format(outdir, name, maptype))
+                imagename="{}/{}_{}_map2".format(outdir_beam, name, maptype))
         
         # # plot!
         # for i, candname in enumerate(c.cand_name):
         #     logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
         #     plot.plot_slices(src_name=candname, 
         #                      imagelist=imagelist, 
-        #                      name="{}/{}_{}".format(outdir, name, candname))
+        #                      name="{}/{}_{}".format(outdir_beam, name, candname))
         
 
 
@@ -170,9 +167,9 @@ def process_beam(beam):
     logger.info("=========Combine catalogue==========")
 
 
-    namelist = ['{}/{}_{}_cand.csv'.format(outdir, name, maptype) for maptype in maplist ]
+    namelist = ['{}/{}_{}_cand.csv'.format(outdir_beam, name, maptype) for maptype in maplist ]
 
-    plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir, name), 
+    plot.combine_csv(namelist, tablename="{}/{}_final".format(outdir_beam, name), 
                 savevot=True)
 
 
@@ -181,26 +178,33 @@ def process_beam(beam):
     # plot final candidates 
     logger.info("========= Plotting =============")
 
-    final_csv = "{}/{}_final.csv".format(outdir, name)
+    final_csv = "{}/{}_final.csv".format(outdir_beam, name)
 
     if os.path.exists(final_csv):
         p = Products(final_csv)
         p.generate_slices(imagelist=imagelist, 
-                        savename='{}/{}_slices'.format(outdir, name))
+                        savename='{}/{}_slices'.format(outdir_beam, name))
         p.generate_cutout(fitsname=deepimage, 
-                        savename='{}/{}_deepcutout'.format(outdir, name))
+                        savename='{}/{}_deepcutout'.format(outdir_beam, name))
         p.generate_lightcurve(imagelist=imagelist, 
                             deepname=deepimage, 
-                            savename='{}/{}_lightcurve'.format(outdir, name))
+                            savename='{}/{}_lightcurve'.format(outdir_beam, name))
 
 
-
-
+    
+    
+    finalize_output(tar_name, outdir_beam)
 
     logger.info("====== Finished. =====")
 
 if __name__ == "__main__":
-    process_beam(14)
+    try:
+        process_beam(14)
+    except Exception:
+        logger.exception("run into error {}: {}".format(sys.exc_info()[0], sys.exc_info()[1]))
+        pass
+   
+        
     # for i in range(36):
         # process_beam(i)
 
