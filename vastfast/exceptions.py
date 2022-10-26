@@ -9,6 +9,13 @@ class Error(Exception):
 
 
 class NoInputError(Error):
-    def __init__(self, message="No input file(s) available"):
+    def __init__(self, message="Input file(s) not available"):
         super().__init__(message)
 
+class NoStdMapError(Error):
+    def __init__(self, message="std map not available"):
+        super().__init__(message)
+
+class NoMapError(Error):
+    def __init__(self, message="None of chisquare, peak or gaussian map is available"):
+        super().__init__(message)

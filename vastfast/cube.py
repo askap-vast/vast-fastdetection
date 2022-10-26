@@ -268,6 +268,7 @@ class Cube:
             
         self.kernel = m.kernel
         self.sigcube = np.array(sigcube)
+       
         
         
         
@@ -335,8 +336,6 @@ class Cube:
         logger.info("Remove {} of {} images".format(sum(rmslist>threshold), 
                                                  len(self.imagelist)))
 
-        
-            
             
         
 class Filter:
@@ -357,7 +356,6 @@ class Filter:
             
         # get local rms
         self.cube_local_rms()
-            
         
     
     def fmap(self, ktype, width=4):
@@ -396,7 +394,7 @@ class Filter:
         data = hdu.data 
        
         hdu.data = self.map.reshape(data.shape)
-        hdu.writeto(fitsname)
+        hdu.writeto(fitsname, overwrite=True)
         
         
         
@@ -566,7 +564,7 @@ class Filter:
         """input: sigcube
             output: rms cube
         """
-        logger.info("Calculate local rms...")
+        logger.info("Calculating local rms...")
         
         rmscube = np.zeros(self.sigcube.shape, dtype=np.float32)
         rmscube[:] = np.nan
@@ -575,7 +573,7 @@ class Filter:
             rms_image = self.get_local_rms(data=data_image)
             rmscube[i] = rms_image
             
-        logger.info("Calculate local rms finished...")
+        logger.info("Finish calculating local rms.")
             
         self.rmscube = rmscube
     
@@ -605,8 +603,6 @@ class Filter:
         return rms
         
         
-
-
 
 
 

@@ -32,6 +32,8 @@ import gc
 
 from memory_profiler import profile
 
+from .exceptions import *
+
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -469,25 +471,16 @@ def combine_csv(namelist, radius=10,
 class Candidates:
     """Generate the vot table for final candidates
     """
-    
-    def __init__(self, chisq_map, peak_map, std_map, gaussian_map=''):
-        """chisq_map: str
-            chisquare map location, should be FITS file
+    _map_full = ["chisquare_map", "peak_map", "gaussian_map"]
+
+    def __init__(self, map_dict):
+        """map_dict: dict of map file
         """
-        
-        if isinstance(chisq_map, str):
-            try: 
-                self.fi = fits.open(chisq_map)[0]
-            except FileNotFoundError:
-                logger.exception("Unable to open image %s" % chisq_map)
-        elif isinstance(chisq_map, fits.HDUList):
-            self.fi= chisq_map
-        else:
-            raise ArgumentError("Do not understand input image")
-            
-        # read chisquare map 
-        self.chisq_map = self.fi.data.squeeze()
-        # read basic information from chisquare map
+        self.map_dict = map_dict
+
+        # check whether maps are available
+        self._map_file_check()
+        # read basic information from available map
         self.wcs = WCS(self.fi.header, naxis=2)
         # beam center
         self.beam_center = SkyCoord(self.fi.header['CRVAL1'], 
@@ -495,51 +488,58 @@ class Candidates:
         # FWHM of primary beam
         self.fwhm = 3e8/self.fi.header['CRVAL3']/12 * 180/np.pi * u.degree
         
+    def _map_file_check(self):
+        valid_map = []
+
+        for key in self.map_dict:         
+            mapfile = self.map_dict[key]
+            try:
+                setattr(self, key, fits.open(mapfile)[0].data.squeeze())
+                valid_map.append(key)
+            except FileNotFoundError:
+                logger.warning("Unable to open image {}".format(mapfile))
         
-        # peak map
-        self.peak_map = fits.open(peak_map)[0].data.squeeze()
-        # std map
-        self.std_map = fits.open(std_map)[0].data.squeeze()
-        # gaussian map
-        if gaussian_map != '':
-            logger.info("Open Gaussian map %s" % gaussian_map)
-            self.gaussian_map = fits.open(gaussian_map)[0].data.squeeze()
+        if 'std_map' not in valid_map:
+            raise NoStdMapError() 
+
+        elif len(valid_map) == 1 and valid_map[0] == 'std_map':
+            raise NoMapError()
+
         else:
-            logger.info("No gaussian map is input")
+            fi_file = self.map_dict[valid_map[0]]
+            self.fi = fits.open(fi_file)[0]
+            valid_map.remove('std_map')
+            self.valid_map = valid_map
+            logger.info("Available maps: {}".format(self.valid_map))
 
         
         
-        
-    def local_max(self, min_distance=30, sigma=5, data=None):
+    def local_max(self, maptype, min_distance=30, sigma=5):
         '''Find the local maxium of an image
         
         sigma: identify blobs above a specfic sigma threshold
         min_distance: pixel number of the minimal distance of two neighbours blobs
         '''
-        if data == None or data == 'chisquare':
-            data = self.chisq_map
+
+        if hasattr(self, maptype):
+            data = getattr(self, maptype)
+            # get threshold in log space
+            threshold = get_threshold_logspace(data, sigma=sigma)
             
-        elif data == 'peak':
-            data = self.peak_map
+            # find local maximum 
+            xy = peak_local_max(data, min_distance=min_distance, 
+                                threshold_abs=threshold)
             
-        elif data == "gaussian":
-            data = self.gaussian_map
-        
-        # get threshold in log space
-        threshold = get_threshold_logspace(data, sigma=sigma)
-        
-        # find local maximum 
-        xy = peak_local_max(data, min_distance=min_distance, 
-                            threshold_abs=threshold)
-        
-        # get coordiantes, in pixel and world 
-        yp, xp = xy[:, 0], xy[:, 1]
-        
-        self.xp = xp
-        self.yp = yp
-        
-        self.cand_src = pixel_to_skycoord(xp, yp, wcs=self.wcs)
-        logger.info("Selected {} candidates...".format(self.cand_src.shape[0]))
+            # get coordiantes, in pixel and world 
+            yp, xp = xy[:, 0], xy[:, 1]
+            
+            self.xp = xp
+            self.yp = yp
+            
+            self.cand_src = pixel_to_skycoord(xp, yp, wcs=self.wcs)
+            logger.info("Selected {} candidates...".format(self.cand_src.shape[0]))
+        else:
+            logger.warning("{} is not available.".format(maptype))
         
         
         
@@ -613,7 +613,6 @@ class Candidates:
             _, d2d, _ = self.cand_src.match_to_catalog_sky(deep_bright)
             self.bright_sep_arcmin = d2d.arcmin
         
-        
     
     def save_csvtable(self, tablename="cand_catalogue", savevot=False):
         """Save selected candidates to a csv table
@@ -628,111 +627,103 @@ class Candidates:
         
         
         t = Table()
+    
+        # number of candidates
+        n_cand = sum(self.final_idx)
         
-        # source id 
-        t['source_id'] = np.arange(sum(self.final_idx))
-        
-        # name in J005800.91-235449.00 format
-        self.cand_name = ['J' + \
-             self.cand_src[self.final_idx][i].ra.to_string(unit=u.hourangle, 
-                                                           sep="", 
-                                                           precision=2, 
-                                                           pad=True) + \
-             self.cand_src[self.final_idx][i].dec.to_string(sep="", 
+        # save csv & vot files if candidates found
+        if n_cand > 0:
+            # source id 
+            t['source_id'] = np.arange(n_cand)
+            
+            # name in J005800.91-235449.00 format
+            self.cand_name = ['J' + \
+                self.cand_src[self.final_idx][i].ra.to_string(unit=u.hourangle, 
+                                                            sep="", 
                                                             precision=2, 
-                                                            alwayssign=True, 
-                                                            pad=True)
-             for i in range(sum(self.final_idx))
-            ]
+                                                            pad=True) + \
+                self.cand_src[self.final_idx][i].dec.to_string(sep="", 
+                                                                precision=2, 
+                                                                alwayssign=True, 
+                                                                pad=True)
+                for i in range(sum(self.final_idx))
+                ]
+                
+            t['name'] = self.cand_name
+        
+            # ra_str in format of 00:58:00.91 
+            t['ra_str'] = self.cand_src[self.final_idx].ra.to_string(
+                unit=u.hourangle, sep=':', precision=2, pad=True
+                )
+            t['dec_str'] = self.cand_src[self.final_idx].dec.to_string(
+                unit=u.degree, sep=':', precision=2, 
+                alwayssign=True, pad=True
+                )
             
-        t['name'] = self.cand_name
-        
-        
-        # ra_str in format of 00:58:00.91 
-        t['ra_str'] = self.cand_src[self.final_idx].ra.to_string(
-            unit=u.hourangle, sep=':', precision=2, pad=True
-            )
-        
-        # dec_str in format of -58:21:04.3
-        t['dec_str'] = self.cand_src[self.final_idx].dec.to_string(
-            unit=u.degree, sep=':', precision=2, 
-            alwayssign=True, pad=True
-            )
-        
-        # ra and dec in deg
-        t['ra'] = self.cand_src[self.final_idx].ra.degree
-        t['dec'] = self.cand_src[self.final_idx].dec.degree
-        
-        # read the chisq value at each pixel
-        t['chi_square'] = self.chisq_map[self.yp, self.xp][self.final_idx]
-        # calculate the sigma
-        t['chi_square_sigma'] = get_sigma_logspace(self.chisq_map, 
-                                                   np.array(t['chi_square']))
-        
-        # read the peak value at each pixel 
-        t['peak_map'] = self.peak_map[self.yp, self.xp][self.final_idx]
-        # calculate the sigma
-        t['peak_map_sigma'] = get_sigma_logspace(self.peak_map, 
-                                                 np.array(t['peak_map']))
-        
-        # if there's Gaussian map 
-        if hasattr(self, 'gaussian_map'):
-            t['gaussian_map'] = self.gaussian_map[self.yp, self.xp][self.final_idx]
-            t['gaussian_map_sigma'] = get_sigma_logspace(self.gaussian_map, 
-                                                     np.array(t['gaussian_map']))
+            # ra and dec in deg
+            t['ra'] = self.cand_src[self.final_idx].ra.degree
+            t['dec'] = self.cand_src[self.final_idx].dec.degree
+            
+            for maptype in self._map_full:
+                colname = maptype
+                sig_colname = colname + "_sigma"
+                if hasattr(self, maptype):
+                    t[colname] = getattr(self, maptype)[self.yp, self.xp][self.final_idx]
+                    t[sig_colname] = get_sigma_logspace(getattr(self, maptype), 
+                                                    np.array(t[colname]))
+                else:
+                    t[colname] = [np.nan] * sum(self.final_idx)
+                    t[sig_colname] = [np.nan] * sum(self.final_idx)
+                        
+            # read the peak value at each pixel 
+            t['std_map'] = self.std_map[self.yp, self.xp][self.final_idx]
+            
+            # modulation index using deep source flux
+            t['md_deep'] = self.md[self.final_idx]
+            
+            # separaion to nearest deep counterpart
+            t['deep_sep_arcsec'] = self.d2d.arcsec[self.final_idx]
+            
+            # number of close deep sources
+            t['deep_num'] = self.deep_num[self.final_idx]
+            
+            # separation to bright deep source
+            t['bright_sep_arcmin'] = self.bright_sep_arcmin[self.final_idx]
+            
+            # separation to beam center
+            t['beam_sep_deg'] = self.cand_src.separation(self.beam_center).degree[self.final_idx]
+            
+            # beam center coordinates
+            t['beam_ra']= [self.beam_center.ra.deg] * sum(self.final_idx)
+            t['beam_dec']= [self.beam_center.dec.deg] * sum(self.final_idx)
+            
+            # name of the nearest deep counterpart
+            t['deep_name'] = np.array(self.deep_name)[self.deepidx][self.final_idx]
+            
+            # coordinates for nearest deep counterpart 
+            t['deep_ra_deg'] = self.deep_src.ra.degree[self.deepidx][self.final_idx]
+            t['deep_dec_deg'] = self.deep_src.dec.degree[self.deepidx][self.final_idx]
+            
+            # flux density of the nearest deep counterpart
+            t['deep_peak_flux'] = self.deep_peak_flux[self.deepidx][self.final_idx]
+            t['deep_int_flux'] = self.deep_int_flux[self.deepidx][self.final_idx]
+            
+            
+            
+            # save csv table
+            t.write("{}.csv".format(tablename), overwrite=True)
+            logger.info("Save csv {}".format(tablename))
+            
+            # save vot table
+            if savevot and len(t) != 0:
+                t.write("{}.vot".format(tablename), 
+                        table_id="candidates", 
+                        format="votable", 
+                        overwrite=True)
+                logger.info("Save vot {}".format(tablename))
+            
         else:
-            t['gaussian_map']  = [np.nan] * sum(self.final_idx)
-            t['gaussian_map_sigma'] = [np.nan] * sum(self.final_idx)
-            
-        
-        # read the peak value at each pixel 
-        t['std_map'] = self.std_map[self.yp, self.xp][self.final_idx]
-        
-        # modulation index using deep source flux
-        t['md_deep'] = self.md[self.final_idx]
-        
-        # separaion to nearest deep counterpart
-        t['deep_sep_arcsec'] = self.d2d.arcsec[self.final_idx]
-        
-        # number of close deep sources
-        t['deep_num'] = self.deep_num[self.final_idx]
-        
-        # separation to bright deep source
-        t['bright_sep_arcmin'] = self.bright_sep_arcmin[self.final_idx]
-        
-        # separation to beam center
-        t['beam_sep_deg'] = self.cand_src.separation(self.beam_center).degree[self.final_idx]
-        
-        # beam center coordinates
-        t['beam_ra']= [self.beam_center.ra.deg] * sum(self.final_idx)
-        t['beam_dec']= [self.beam_center.dec.deg] * sum(self.final_idx)
-        
-        # name of the nearest deep counterpart
-        t['deep_name'] = np.array(self.deep_name)[self.deepidx][self.final_idx]
-        
-        # coordinates for nearest deep counterpart 
-        t['deep_ra_deg'] = self.deep_src.ra.degree[self.deepidx][self.final_idx]
-        t['deep_dec_deg'] = self.deep_src.dec.degree[self.deepidx][self.final_idx]
-        
-        # flux density of the nearest deep counterpart
-        t['deep_peak_flux'] = self.deep_peak_flux[self.deepidx][self.final_idx]
-        t['deep_int_flux'] = self.deep_int_flux[self.deepidx][self.final_idx]
-        
-        
-        
-        # save csv table
-        t.write("{}.csv".format(tablename), overwrite=True)
-        logger.info("Save csv {}".format(tablename))
-        
-        # save vot table
-        if savevot and len(t) != 0:
-            t.write("{}.vot".format(tablename), 
-                    table_id="candidates", 
-                    format="votable", 
-                    overwrite=True)
-            logger.info("Save vot {}".format(tablename))
-        
-        
+            logger.warning("No csv/vot files generated as no candidates found.")
         
         
         
