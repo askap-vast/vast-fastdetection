@@ -521,13 +521,13 @@ class Filter:
     def _process_block(self, arr1, block_info=None):
         print(block_info)
         kernel = Gaussian1DKernel(stddev=4)
-        res = np.apply_along_axis(_conv_1d, axis=2, arr=arr1, kernel=kernel)
+        res = np.apply_along_axis(self._conv_1d, axis=2, arr=arr1, kernel=kernel)
         print("process: ", os.getegid())
         return res
 
 
     def _get_gmap(self):
-        tt = da.map_blocks(_process_block, self.sigcube, chunks=(100,100,40))
+        tt = da.map_blocks(self._process_block, self.sigcube, chunks=(100,100,40))
         res = da.nanmax(tt, axis=2) - da.nanmean(tt, axis=2)  
         print("res chunksize: ", res.chunksize)
         return res  
@@ -536,7 +536,7 @@ class Filter:
         sigcube_t = self.sigcube.transpose(1,2,0).copy(order="C")
         da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,40))
         print("sig cube now: ", type(da_sigcube_t), da_sigcube_t.shape)
-        da_gmap = _get_gmap(da_sigcube_t)
+        da_gmap = self._get_gmap(da_sigcube_t)
         gmap = da_gmap.compute(scheduler="processes", num_workers=4)
         np.save("gmap_test", gmap)
         
