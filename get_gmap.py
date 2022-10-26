@@ -7,6 +7,10 @@ import dask.array as da
 import dask
 
 import numpy as np
+import os
+
+from memory_profiler import profile
+import gc
 
 FILE_0 = "tests/fixtures/sigcube.npy"
 # FILE_0 = "tests/fixtures/small_sigcube.npy"
@@ -14,9 +18,14 @@ FILE_0 = "tests/fixtures/sigcube.npy"
 
 sigcube = np.load(FILE_0)
 sigcube_t = sigcube.transpose(1,2,0).copy(order="C")
+del sigcube
+gc.collect()
 
-da_sigcube = da.from_array(sigcube)
-da_sigcube_t = da.from_array(sigcube_t)
+# da_sigcube = da.from_array(sigcube)
+da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,40))
+
+# blocks = da_sigcube_t.to_delayed().ravel()
+# print("blocks: ", blocks)
 
 def get_smocube(sigcube):
     kernel = Gaussian1DKernel(stddev=4)
@@ -33,28 +42,46 @@ def get_gmap(smocube):
     # np.save("gaussianmap", res)
     # np.save("small_gmap", res)
 
-@dask.delayed
-def conv_1d(arr, stddev):
-    kernel = Gaussian1DKernel(stddev=stddev)
+
+def conv_1d(arr, kernel):
+    # kernel = Gaussian1DKernel(stddev=stddev)
     arr_res = convolve(arr, kernel)
+    # res = np.nanmax(arr_res) - np.nanmean(arr_res)
+    # print("called: ", os.getpid())
     return arr_res
 
-def get_smocube_2(sigcube):
-    # kernel = Gaussian1DKernel(stddev=4)
+def get_smocube_2(sigcube, stddev):
+    kernel = Gaussian1DKernel(stddev=stddev)
     smocube =  np.apply_along_axis(conv_1d, 
-                                   axis=0, arr=sigcube, stddev=4)
+                                   axis=2, arr=sigcube, kernel=kernel)
     # np.save("smocube", smocube)
     # np.save("small_smocube", smocube)
     return smocube
 
+
+# @profile
 def run_block(arr1, block_info=None):
     print(block_info)
-    arr2 = Gaussian1DKernel(stddev=4)
-    return np.apply_along_axis(lambda m: convolve(m, arr2), axis=2, arr=arr1)
+    kernel = Gaussian1DKernel(stddev=4)
+    # res = np.zeros(arr1.shape)
+    # res[:] = np.nan
+    # print("res shape: ", res.shape)
+    # for i in range(arr1.shape[0]):
+    #     for j in range(arr1.shape[1]):
+    #         res[i,j,:] = convolve(arr1[i,j,:],arr2)
+    res = np.apply_along_axis(conv_1d, 
+                                   axis=2, arr=arr1, kernel=kernel)
+    print("process: ", os.getegid())
+    # res = da.nanmax(res_0, axis=2) - np.nanmean(res_0, axis=2)
+    # time.sleep(20)
+    return res
 
+# @profile
 def get_smocube_3(sigcube):
-    tt = da.map_blocks(run_block, sigcube)
-    return tt
+    tt = da.map_blocks(run_block, sigcube, chunks=(100,100,40))
+    res = da.nanmax(tt, axis=2) - da.nanmean(tt, axis=2)
+    print("res chunksize: ", res.chunksize)
+    return res
 
 if __name__ == "__main__":
     # start = time.time()
@@ -69,7 +96,9 @@ if __name__ == "__main__":
     da_smocube = get_smocube_3(da_sigcube_t)
     print("da_smocube shape: ", da_smocube.shape)
     print("chunksize: ", da_smocube.chunksize)
-    smocube = da_smocube.compute()
+    smocube = da_smocube.compute(scheduler='processes', num_workers=4)
+    # smocube = da_smocube.compute(num_workers=1)
+    # res = smocube.transpose(2,0,1).copy(order="C")
     np.save("smocube", smocube)
     # np.save("small_smocube", smocube)
     mid = time.time()
