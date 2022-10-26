@@ -478,42 +478,6 @@ class Filter:
     def _gaussian(self):
         return Gaussian1DKernel(stddev=self.width)
 
-    def _block(self, data, resm, iter_id):
-        """generating one block of gaussian map"""
-        kernel = self._gaussian()
-        arr = data[iter_id]
-        # arr_res = np.apply_along_axis(lambda m:convolve(m, kernel), 
-        #                                 axis=1, arr=arr)
-        # res = np.nanmax(arr_res, axis=1) - np.nanmean(arr_res, axis=1)
-        # result = np.ndarray(self.gmap.shape, self.gmap.dtype, buffer=resm.buf)
-        # result[iter_id] = res[:]
-        print("process pix: ", iter_id)
-
-    # def _gmap(self, nprocess=4):
-    #     """Gaussian map"""
-    #     st = self.sigcube.transpose(1,2,0).copy(order="C")
-    #     axis_x, axis_y = st.shape[0], st.shape[1]
-    #     chunksize = int(np.ceil(axis_x/nprocess))
-    #     logger.info("chunksize: {}".format(chunksize))
-    #     self.gmap = np.zeros((axis_x, axis_y), dtype=np.float32)
-    #     self.gmap[:] = np.nan
-    #     with SharedMemoryManager() as smm:
-    #         print("shared memory context")
-    #         shm_dd = smm.SharedMemory(size=st.nbytes)
-    #         shm_r = smm.SharedMemory(size=self.gmap.nbytes)
-    #         sdd = np.ndarray(st.shape, dtype=st.dtype, buffer=shm_dd.buf)
-    #         sdd[:] = st[:]
-    #         sr = np.ndarray(self.gmap.shape, dtype=self.gmap.dtype, buffer=shm_r.buf)
-    #         sr[:] = self.gmap[:]
-    #         logger.info("start pooling")
-    #         pool = ctx.Pool(processes=nprocess)
-    #         pool.map(partial(self._block, sdd, shm_r), range(axis_x), chunksize=chunksize)
-    #         logger.info("end pool")
-
-    #     # self.gmap[:] = sr[:]
-    #     # np.save("gres", self.gmap)    
-    #     return self.gmap
-
     def _gmap(self):
         sigcube_t = self.sigcube.transpose(1,2,0).copy(order="C")
         da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,40))
@@ -521,6 +485,7 @@ class Filter:
         da_gmap = _get_gmap(da_sigcube_t)
         gmap = da_gmap.compute(scheduler="processes", num_workers=4)
         np.save("gmap_test", gmap)
+        return gmap
         
 
     def _chisquare(self, peak_flux, local_rms, m=1):
