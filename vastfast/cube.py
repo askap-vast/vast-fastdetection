@@ -486,7 +486,7 @@ class Filter:
         res = np.nanmax(arr_res, axis=1) - np.nanmean(arr_res, axis=1)
         result = np.ndarray(self.gmap.shape, self.gmap.dtype, buffer=resm.buf)
         result[iter_id] = res[:]
-        print("process pix: ", iter_id)
+        # print("process pix: ", iter_id)
 
     def _gmap(self, nprocess=4):
         """Gaussian map"""

@@ -919,8 +919,8 @@ class Products:
         # save catalgoue 
         if savecsv:
             # save csv table
-            peak_flux_table.write("{}_peak_flux.csv".format(savename))
-            local_rms_table.write("{}_local_rms.csv".format(savename))
+            peak_flux_table.write("{}_peak_flux.csv".format(savename), overwrite=True)
+            local_rms_table.write("{}_local_rms.csv".format(savename), overwrite=True)
 
             logger.info("Save csv {}".format(savename))
             
