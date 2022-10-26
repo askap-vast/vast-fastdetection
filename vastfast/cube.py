@@ -526,8 +526,8 @@ class Filter:
         return res
 
 
-    def _get_gmap(self):
-        tt = da.map_blocks(self._process_block, self.sigcube, chunks=(100,100,40))
+    def _get_gmap(self, sigcube):
+        tt = da.map_blocks(self._process_block, sigcube, chunks=(100,100,40))
         res = da.nanmax(tt, axis=2) - da.nanmean(tt, axis=2)  
         print("res chunksize: ", res.chunksize)
         return res  
