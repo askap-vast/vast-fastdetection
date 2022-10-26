@@ -514,29 +514,11 @@ class Filter:
     #     # np.save("gres", self.gmap)    
     #     return self.gmap
 
-    def _conv_1d(self, arr, kernel):
-        arr_res = convolve(arr, kernel)
-        return arr_res
-
-    def _process_block(self, arr1, block_info=None):
-        print(block_info)
-        kernel = Gaussian1DKernel(stddev=4)
-        res = np.apply_along_axis(self._conv_1d, axis=2, arr=arr1, kernel=kernel)
-        print("process: ", os.getegid())
-        return res
-
-
-    def _get_gmap(self, sigcube):
-        tt = da.map_blocks(self._process_block, sigcube, chunks=(100,100,40))
-        res = da.nanmax(tt, axis=2) - da.nanmean(tt, axis=2)  
-        print("res chunksize: ", res.chunksize)
-        return res  
-
     def _gmap(self):
         sigcube_t = self.sigcube.transpose(1,2,0).copy(order="C")
         da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,40))
         print("sig cube now: ", type(da_sigcube_t), da_sigcube_t.shape)
-        da_gmap = self._get_gmap(da_sigcube_t)
+        da_gmap = _get_gmap(da_sigcube_t)
         gmap = da_gmap.compute(scheduler="processes", num_workers=4)
         np.save("gmap_test", gmap)
         
@@ -627,3 +609,22 @@ class Filter:
         
         return rms
         
+
+### extra functions needed for gaussian map 
+def _conv_1d(arr, kernel):
+        arr_res = convolve(arr, kernel)
+        return arr_res
+
+def _process_block(arr1, block_info=None):
+    print(block_info)
+    kernel = Gaussian1DKernel(stddev=4)
+    res = np.apply_along_axis(_conv_1d, axis=2, arr=arr1, kernel=kernel)
+    print("process: ", os.getegid())
+    return res
+
+
+def _get_gmap(sigcube):
+    tt = da.map_blocks(_process_block, sigcube, chunks=(100,100,40))
+    res = da.nanmax(tt, axis=2) - da.nanmean(tt, axis=2)  
+    print("res chunksize: ", res.chunksize)
+    return res  
