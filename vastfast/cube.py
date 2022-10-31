@@ -373,13 +373,6 @@ class Filter:
         elif ktype == "gaussian":
             self.map = self._gmap()
         
-        # else:
-        #     if ktype == 'gaussian':
-        #         kernel = self._gaussian()
-                
-        #     self.map = self._filter(kernel)
-        
-        
         
         
     def tofits(self, fitsname: str, imagename=None):
@@ -478,10 +471,11 @@ class Filter:
 
     def _gmap(self):
         sigcube_t = self.sigcube.transpose(1,2,0).copy(order="C")
-        time_dim = sigcube_t[2]
+        logger.info("Transposed sigcube shape: {}".format(sigcube_t.shape))
+        time_dim = sigcube_t.shape[2]
         da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,time_dim))
         logger.info("chunksize: {}".format(da_sigcube_t.chunksize))
-        print("sig cube now: ", type(da_sigcube_t), da_sigcube_t.shape)
+        
         da_gmap = _get_gmap(da_sigcube_t)
         gmap = da_gmap.compute(scheduler="processes", num_workers=4)
         np.save("gmap_test", gmap)
@@ -581,10 +575,10 @@ def _conv_1d(arr, kernel):
         return arr_res
 
 def _process_block(arr1, block_info=None):
-    print(block_info)
+    logger.info(block_info)
     kernel = Gaussian1DKernel(stddev=4)
     res = np.apply_along_axis(_conv_1d, axis=2, arr=arr1, kernel=kernel)
-    print("process: ", os.getpid())
+    logger.info("process: {}".format(os.getpid()))
     return res
 
 

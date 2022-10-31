@@ -47,6 +47,7 @@ class Procedures():
 
     def _get_sigcube(self):
         """get sigcube"""
+        print("procedure logger: ", logger.name)
         logger.info("============")
         logger.info("Building the cube...")
         cube = Cube(self.imagelist)
@@ -64,7 +65,7 @@ class Procedures():
             return sigcube
 
         except Exception:
-            logger.exception("Fail to generate sigcube; skip the beam{:02}".format(beam))
+            logger.exception("Fail to generate sigcube; skip the beam{:02}".format(self.beam))
             return -1
 
     def get_filter(self, sigcube):
@@ -72,7 +73,7 @@ class Procedures():
             f = Filter(sigcube)
             return f
         except Exception:
-            logger.exception("Fail to generate rms cube; skip the beam{:02}".format(beam))
+            logger.exception("Fail to generate rms cube; skip the beam{:02}".format(self.beam))
             return -1
 
     def _get_map(self, f, ktype):

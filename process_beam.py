@@ -26,13 +26,14 @@ file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
-logger.handlers.clear()
+# logger.handlers.clear()
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
 
 
 def main():
+    print("main logger: ", logger.handlers)
     logger.info("============")
     logger.info("Reading input files...")
     # input data: short images
