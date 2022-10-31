@@ -8,26 +8,26 @@ import  shutil
 from .cube import Cube, Filter
 from .plot import Candidates, Products, combine_csv
 from .exceptions import *
-
+from .setting import G_WIDTH
 logger = logging.getLogger(__name__)
 
+def create_out_beam(outdir, beam):
+    outdir_beam = outdir + "/output_beam{:02}".format(beam)
+    if not os.path.exists(outdir_beam):
+        os.mkdir(outdir_beam)
+    return outdir_beam
+
 class Procedures():
-    def __init__(self, imagelist, beam, catalogue, outdir, out_prefix, ktypelist, deepimage=None):
+    def __init__(self, imagelist, beam, catalogue, outdir, out_prefix, outdir_beam, ktypelist, deepimage=None):
         self.imagelist = imagelist
         self.beam = beam
         self.catalogue = catalogue
         self.outdir = outdir
         self.out_prefix = out_prefix
+        self.outdir_beam = outdir_beam
         self.ktypelist = ktypelist
         self.deepimage = deepimage
-        self._create_out_beam()
         self._create_outfile_names()
-
-    def _create_out_beam(self):
-        outdir_beam = self.outdir + "/output_beam{:02}".format(self.beam)
-        if not os.path.exists(outdir_beam):
-            os.mkdir(outdir_beam)
-        self.outdir_beam = outdir_beam
 
     def _create_outfile_names(self):
         # output file prefix
@@ -43,9 +43,7 @@ class Procedures():
         self.get_candidates()
         self.combine_catalogue()
         self.plot_final_candidates()
-        self.finalize_output()
-       
-        
+        self.finalize_output()        
 
     def _get_sigcube(self):
         """get sigcube"""
@@ -80,7 +78,7 @@ class Procedures():
     def _get_map(self, f, ktype):
         logger.info("===== Matched Filter =====")
         logger.info("Kernel match filter '{}'...".format(ktype))
-        f.fmap(ktype, width=4)
+        f.fmap(ktype, width=G_WIDTH)
         logger.info("Kernel match Done")
         f.tofits(fitsname="{}/{}_{}.fits".format(self.outdir_beam, self.name, ktype), imagename=self.imagelist[0])
         logger.info("Save the results to {}_{}.fits".format(self.name, ktype))

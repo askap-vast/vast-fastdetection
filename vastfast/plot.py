@@ -34,10 +34,11 @@ from memory_profiler import profile
 
 from .exceptions import *
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# logging.basicConfig()
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
 
+logger = logging.getLogger(__name__)
 
 class ArgumentError(Exception):
     pass

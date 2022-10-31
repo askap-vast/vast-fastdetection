@@ -1,6 +1,3 @@
-# total number of beams 
-N_BEAMS = 36
-
 # directory of data 
 INPUT_PATH = "../test_data/SB9596_beam14_casa/"
 
@@ -15,3 +12,5 @@ OUT_PREFIX = "output"
 KTYPELIST = ['chisquare', 'peak', 'std', 'gaussian']
 
 
+# Gaussian width
+G_WIDTH = 4

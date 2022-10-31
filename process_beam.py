@@ -1,34 +1,38 @@
 #!/usr/bin/env python
 
 import sys
-import os
-import glob
+import logging
 
-from vastfast.cube import Filter
-from vastfast import plot
-from vastfast.plot import Candidates, Products
+
 from vastfast.input import read_shortimage, read_deepcat, read_deepimage
-from vastfast.procedures import *
+from vastfast.procedures import create_out_beam, Procedures
 from vastfast.exceptions import *
 from vastfast.setting import INPUT_PATH, OUT_DIR, OUT_PREFIX, KTYPELIST
 
-import logging
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-sh = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s")
-sh.setFormatter(formatter)
-logger.handlers.clear()
-logger.addHandler(sh)
 
-
-
-## ========= arguments ================
+## ========= arguments ========= 
 beam = sys.argv[-1]
 beam = int(beam)
 
+## ========= beam output directory ========= 
+outdir_beam = create_out_beam(OUT_DIR, beam)
+
+## =========  set up logger ========= 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s")
+file_handler = logging.FileHandler(outdir_beam + '/log.log', 'w')
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+logger.handlers.clear()
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
+
+
+
 def main():
-   
     logger.info("============")
     logger.info("Reading input files...")
     # input data: short images
@@ -49,7 +53,7 @@ def main():
     deepimage = read_deepimage(INPUT_PATH, beam)
     
     # process beam
-    p = Procedures(imagelist, beam, catalogue, OUT_DIR, OUT_PREFIX, KTYPELIST, deepimage)
+    p = Procedures(imagelist, beam, catalogue, OUT_DIR, OUT_PREFIX, outdir_beam, KTYPELIST, deepimage)
     p.run_all_steps()
 
       

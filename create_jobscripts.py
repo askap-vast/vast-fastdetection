@@ -4,7 +4,7 @@ N_CPU = 4
 
 module_file = "/fred/oz999/tiger/SS2022B-TMurphy/ozstar-dev.sh"
 work_dir = "/fred/oz999/tiger/SS2022B-TMurphy/tmurphy_2022b"
-python_file = "run_all_single.py"
+python_file = "process_beam.py"
 
 def write_job_single(beam):
     filename = "vastfast_beam{:02}.sh".format(beam)
@@ -16,9 +16,10 @@ def write_job_single(beam):
     out.write("#SBATCH --time=02:00:00\n")
     out.write("#SBATCH --mem={}g \n".format(MEM))
     out.write("#SBATCH --cpus-per-task={}\n\n".format(N_CPU))
+    out.write("export MPLBACKEND=agg\n")
     out.write("source " + module_file + "\n")
     out.write("cd " + work_dir + "\n\n")
-    out.write("python " + "run_all_single.py " + str(beam) + "\n\n")
+    out.write("python " + python_file + ' ' + str(beam) + "\n\n")
     out.close()
 
 def create_jobs():
