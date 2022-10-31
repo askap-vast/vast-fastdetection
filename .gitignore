@@ -50,7 +50,7 @@ _build
 
 #Miscillaneous
 .install*
-.ipynb
+*.ipynb
 .ipynb_checkpoints
 htmlcov
 .coverage
@@ -59,6 +59,8 @@ htmlcov
 output
 *.npy
 profile
+tmp
+
 
 
 

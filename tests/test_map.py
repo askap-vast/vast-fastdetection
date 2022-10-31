@@ -18,6 +18,9 @@ FILE_7 = PATH + "/../smocube.npy"
 FILE_8 = PATH + "/fixtures/gaussianmap.npy"
 FILE_9 = PATH + "/../gaussianmap.npy"
 
+FILE_10 = PATH + "/fixtures/small_smocube.npy"
+FILE_11 = PATH + "/../small_smocube.npy"
+
 @pytest.fixture
 def original_chimap():
     o_chimap = np.load(FILE_0)
@@ -54,7 +57,8 @@ def original_smocube():
 
 def test_smocube(original_smocube) -> None:
     new_smocube = np.load(FILE_7)
-    assert np.array_equal(original_smocube, new_smocube)
+    # assert np.array_equal(original_smocube, new_smocube)
+    assert np.allclose(original_smocube, new_smocube)
 
 @pytest.fixture
 def original_gmap():
@@ -64,3 +68,12 @@ def original_gmap():
 def test_gmap(original_gmap) -> None:
     new_gmap = np.load(FILE_9)
     assert np.array_equal(original_gmap, new_gmap)
+
+@pytest.fixture
+def original_small_smocube():
+    small_smocube = np.load(FILE_10)
+    return small_smocube
+
+def test_small_smocube(original_small_smocube) -> None:
+    new_small_smocube = np.load(FILE_11)
+    assert np.array_equal(original_small_smocube, new_small_smocube)

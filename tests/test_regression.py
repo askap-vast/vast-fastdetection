@@ -6,6 +6,7 @@ from pandas.testing import assert_frame_equal
 # result file to compare with
 PATH = os.path.dirname(__file__)
 RES_FILE_1 = PATH + "/fixtures/detection_results/output_cand.csv"
+RES_FILE_3 = PATH + "/fixtures/"
 
 # generated data
 RES_FILE_2 = PATH + "/../output/output_beam14_cand.csv"
