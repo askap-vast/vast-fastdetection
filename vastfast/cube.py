@@ -575,17 +575,17 @@ def _conv_1d(arr, kernel):
         return arr_res
 
 def _process_block(arr1, block_info=None):
-    logger.info(block_info)
+    # logger.info(block_info)
     kernel = Gaussian1DKernel(stddev=4)
     res = np.apply_along_axis(_conv_1d, axis=2, arr=arr1, kernel=kernel)
-    logger.info("process: {}".format(os.getpid()))
+    # logger.info("process: {}".format(os.getpid()))
     return res
 
 
 def _get_gmap(sigcube):
     # tt = da.map_blocks(_process_block, sigcube, chunks=(100,100,40))
     tt = da.map_blocks(_process_block, sigcube)
-    logger.info("chunksize: {}".format(tt.chunksize))
+    # logger.info("chunksize: {}".format(tt.chunksize))
     res = da.nanmax(tt, axis=2) - da.nanmean(tt, axis=2)  
-    print("res chunksize: ", res.chunksize)
+    logger.info("res chunksize: {}".format(res.chunksize))
     return res  
