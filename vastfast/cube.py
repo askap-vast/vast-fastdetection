@@ -478,8 +478,8 @@ class Filter:
 
     def _gmap(self):
         sigcube_t = self.sigcube.transpose(1,2,0).copy(order="C")
-        # da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,40))
-        da_sigcube_t = da.from_array(sigcube_t)
+        time_dim = sigcube_t[2]
+        da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,time_dim))
         logger.info("chunksize: {}".format(da_sigcube_t.chunksize))
         print("sig cube now: ", type(da_sigcube_t), da_sigcube_t.shape)
         da_gmap = _get_gmap(da_sigcube_t)
