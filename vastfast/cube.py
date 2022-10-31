@@ -574,7 +574,7 @@ def _conv_1d(arr, kernel):
         arr_res = convolve(arr, kernel)
         return arr_res
 
-def _process_block(arr1, block_info=None):
+def _process_block(arr1):
     # logger.info(block_info)
     kernel = Gaussian1DKernel(stddev=4)
     res = np.apply_along_axis(_conv_1d, axis=2, arr=arr1, kernel=kernel)
