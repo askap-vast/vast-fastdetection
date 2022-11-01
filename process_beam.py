@@ -21,19 +21,18 @@ outdir_beam = create_out_beam(OUT_DIR, beam)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s: %(message)s")
-file_handler = logging.FileHandler(outdir_beam + '/beam{:02}.log'.format(beam), 'w+')
+file_handler = logging.FileHandler(outdir_beam + '/beam{:02}.log'.format(beam))
 file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
-# logger.handlers.clear()
+logger.handlers.clear()
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
 
 
 def main():
-    print("main logger: ", logger.handlers)
     logger.info("============")
     logger.info("Reading input files...")
     # input data: short images

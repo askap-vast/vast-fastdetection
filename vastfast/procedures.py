@@ -47,7 +47,6 @@ class Procedures():
 
     def _get_sigcube(self):
         """get sigcube"""
-        print("procedure logger: ", logger.name)
         logger.info("============")
         logger.info("Building the cube...")
         cube = Cube(self.imagelist)

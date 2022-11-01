@@ -28,10 +28,8 @@ from astropy.utils.exceptions import AstropyWarning, AstropyDeprecationWarning
 from skimage.feature import peak_local_max
 from scipy.interpolate import interp2d
 
-import multiprocessing as mp
-from multiprocessing.managers import SharedMemoryManager
-
-from vastfast.fastFunc import G2D
+from .fastFunc import G2D
+from .setting import CHUNK_0, CHUNK_1
 
 
 
@@ -444,8 +442,8 @@ class Filter:
         # covert cubes into dask array
         da_sig = da.from_array(self.sigcube)
         da_rms = da.from_array(self.rmscube)
-        logger.info("chimap calculation -- sigcube chunksize: {}".format(da_sig.chunksize))
-        logger.info("chimap calculation -- rmscube chunksize: {}".format(da_rms.chunksize))
+        logger.info("chisquare map calculation using dask -- sigcube chunksize: {}".format(da_sig.chunksize))
+        logger.info("chisquare map calculation using dask -- rmscube chunksize: {}".format(da_rms.chunksize))
 
         # freedom
         nu = da_sig.shape[0] - 1
@@ -460,7 +458,8 @@ class Filter:
         
         res = da.sum(da.square(data), axis=0) / nu
         logger.info("chi map res chunksize: {}".format(res.chunksize))
-        nres = res.compute(num_workers=1)
+        # nres = res.compute(num_workers=1)
+        nres = res.compute()
         return nres
         
     
@@ -473,8 +472,8 @@ class Filter:
         sigcube_t = self.sigcube.transpose(1,2,0).copy(order="C")
         logger.info("Transposed sigcube shape: {}".format(sigcube_t.shape))
         time_dim = sigcube_t.shape[2]
-        da_sigcube_t = da.from_array(sigcube_t, chunks=(100,100,time_dim))
-        logger.info("chunksize: {}".format(da_sigcube_t.chunksize))
+        da_sigcube_t = da.from_array(sigcube_t, chunks=(CHUNK_0,CHUNK_1,time_dim))
+        logger.info("gaussian map calculation using dask -- transposed sigcube chunksize: {}".format(da_sigcube_t.chunksize))
         
         da_gmap = _get_gmap(da_sigcube_t)
         gmap = da_gmap.compute(scheduler="processes", num_workers=4)
@@ -501,15 +500,17 @@ class Filter:
         # convert cubes to dask array
         da_sig = da.from_array(self.sigcube)
         da_rms = da.from_array(self.rmscube)
-        logger.info("peakmap calculation -- sigcube chunksize: {}".format(da_sig.chunksize))
-        logger.info("peakmap calculation -- rmscube chunksize: {}".format(da_rms.chunksize))
+        logger.info("peak map calculation using dask -- sigcube chunksize: {}".format(da_sig.chunksize))
+        logger.info("peak map calculation using dask -- rmscube chunksize: {}".format(da_rms.chunksize))
 
         snr = da_sig / da_rms
         
         # return (np.nanmax(self.sigcube, axis=0) - np.nanmedian(self.sigcube, axis=0)) 
         res = (da.nanmax(snr, axis=0) - da.nanmedian(snr, axis=0)) 
-        logger.info("peak map res chunksize: {}".format(res.chunksize))
-        nres = res.compute(num_workers=1)
+        logger.info("peak map calculation using dask -- result chunksize: {}".format(res.chunksize))
+        # nres = res.compute(num_workers=1)
+        nres = res.compute()
+        print("peak dask dir: ", dir(nres))
         return nres
     
     
@@ -518,10 +519,10 @@ class Filter:
         """        
         # convert cubes to dask array
         da_sig = da.from_array(self.sigcube)
-        logger.info("chimap calculation -- sigcube chunksize: {}".format(da_sig.chunksize))
+        logger.info("std map calculation using dask -- sigcube chunksize: {}".format(da_sig.chunksize))
 
         res = da.nanstd(da_sig, axis=0)
-        logger.info("std map res chunksize: {}".format(res.chunksize))
+        logger.info("std map calculation using dask -- result chunksize: {}".format(res.chunksize))
         nres = res.compute(num_workers=1)
         return nres
     
@@ -576,17 +577,17 @@ def _conv_1d(arr, kernel):
         return arr_res
 
 def _process_block(arr1, block_info=None):
-    logger.info(block_info)
     kernel = Gaussian1DKernel(stddev=4)
     res = np.apply_along_axis(_conv_1d, axis=2, arr=arr1, kernel=kernel)
-    logger.info("process: {}".format(os.getpid()))
+    logger.debug(block_info)
+    logger.debug("process: {}".format(os.getpid()))
     return res
 
 
 def _get_gmap(sigcube):
     # tt = da.map_blocks(_process_block, sigcube, chunks=(100,100,40))
     tt = da.map_blocks(_process_block, sigcube)
-    # logger.info("chunksize: {}".format(tt.chunksize))
+    logger.info("gaussian map calculation using dask -- blocked sigcube chunksize: {}".format(tt.chunksize))
     res = da.nanmax(tt, axis=2) - da.nanmean(tt, axis=2)  
-    logger.info("res chunksize: {}".format(res.chunksize))
+    logger.info("gaussian map calculation using dask -- result chunksize: {}".format(res.chunksize))
     return res  
