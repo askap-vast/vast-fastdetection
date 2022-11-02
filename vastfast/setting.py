@@ -2,8 +2,8 @@
 OUT_PREFIX = "output"
 
 # list of maps 
-KTYPELIST = ['chisquare', 'peak', 'std']
-# KTYPELIST = ['chisquare', 'peak', 'std', 'gaussian']
+# KTYPELIST = ['chisquare', 'peak', 'std']
+KTYPELIST = ['chisquare', 'peak', 'std', 'gaussian']
 
 
 # Gaussian width

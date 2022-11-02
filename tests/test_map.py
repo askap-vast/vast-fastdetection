@@ -12,14 +12,14 @@ FILE_3 = PATH + "/../peakmap.npy"
 FILE_4 = PATH + "/fixtures/stdmap.npy"
 FILE_5 = PATH + "/../stdmap.npy"
 
-FILE_6 = PATH + "/fixtures/smocube.npy"
-FILE_7 = PATH + "/../smocube.npy"
+# FILE_6 = PATH + "/fixtures/smocube.npy"
+# FILE_7 = PATH + "/../smocube.npy"
 
 FILE_8 = PATH + "/fixtures/gaussianmap.npy"
 FILE_9 = PATH + "/../gaussianmap.npy"
 
-FILE_10 = PATH + "/fixtures/small_smocube.npy"
-FILE_11 = PATH + "/../small_smocube.npy"
+# FILE_10 = PATH + "/fixtures/small_smocube.npy"
+# FILE_11 = PATH + "/../small_smocube.npy"
 
 @pytest.fixture
 def original_chimap():
@@ -50,15 +50,15 @@ def test_stdmap(original_stdmap) -> None:
     new_stdmap = np.load(FILE_5)
     assert np.allclose(original_stdmap, new_stdmap)
 
-@pytest.fixture
-def original_smocube():
-    smocube = np.load(FILE_6)
-    return smocube
+# @pytest.fixture
+# def original_smocube():
+#     smocube = np.load(FILE_6)
+#     return smocube
 
-def test_smocube(original_smocube) -> None:
-    new_smocube = np.load(FILE_7)
-    # assert np.array_equal(original_smocube, new_smocube)
-    assert np.allclose(original_smocube, new_smocube)
+# def test_smocube(original_smocube) -> None:
+#     new_smocube = np.load(FILE_7)
+#     # assert np.array_equal(original_smocube, new_smocube)
+#     assert np.allclose(original_smocube, new_smocube)
 
 @pytest.fixture
 def original_gmap():
@@ -69,11 +69,11 @@ def test_gmap(original_gmap) -> None:
     new_gmap = np.load(FILE_9)
     assert np.array_equal(original_gmap, new_gmap)
 
-@pytest.fixture
-def original_small_smocube():
-    small_smocube = np.load(FILE_10)
-    return small_smocube
+# @pytest.fixture
+# def original_small_smocube():
+#     small_smocube = np.load(FILE_10)
+#     return small_smocube
 
-def test_small_smocube(original_small_smocube) -> None:
-    new_small_smocube = np.load(FILE_11)
-    assert np.array_equal(original_small_smocube, new_small_smocube)
+# def test_small_smocube(original_small_smocube) -> None:
+#     new_small_smocube = np.load(FILE_11)
+#     assert np.array_equal(original_small_smocube, new_small_smocube)

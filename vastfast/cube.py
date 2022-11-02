@@ -460,6 +460,7 @@ class Filter:
         logger.info("chi map res chunksize: {}".format(res.chunksize))
         # nres = res.compute(num_workers=1)
         nres = res.compute()
+        # np.save("chimap", nres)
         return nres
         
     
@@ -477,7 +478,7 @@ class Filter:
         
         da_gmap = _get_gmap(da_sigcube_t)
         gmap = da_gmap.compute(scheduler="processes", num_workers=nprocess)
-        np.save("gmap_test", gmap)
+        # np.save("gaussianmap", gmap)
         return gmap
         
 
@@ -509,7 +510,7 @@ class Filter:
         logger.info("peak map calculation using dask -- result chunksize: {}".format(res.chunksize))
         # nres = res.compute(num_workers=1)
         nres = res.compute()
-        print("peak dask dir: ", dir(nres))
+        # np.save("peakmap", nres)
         return nres
     
     
@@ -524,6 +525,7 @@ class Filter:
         logger.info("std map calculation using dask -- result chunksize: {}".format(res.chunksize))
         # nres = res.compute(num_workers=1)
         nres = res.compute()
+        # np.save("stdmap", nres)
         return nres
     
     
