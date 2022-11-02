@@ -1,15 +1,9 @@
-# directory of data 
-INPUT_PATH = "../test_data/SB9596_beam14_casa/"
-
-# default output directory
-OUT_DIR = "./output"
-
 # default prefix for output files 
 OUT_PREFIX = "output"
 
 # list of maps 
-# KTYPELIST = ['chisquare', 'peak', 'std']
-KTYPELIST = ['chisquare', 'peak', 'std', 'gaussian']
+KTYPELIST = ['chisquare', 'peak', 'std']
+# KTYPELIST = ['chisquare', 'peak', 'std', 'gaussian']
 
 
 # Gaussian width
@@ -21,3 +15,4 @@ G_WIDTH = 4
 # NOTICE: if the chunksize is too big, it will result in out-of-memory issue or kill the process
 CHUNK_0 = 100
 CHUNK_1 = 100
+

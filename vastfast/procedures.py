@@ -8,7 +8,8 @@ import  shutil
 from .cube import Cube, Filter
 from .plot import Candidates, Products, combine_csv
 from .exceptions import *
-from .setting import G_WIDTH
+from .setting import OUT_PREFIX, KTYPELIST, G_WIDTH
+
 logger = logging.getLogger(__name__)
 
 def create_out_beam(outdir, beam):
@@ -18,20 +19,19 @@ def create_out_beam(outdir, beam):
     return outdir_beam
 
 class Procedures():
-    def __init__(self, imagelist, beam, catalogue, outdir, out_prefix, outdir_beam, ktypelist, deepimage=None):
+    def __init__(self, imagelist, beam, catalogue, outdir, outdir_beam, deepimage=None, nprocess=4):
         self.imagelist = imagelist
         self.beam = beam
         self.catalogue = catalogue
         self.outdir = outdir
-        self.out_prefix = out_prefix
         self.outdir_beam = outdir_beam
-        self.ktypelist = ktypelist
         self.deepimage = deepimage
+        self.nprocess = nprocess
         self._create_outfile_names()
 
     def _create_outfile_names(self):
         # output file prefix
-        self.name = self.out_prefix + "_beam{:02}".format(self.beam)
+        self.name = OUT_PREFIX + "_beam{:02}".format(self.beam)
         # output tar file
         self.tar_name = self.outdir + "/output_beam{:02}.tar.gz".format(self.beam)
 
@@ -78,14 +78,14 @@ class Procedures():
     def _get_map(self, f, ktype):
         logger.info("===== Matched Filter =====")
         logger.info("Kernel match filter '{}'...".format(ktype))
-        f.fmap(ktype, width=G_WIDTH)
+        f.fmap(ktype, width=G_WIDTH, nprocess=self.nprocess)
         logger.info("Kernel match Done")
         f.tofits(fitsname="{}/{}_{}.fits".format(self.outdir_beam, self.name, ktype), imagename=self.imagelist[0])
         logger.info("Save the results to {}_{}.fits".format(self.name, ktype))
 
     def get_map_all(self, f):
         """get maps of given ktype"""
-        for ktype in self.ktypelist:
+        for ktype in KTYPELIST:
             try:
                 self._get_map(f, ktype)
             except Exception:
@@ -93,7 +93,7 @@ class Procedures():
 
     def read_map_list(self):
         maps = {}
-        for ktype in self.ktypelist:
+        for ktype in KTYPELIST:
             map_name = ktype+ "_map"
             maps[map_name] = "{}/{}_{}.fits".format(self.outdir_beam, self.name, ktype)
 

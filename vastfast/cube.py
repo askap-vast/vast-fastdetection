@@ -356,7 +356,7 @@ class Filter:
         self.cube_local_rms()
         
     
-    def fmap(self, ktype, width=4):
+    def fmap(self, ktype, width=4, nprocess=4):
         self.width = width
 
         if ktype == "chisquare":
@@ -369,7 +369,7 @@ class Filter:
             self.map = self._stdmap()
 
         elif ktype == "gaussian":
-            self.map = self._gmap()
+            self.map = self._gmap(nprocess)
         
         
         
@@ -468,7 +468,7 @@ class Filter:
     def _gaussian(self):
         return Gaussian1DKernel(stddev=self.width)
 
-    def _gmap(self):
+    def _gmap(self, nprocess):
         sigcube_t = self.sigcube.transpose(1,2,0).copy(order="C")
         logger.info("Transposed sigcube shape: {}".format(sigcube_t.shape))
         time_dim = sigcube_t.shape[2]
@@ -476,8 +476,7 @@ class Filter:
         logger.info("gaussian map calculation using dask -- transposed sigcube chunksize: {}".format(da_sigcube_t.chunksize))
         
         da_gmap = _get_gmap(da_sigcube_t)
-        gmap = da_gmap.compute(scheduler="processes", num_workers=4)
-        # gmap = da_gmap.compute()
+        gmap = da_gmap.compute(scheduler="processes", num_workers=nprocess)
         np.save("gmap_test", gmap)
         return gmap
         
@@ -523,7 +522,8 @@ class Filter:
 
         res = da.nanstd(da_sig, axis=0)
         logger.info("std map calculation using dask -- result chunksize: {}".format(res.chunksize))
-        nres = res.compute(num_workers=1)
+        # nres = res.compute(num_workers=1)
+        nres = res.compute()
         return nres
     
     
@@ -579,8 +579,8 @@ def _conv_1d(arr, kernel):
 def _process_block(arr1, block_info=None):
     kernel = Gaussian1DKernel(stddev=4)
     res = np.apply_along_axis(_conv_1d, axis=2, arr=arr1, kernel=kernel)
-    logger.debug(block_info)
-    logger.debug("process: {}".format(os.getpid()))
+    print(block_info)
+    print("process: {}".format(os.getpid()))
     return res
 
 
