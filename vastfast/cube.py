@@ -13,7 +13,6 @@ Generate a significance cube for transients detection
 import logging
 import warnings
 import numpy as np
-from functools import partial
 import dask.array as da
 import os
 
@@ -38,9 +37,6 @@ warnings.filterwarnings('ignore',
                         category=AstropyDeprecationWarning, append=True)
 
 
-# logging.basicConfig()
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ArgumentError(Exception):
