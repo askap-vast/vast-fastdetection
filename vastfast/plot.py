@@ -25,6 +25,8 @@ from astropy.nddata.utils import Cutout2D
 from astropy.table import Table, vstack
 from astropy.time import Time
 
+import warnings
+warnings.filterwarnings("ignore")
 
 import logging
 
