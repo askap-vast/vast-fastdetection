@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import glob
 
@@ -179,17 +180,17 @@ logger.info("========= Plotting =============")
 
 final_csv = "{}/{}_final.csv".format(outdir, name)
 
-p = Products(final_csv)
-p.generate_slices(imagelist=imagelist, 
-                  savename='{}/{}_slices'.format(outdir, name))
-p.generate_cutout(fitsname=deepimage, 
-                  savename='{}/{}_deepcutout'.format(outdir, name))
-p.generate_lightcurve(imagelist=imagelist, 
-                      deepname=deepimage, 
-                      savename='{}/{}_lightcurve'.format(outdir, name))
-
-
-
+if os.path.exists(final_csv):
+    p = Products(final_csv)
+    p.generate_slices(imagelist=imagelist, 
+                      savename='{}/{}_slices'.format(outdir, name))
+    p.generate_cutout(fitsname=deepimage, 
+                      savename='{}/{}_deepcutout'.format(outdir, name))
+    p.generate_lightcurve(imagelist=imagelist, 
+                          deepname=deepimage, 
+                          savename='{}/{}_lightcurve'.format(outdir, name))
+else:
+    logger.info("Final csv {} not exists. ".format(final_csv))
 
 
 logger.info("====== Finished. =====")
