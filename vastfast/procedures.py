@@ -14,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 def create_out_beam(outdir, beam):
     outdir_beam = outdir + "/output_beam{:02}".format(beam)
-    if not os.path.exists(outdir_beam):
-        os.mkdir(outdir_beam)
+    os.makedirs(outdir_beam, exist_ok=True)
     return outdir_beam
 
 class Procedures():

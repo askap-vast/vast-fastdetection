@@ -8,10 +8,9 @@ authors = ["  < >"]
 python = "^3.8"
 numpy = "^1.20.0,<1.23.2"
 scipy = "^1.5.2"
-pyregion ="<2.1.1"
-astropy = "^5.1"
+astropy = "5.1"
 aplpy = "^2.1.0"
-matplotlib = "^3.5.2"
+matplotlib = "^3.5.2,<3.6"
 scikit-image = "^0.19.3"
 dask = {extras = ["complete"], version = "^2022.9.1"}
 
