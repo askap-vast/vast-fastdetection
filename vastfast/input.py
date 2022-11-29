@@ -9,12 +9,12 @@ logger = logging.getLogger(__name__)
 
 def read_shortimage(path, beam):
     """Read in short images"""
-    simage_files = path +"/" + "beam{:02}*".format(beam)
+    simage_files = path +"/" + "beam{:02}*.fits".format(beam)
     simagelist = sorted(glob.glob(simage_files))
     if len(simagelist) > 1:
         logger.info("Load folder: {}".format(path))
         logger.info("Process {} short images".format(len(simagelist)))
-        # logger.info(imagelist)
+        logger.info(imagelist)
     else:
         raise NoInputError()
         
@@ -23,7 +23,7 @@ def read_shortimage(path, beam):
 
 def read_deepcat(path, beam):
     """Read in deep catalogue"""
-    cat_file = path + "/" + "*beam{:02}*.vot".format(beam)
+    cat_file = path + "/" + "selavy-image.i*beam{:02}*.components.xml".format(beam)
     cats = sorted(glob.glob(cat_file))
     if len(cats) == 1:
         cat = cats[0]
@@ -42,7 +42,7 @@ def read_deepcat(path, beam):
 
 def read_deepimage(path, beam):
     """Read in deep catalogue"""
-    dimage_file = path + "/" + "*beam{:02}*.tt0.fits".format(beam)
+    dimage_file = path + "/" + "image.i.*beam{:02}*taylor.0.restored.fits".format(beam)
     dimages = sorted(glob.glob(dimage_file))
     if len(dimages) == 1:
         dimage = dimages[0]

@@ -741,33 +741,35 @@ class Candidates:
     #     self.fwhm = 3e8/self.fi.header['CRVAL3']/12 * 180/np.pi * u.degree
         
         
-        
-        
-    def read_catalogue(self, catalogue, tabletype="aegean"):
+    def read_catalogue(self, catalogue, tabletype="selavy"):
         """Read the deep image catalogue
-        
-        
+                
         tabletype: "aegean" or "selavy"
-            current only support aegean
+            default table input type is selavy 
         """
-        
+
         logger.info("Read deep catalogue {}...".format(catalogue))
         self.catalogue = Table.read(catalogue)
-        # logger.info(self.catalogue.info)
-        
-        
-        # for Aegean convention
+
+        if tabletype == "aegean":
+            # for Aegean convention
+            label_ra, label_dec = "ra", "dec"
+            label_peak_flux, label_int_flux = "peak_flux", "int_flux"
+        elif tabletype == "selavy":
+            label_ra, label_dec = "col_ra_deg_cont", "col_dec_deg_cont"
+            label_peak_flux, label_int_flux = "col_flux_peak", "col_flux_int"
+
         # deep catalogue sources coordinates
-        self.deep_src = SkyCoord(self.catalogue['ra'], 
-                                 self.catalogue['dec'], 
+        self.deep_src = SkyCoord(self.catalogue[label_ra],
+                                 self.catalogue[label_dec],
                                  unit=u.degree)
-        
+
         # peak flux
-        self.deep_peak_flux = np.array(self.catalogue['peak_flux'])
-        
+        self.deep_peak_flux = np.array(self.catalogue[label_peak_flux])
+
         # integrated flux
-        self.deep_int_flux = np.array(self.catalogue['int_flux'])
-        
+        self.deep_int_flux = np.array(self.catalogue[label_int_flux])
+
         # get name
         # for selavy just read the column 'col_component_name'
         # for aegean you want to use following code to read from scratch 
@@ -775,7 +777,41 @@ class Candidates:
              src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
              src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
              for src in self.deep_src
-            ]
+            ]  
+        
+    # def read_catalogue(self, catalogue, tabletype="aegean"):
+    #     """Read the deep image catalogue
+        
+        
+    #     tabletype: "aegean" or "selavy"
+    #         current only support aegean
+    #     """
+        
+    #     logger.info("Read deep catalogue {}...".format(catalogue))
+    #     self.catalogue = Table.read(catalogue)
+    #     # logger.info(self.catalogue.info)
+        
+        
+    #     # for Aegean convention
+    #     # deep catalogue sources coordinates
+    #     self.deep_src = SkyCoord(self.catalogue['ra'], 
+    #                              self.catalogue['dec'], 
+    #                              unit=u.degree)
+        
+    #     # peak flux
+    #     self.deep_peak_flux = np.array(self.catalogue['peak_flux'])
+        
+    #     # integrated flux
+    #     self.deep_int_flux = np.array(self.catalogue['int_flux'])
+        
+    #     # get name
+    #     # for selavy just read the column 'col_component_name'
+    #     # for aegean you want to use following code to read from scratch 
+    #     self.deep_name = ['J' + \
+    #          src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
+    #          src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
+    #          for src in self.deep_src
+    #         ]
         
         
         

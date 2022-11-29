@@ -3,7 +3,8 @@ import logging
 import os
 import glob
 import tarfile
-import  shutil
+import shutil
+from random import randrange
 
 from .cube import Cube, Filter
 from .plot import Candidates, Products, combine_csv
@@ -13,7 +14,7 @@ from .setting import OUT_PREFIX, KTYPELIST, G_WIDTH
 logger = logging.getLogger(__name__)
 
 def create_out_beam(outdir, beam):
-    outdir_beam = outdir + "/output_beam{:02}".format(beam)
+    outdir_beam = outdir + "/output_beam{:02}_tmp{}".format(beam, randrange(1000,10000))
     os.makedirs(outdir_beam, exist_ok=True)
     return outdir_beam
 
@@ -26,13 +27,25 @@ class Procedures():
         self.outdir_beam = outdir_beam
         self.deepimage = deepimage
         self.nprocess = nprocess
+        self._read_sbid()
         self._create_outfile_names()
+
+    def _read_sbid(self):
+        """read SBID"""
+        found_id = 0
+        self.sbid = "NO_SBID"
+        slice_list = self.catalogue.split(".")
+        for s in slice_list:
+            if s.startswith("SB") and found_id == 0:
+                self.sbid = s
+                found_id = 1
+        
 
     def _create_outfile_names(self):
         # output file prefix
-        self.name = OUT_PREFIX + "_beam{:02}".format(self.beam)
+        self.name = OUT_PREFIX + "_{}_beam{:02}".format(self.sbid, self.beam)
         # output tar file
-        self.tar_name = self.outdir + "/output_beam{:02}.tar.gz".format(self.beam)
+        self.tar_name = self.outdir + "/{}.tar.gz".format(self.name)
 
     def run_all_steps(self):
         sigcube = self.get_sigcube()
