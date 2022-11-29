@@ -14,7 +14,7 @@ def read_shortimage(path, beam):
     if len(simagelist) > 1:
         logger.info("Load folder: {}".format(path))
         logger.info("Process {} short images".format(len(simagelist)))
-        logger.info(imagelist)
+        logger.info(simagelist)
     else:
         raise NoInputError()
         
