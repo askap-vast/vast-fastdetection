@@ -454,8 +454,8 @@ class Filter:
         
         res = da.sum(da.square(data), axis=0) / nu
         logger.info("chi map res chunksize: {}".format(res.chunksize))
-        # nres = res.compute(num_workers=1)
-        nres = res.compute()
+        nres = res.compute(num_workers=1)
+        # nres = res.compute()
         # np.save("chimap", nres)
         return nres
         
@@ -504,8 +504,8 @@ class Filter:
         # return (np.nanmax(self.sigcube, axis=0) - np.nanmedian(self.sigcube, axis=0)) 
         res = (da.nanmax(snr, axis=0) - da.nanmedian(snr, axis=0)) 
         logger.info("peak map calculation using dask -- result chunksize: {}".format(res.chunksize))
-        # nres = res.compute(num_workers=1)
-        nres = res.compute()
+        nres = res.compute(num_workers=1)
+        # nres = res.compute()
         # np.save("peakmap", nres)
         return nres
     
@@ -519,8 +519,8 @@ class Filter:
 
         res = da.nanstd(da_sig, axis=0)
         logger.info("std map calculation using dask -- result chunksize: {}".format(res.chunksize))
-        # nres = res.compute(num_workers=1)
-        nres = res.compute()
+        nres = res.compute(num_workers=1)
+        # nres = res.compute()
         # np.save("stdmap", nres)
         return nres
     
