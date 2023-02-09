@@ -6,55 +6,51 @@ ARG TARGETPLATFORM
 ENV TZ=Etc/UTC
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq \
-      && apt-get install -yq tzdata \
-      && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
-      && dpkg-reconfigure -f noninteractive tzdata \
+    #   && apt-get install -yq tzdata \
+    #   && ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime \
+    #   && dpkg-reconfigure -f noninteractive tzdata \
       && apt-get -y --no-install-recommends install \
          git \
          wget \
-         vim \
-         vim-gnome \
-         openssh-server \
-         libbz2-dev \
          python3-dev \
          python3-pip \
          python-pyparsing \
          build-essential \
-         cmake \
-         gdb \
-         g++ \
-         ca-certificates \
-         gfortran \
-         libgfortran3 \
-         libc6 \
-         libhwloc-dev \
-         libibverbs-dev \
-         libopenmpi-dev \
-         imagemagick \
-         libmagickcore-dev \
-         libmagickwand-dev \
-         libmagic-dev \
-         fuse \
-         libfuse2 \
-         libclang-dev \
-         libssl-dev \
-         libffi-dev \
-         libncurses5-dev \
-         libreadline-dev \
-         flex \
-         bison \
-         libblas-dev \
-         liblapacke-dev \
-         libcfitsio-dev \
-         libpthread-stubs0-dev \
-         libgsl-dev \
-         wcslib-dev \
-         libfftw3-dev \
+        #  cmake \
+        #  gdb \
+        #  g++ \
+        #  ca-certificates \
+        #  gfortran \
+        #  libgfortran3 \
+        #  libc6 \
+        #  libhwloc-dev \
+        #  libibverbs-dev \
+        #  libopenmpi-dev \
+        #  imagemagick \
+        #  libmagickcore-dev \
+        #  libmagickwand-dev \
+        #  libmagic-dev \
+        #  fuse \
+        #  libfuse2 \
+        #  libclang-dev \
+        #  libssl-dev \
+        #  libffi-dev \
+        #  libncurses5-dev \
+        #  libreadline-dev \
+        #  flex \
+        #  bison \
+        #  libblas-dev \
+        #  liblapacke-dev \
+        #  libcfitsio-dev \
+        #  libpthread-stubs0-dev \
+        #  libgsl-dev \
+        #  wcslib-dev \
+        #  libfftw3-dev \
          python-numpy \
          python-setuptools \
-         libx11-dev \
-         xauth \
-         xorg \
+        #  libx11-dev \
+        #  xauth \
+        #  xorg \
          python3-pyqt5 \
          libboost-python-dev \
       && apt-get clean all \
@@ -138,6 +134,7 @@ COPY . .
 RUN /venv/bin/python3.8 -m pip install --upgrade pip
 RUN pip3 install poetry
 RUN poetry install
+# RUN pip3 install pyregion
 ## +++++++++++++++++ Build casacore from source +++++++++++++++++++++
 ## Build casacore first - get measures data as a first step:
 ## TODO: We need a way to link measures data to the updated version
