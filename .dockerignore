@@ -1,3 +1,4 @@
 data/
 venv/
-poetry.lock
+tests/
+docker/

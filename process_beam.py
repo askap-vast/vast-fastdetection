@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import sys
 import logging
 import configparser
@@ -22,6 +22,31 @@ input_path = config["PATH"]["input_dir"]
 out_dir = config["PATH"]["out_dir"]
 
 nprocess = int(config["RESOURCE"]["n_cpu"])
+
+
+## ========= override defaults from docker config ===========
+
+try:
+    config = configparser.ConfigParser()
+    config.read("/input/app_settings.ini")
+except Exception as e:
+    print(e)
+else:
+    try:
+        nprocess = int(config["RESOURCE"]["n_cpu"])
+    except:
+        pass
+
+    try:
+        beam = int(config["PROCESS"]["beam"])
+    except:
+        pass
+
+    try:
+        input_directory_name = config["PROCESS"]["input_directory_name"]
+        input_path = os.path.join(input_path, input_directory_name)
+    except:
+        pass
 
 
 ## ========= beam output directory ========= 
