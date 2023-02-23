@@ -28,15 +28,12 @@ RUN apt-get update && apt-get upgrade -y \
     git \
     wget \
     python3.8-dev \
-    libmariadb-dev \
   # Installing `poetry` package manager:
   && curl -sSL https://install.python-poetry.org | python3 \
   && poetry --version \
   # Cleaning cache:
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /code
 
 COPY ./pyproject.toml ./poetry.lock /code/
 
