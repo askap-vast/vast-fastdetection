@@ -6,8 +6,9 @@ import sys
 
 VIS = sys.argv[-4]
 DIR = sys.argv[-3]
-SBID = sys.argv[-2] # in format of SBxxx
-BEAM = sys.argv[-1] # in format of beam00
+SBID = sys.argv[-2] # in the format of SBxxx
+BEAM = sys.argv[-1] # in the format of beam00
+
 print("** NOTICE  ** path passed as arg:", VIS, DIR, SBID, BEAM)
 
 
