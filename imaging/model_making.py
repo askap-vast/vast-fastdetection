@@ -4,13 +4,10 @@ import os
 import sys
 
 
-VIS = sys.argv[-4]
-DIR = sys.argv[-3]
-SBID = sys.argv[-2] # in the format of SBxxx
-BEAM = sys.argv[-1] # in the format of beam00
+VIS = sys.argv[-2]
+imagename = sys.argv[-1] # recommend in format of SBxxx_beamxxx
 
-print("** NOTICE  ** path passed as arg:", VIS, DIR, SBID, BEAM)
-
+print("** NOTICE  ** path passed as arg:", VIS, imagename)
 
 imsize = 10000
 cell = ['2.5arcsec']
@@ -24,11 +21,6 @@ uvrange = '>1.0m' # >1.0m
 pbcor = False # True, False
 pblimit = -0.2 # 0.1, -0.2
 
-# move to working path 
-os.chdir(DIR)
-
-imagename = '%s_%s' % (SBID, BEAM)
-print('Reading %s, saving in %s as %s' % (VIS, DIR, imagename))
 
 # reset previous stored model (if there is)
 clearcal(vis=VIS)
@@ -105,11 +97,19 @@ tclean(
     )
 print('Made a deep image finished %s' % BEAM)
 
+
 # subtract model
 uvsub(vis=VIS)
 print('Model-subtraction %s Finished.' % BEAM)
 
+
 # convert image to fits file
-exportfits(imagename="%s.image.tt0"%imagename, 
-           fitsimage="%s.image.tt0.fits"%imagename)
+if nterm == 2:
+    exportfits(imagename="%s.image.tt0"%imagename, 
+            fitsimage="%s.image.tt0.fits"%imagename)
+elif nterm == 1:
+    exportfits(imagename="%s.image"%imagename, 
+            fitsimage="%s.image.fits"%imagename)
+else:
+    print("WARNING: uncompatible nterm number -->", nterm)
 
