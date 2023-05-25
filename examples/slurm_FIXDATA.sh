@@ -8,7 +8,7 @@
 #SBATCH --nodelist=hw-x86-cpu10
 #SBATCH --mem=50gb
 #SBATCH --output=/o9000/ASKAP/VAST/fast_survey/LOGS/slurm_FIXDATA_SB47253_beam00.output
-#SBATCH --output=/o9000/ASKAP/VAST/fast_survey/LOGS/slurm_FIXDATA_SB47253_beam00.error
+#SBATCH --error=/o9000/ASKAP/VAST/fast_survey/LOGS/slurm_FIXDATA_SB47253_beam00.error
 #SBATCH --export=all
 
 module use /home/app/modulefiles
