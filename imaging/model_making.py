@@ -22,9 +22,9 @@ pbcor = False # True, False
 pblimit = -0.2 # 0.1, -0.2
 
 
-# reset previous stored model (if there is)
-clearcal(vis=VIS)
-print('Reset all model and corrected data')
+# # reset previous stored model (if there is)
+# clearcal(vis=VIS)
+# print('Reset all model and corrected data')
 
 
 # # make a deep image
