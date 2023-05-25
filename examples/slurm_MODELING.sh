@@ -2,7 +2,7 @@
 
 #SBATCH --partition=all-x86-cpu
 #SBATCH --time=30:00:00
-#SBATCH --job-name=MOD01
+#SBATCH --job-name=MOD-01
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --nodelist=hw-x86-cpu10
