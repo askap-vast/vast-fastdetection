@@ -25,7 +25,7 @@ module load python/cpu-3.7.4
 
 python $loc/tools/get_everything_ready.py $sbid $SCRIPTS
 
-mkdir $VIS
+cd $VIS
 bash $SCRIPTS/download_selavy.sh
 
 
