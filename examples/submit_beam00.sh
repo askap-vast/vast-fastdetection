@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Download and untar visibility
+bash ~/vast_fastdetection/examples/bash_GETDATA_beam00.sh
+
 # Rescale data (from askapsoft convention to CASA convention)
 # And fix beam positions
 FIXDATA=`sbatch ~/vast_fastdetection/examples/slurm_FIXDATA.sh | awk '{print $4}'`
