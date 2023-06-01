@@ -1,13 +1,12 @@
-#!/usr/bin/env sh
 
 import os
 import sys
 
 
-VIS = sys.argv[-2]
+vis = sys.argv[-2]
 imagename = sys.argv[-1]  # recommend in format of SBxxx_beamxxx
 
-print("** NOTICE  ** path passed as arg:", VIS, imagename)
+print("** NOTICE  ** path passed as arg:", vis, imagename)
 
 imsize = 4096
 cell = ['2.5arcsec']
@@ -23,13 +22,13 @@ pblimit = -0.2  # 0.1, -0.2
 
 
 # reset previous stored model (if there is)
-clearcal(vis=VIS)
+clearcal(vis=vis)
 print('Reset all model and corrected data')
 
 
 # make a deep image
 tclean(
-    vis=VIS,
+    vis=vis,
     selectdata=True,
     field='',
     spw='',
@@ -95,12 +94,12 @@ tclean(
     startmodel='',
     parallel=False
 )
-print('Made a deep image finished %s' % BEAM)
+print('Made a deep image finished %s' % imagename)
 
 
 # subtract model
-uvsub(vis=VIS)
-print('Model-subtraction %s Finished.' % BEAM)
+uvsub(vis=vis)
+print('Model-subtraction %s Finished.' % imagename)
 
 
 # convert image to fits file
@@ -118,3 +117,5 @@ print('Model-subtraction %s Finished.' % BEAM)
 
 exportfits(imagename="%s.image.tt0" % imagename,
            fitsimage="%s.image.tt0.fits" % imagename)
+
+
