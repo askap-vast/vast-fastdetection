@@ -13,11 +13,10 @@
 
 module use /home/app/modulefiles
 module load casa/5.0.0-218.el6
-module load python/cpu-3.6.5
+
 
 cd /o9000/ASKAP/VAST/fast_survey/SB47253/images
 
-echo TEST??????
 
 time casa --logfile /o9000/ASKAP/VAST/fast_survey/LOGS/casa_IMGFAST_SB47253_beam00.log --nogui -c ~/vast_fastdetection/imaging/short_imaging.py /o9000/ASKAP/VAST/fast_survey/SB47253/visibilities/scienceData.VAST_1806-25.SB47253.VAST_1806-25.beam00_averaged_cal.leakage.ms.corrected SB47253_beam00 10
 

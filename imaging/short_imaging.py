@@ -7,7 +7,7 @@ import numpy as np
 vis = sys.argv[-3]
 imagename = sys.argv[-2]  # recommend in format of SBxxx_beamxx
 step = sys.argv[-1]  # images time length - in unit of seconds
-print("** NOTICE  ** the args passed to casa was:", vis, imagename, step)
+print "** NOTICE  ** the args passed to casa was:" + vis + imagename + step
 
 
 # corrected, data
@@ -35,13 +35,13 @@ tb.open(vis)
 ############################
 
 # the ASKAP resolution is 9.97s, so we need a different workaround for 10s images
-if step <= 10:
+if ( step <= 10 ):
     from collections import Counter
     times = Counter(tb.getcol('TIME')).keys()
     times.sort()
     # time in fits is the middle time (but it doesn't matter as 10s is the sampling time, so it's the start, middle, and end time as well)
     times = np.array(times) - step/2
-    print("Input time length is {}s, using a slightly different way to get short images".format(step))
+    print "Input time length is {}s, using a slightly different way to get short images".format(step)
 
 else:
     times = tb.getcol('TIME')
@@ -50,7 +50,7 @@ else:
     # time in fits is therefore the START time 
     times = np.arange(start=np.min(times)-interval/2,
                       stop=np.max(times)+interval/2, step=step)
-    print("Input time length is {}s, i.e., {:.1f}m".format(step, step/60))
+    print "Input time length is {}s, i.e., {:.1f}m".format(step, step/60)
 
 
 tb.close()
@@ -72,4 +72,4 @@ for j in range(times.shape[0]):
     exportfits(imagename='%s.image' % imagename_j,
                fitsimage='%s.fits' % imagename_j)
 
-print('%s Finished. ' % imagename)
+print '%s Finished. ' % imagename
