@@ -6,7 +6,7 @@ import numpy as np
 vis = sys.argv[-3]
 imagename = sys.argv[-2]  # recommend in format of SBxxx_beamxx
 step = sys.argv[-1]  # images time length - in unit of seconds
-print("** NOTICE  ** the args passed to casa was :", vis, imagename, step)
+print("** NOTICE  ** the args passed to casa was:", vis, imagename, step)
 
 
 # corrected, data
