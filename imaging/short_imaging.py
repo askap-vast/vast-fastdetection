@@ -1,3 +1,4 @@
+#!/usr/bin/env sh 
 
 import os
 import sys
