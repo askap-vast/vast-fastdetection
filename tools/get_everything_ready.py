@@ -13,7 +13,7 @@ and catalogues. (Double check the completion of visibilities downloading and
 untar visibilities) 
 2. Run slurm_FIXDATA_beam??.sh (including rescale and fix dir)
 3. Run slurm_MODELING_beam??.sh (deep modeling)
-4. Run slurm_IMAFAST_beam??.sh (fast imaging, in either time interval)
+4. Run slurm_IMGFAST_beam??.sh (fast imaging, in either time interval)
 5. Run slurm_SELCAND_beam??.sh (select candidates)
 """
 
