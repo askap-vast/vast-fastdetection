@@ -34,13 +34,13 @@ path = sys.argv[-1] # output parent location
 ############################
 # Build file saving system structure 
 ############################
-path_data = os.join.path(path, 'data') # saving visibilities, selavy catalogues 
-path_models = os.join.path(path, 'models') 
-path_images = os.join.path(path, 'images')
-path_cand = os.join.path(path, 'candidates')
+path_data = os.path.join(path, 'data') # saving visibilities, selavy catalogues 
+path_models = os.path.join(path, 'models') 
+path_images = os.path.join(path, 'images')
+path_cand = os.path.join(path, 'candidates')
 
-path_scripts = os.join.path(path, 'scripts')
-path_logs = os.join.path(path, 'logfiles')
+path_scripts = os.path.join(path, 'scripts')
+path_logs = os.path.join(path, 'logfiles')
 
 
 def create_dir(dir):
@@ -142,7 +142,7 @@ for idx in range(36):
         fw.write(text + '\n')
         fw.write('\n')
 
-    print('Generate {} finished. '.format(savename))
+    print('Writing {}'.format(savename))
 
 
 ############################
@@ -173,7 +173,7 @@ with open(savename, 'w') as fw:
         fw.write("sleep 1s" + '\n')
         fw.write('\n')
 
-print('Generate {} finished. '.format(savename))
+print('Writing {}'.format(savename))
 
 
 ############################
@@ -204,7 +204,7 @@ with open(savename, 'w') as fw:
         fw.write("sleep 1s" + '\n')
         fw.write('\n')
 
-print('Generate {} finished. '.format(savename))
+print('Writing {}'.format(savename))
 
 
 
