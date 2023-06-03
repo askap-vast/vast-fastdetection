@@ -231,8 +231,8 @@ for idx in range(36):
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
         # fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
         fw.write('#SBATCH --mem=10gb' + '\n')
-        fw.write('--output='+os.path.join(path_logs, 'slurm_FIXDATA_{}.output'.format(affix)) + '\n')
-        fw.write('--error='+os.path.join(path_logs, 'slurm_FIXDATA_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_FIXDATA_{}.output'.format(affix)) + '\n')
+        fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_FIXDATA_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
         fw.write('\n')
 
@@ -253,7 +253,7 @@ for idx in range(36):
         fw.write(text + '\n')
         fw.write('\n')
 
-        text = 'time -p python {} {} {}'.format(
+        text = 'time -p python {} {}'.format(
             os.path.join(loc, 'fix_dir.py'), 
             path_file+'.corrected'
             )    
@@ -344,7 +344,7 @@ for idx in range(36):
         filename = vis[idx]['filename']
         path_file = os.path.join(path_data, filename) + '.corrected'
 
-        text = 'time casa --logfile {} --nogui -c {} {} {}'.format(
+        text = 'time casa --logfile {} --nogui -c {} {} {} {}'.format(
             os.path.join(path_logs, 'casa_IMGFAST_{}.log'.format(affix)), 
             os.path.join(loc, 'imaging', 'short_imaging.py'), 
             path_file, 
