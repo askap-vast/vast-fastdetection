@@ -30,6 +30,10 @@ import xmltodict
 sbid = sys.argv[-2]  # number only
 path = sys.argv[-1] # output parent location 
 
+loc='/home/ymwang/vast_fastdetection' # code location 
+
+#nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(1, 11) if j not in [4]] 
+exclude_nodes = ['purley-x86-cpu08', 'hw-x86-cpu04', 'hw-x86-cpu11']
 
 ############################
 # Build file saving system structure 
@@ -208,8 +212,149 @@ print('Writing {}'.format(savename))
 
 
 
+############################
+# Generate slurm_FIXDATA_??.sh
+############################
+
+for idx in range(36):
+    savename = os.path.join(path_scripts, 'slurm_FIXDATA_beam{:02d}.sh'.format(idx))
+    affix = 'SB{}_beam{:02d}'.format(sbid, idx)
+
+    with open(savename, 'w') as fw:
+        fw.write("#!/bin/bash" + '\n')
+        fw.write('\n')
+
+        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        fw.write('#SBATCH --time=1:00:00' + '\n')
+        fw.write('#SBATCH --job-name=FIX-{:02d}'.format(idx) + '\n')
+        fw.write('#SBATCH --nodes=1' + '\n')
+        fw.write('#SBATCH --ntasks-per-node=1' + '\n')
+        # fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        fw.write('#SBATCH --mem=10gb' + '\n')
+        fw.write('--output='+os.path.join(path_logs, 'slurm_FIXDATA_{}.output'.format(affix)) + '\n')
+        fw.write('--error='+os.path.join(path_logs, 'slurm_FIXDATA_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --export=all' + '\n')
+        fw.write('\n')
+
+        fw.write('module use /home/app/modulefiles' + '\n')
+        fw.write('module load casacore/cpu-py3.6.5-3.1.0' + '\n')
+        fw.write('\n')
+
+        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+
+        filename = vis[idx]['filename']
+        path_file = os.path.join(path_data, filename)
+
+        text = 'time -p python {} {} {}'.format(
+            os.path.join(loc, 'askapsoft_rescale.py'), 
+            path_file, path_file+'.corrected'
+            )        
+        fw.write(text + '\n')
+        fw.write('\n')
+
+        text = 'time -p python {} {} {}'.format(
+            os.path.join(loc, 'fix_dir.py'), 
+            path_file+'.corrected'
+            )    
+        fw.write(text + '\n')
+        fw.write('\n')
+
+    print('Writing {}'.format(savename))
 
 
+
+############################
+# Generate slurm_MODELING_??.sh
+############################
+
+for idx in range(36):
+    savename = os.path.join(path_scripts, 'slurm_MODELING_beam{:02d}.sh'.format(idx))
+    affix = 'SB{}_beam{:02d}'.format(sbid, idx)
+
+    with open(savename, 'w') as fw:
+        fw.write("#!/bin/bash" + '\n')
+        fw.write('\n')
+
+        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        fw.write('#SBATCH --time=10:00:00' + '\n')
+        fw.write('#SBATCH --job-name=MOD-{:02d}'.format(idx) + '\n')
+        fw.write('#SBATCH --nodes=1' + '\n')
+        fw.write('#SBATCH --ntasks-per-node=1' + '\n')
+        fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        fw.write('#SBATCH --mem=50gb' + '\n')
+        fw.write('--output='+os.path.join(path_logs, 'slurm_MODELING_{}.output'.format(affix)) + '\n')
+        fw.write('--error='+os.path.join(path_logs, 'slurm_MODELING_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --export=all' + '\n')
+        fw.write('\n')
+
+        fw.write('module use /home/app/modulefiles' + '\n')
+        fw.write('module load casa/5.0.0-218.el6' + '\n')
+        fw.write('\n')
+
+        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+
+        filename = vis[idx]['filename']
+        path_file = os.path.join(path_data, filename) + '.corrected'
+
+        text = 'time casa --logfile {} --nogui -c {} {} {}'.format(
+            os.path.join(path_logs, 'casa_MODELING_{}.log'.format(affix)), 
+            os.path.join(loc, 'imaging', 'model_making.py'), 
+            path_file, 
+            affix
+        )
+        fw.write(text + '\n')
+        fw.write('\n')
+
+    print('Writing {}'.format(savename))
+
+
+############################
+# Generate slurm_IMGFAST_??.sh
+############################
+
+for idx in range(36):
+    savename = os.path.join(path_scripts, 'slurm_IMGFAST_beam{:02d}.sh'.format(idx))
+    affix = 'SB{}_beam{:02d}'.format(sbid, idx)
+
+    with open(savename, 'w') as fw:
+        fw.write("#!/bin/bash" + '\n')
+        fw.write('\n')
+
+        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        fw.write('#SBATCH --time=10:00:00' + '\n')
+        fw.write('#SBATCH --job-name=IMG-{:02d}'.format(idx) + '\n')
+        fw.write('#SBATCH --nodes=1' + '\n')
+        fw.write('#SBATCH --ntasks-per-node=1' + '\n')
+        fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        fw.write('#SBATCH --mem=30gb' + '\n')
+        fw.write('--output='+os.path.join(path_logs, 'slurm_IMGFAST_{}.output'.format(affix)) + '\n')
+        fw.write('--error='+os.path.join(path_logs, 'slurm_IMGFAST_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --export=all' + '\n')
+        fw.write('\n')
+
+        fw.write('module use /home/app/modulefiles' + '\n')
+        fw.write('module load casa/5.0.0-218.el6' + '\n')
+        fw.write('\n')
+
+        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+
+        filename = vis[idx]['filename']
+        path_file = os.path.join(path_data, filename) + '.corrected'
+
+        text = 'time casa --logfile {} --nogui -c {} {} {}'.format(
+            os.path.join(path_logs, 'casa_IMGFAST_{}.log'.format(affix)), 
+            os.path.join(loc, 'imaging', 'short_imaging.py'), 
+            path_file, 
+            affix, 
+            10
+        )
+        fw.write(text + '\n')
+        fw.write('\n')
+
+    print('Writing {}'.format(savename))
 
 
 
