@@ -35,6 +35,7 @@ loc='/home/ymwang/vast_fastdetection' # code location
 #nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(1, 11) if j not in [4]] 
 exclude_nodes = ['purley-x86-cpu08', 'hw-x86-cpu04', 'hw-x86-cpu11']
 
+
 ############################
 # Build file saving system structure 
 ############################
@@ -216,6 +217,41 @@ print('Writing {}'.format(savename))
 # Generate slurm_FIXDATA_??.sh
 ############################
 
+
+# def FIXDATA(affix, filename):
+#     string = """
+#     #!/bin/bash 
+
+#     #SBATCH --partition=all-x86-cpu
+#     #SBATCH --time=1:00:00
+#     #SBATCH --job-name=FIX-{:02d}
+#     #SBATCH --nodes=1
+#     #SBATCH --ntasks-per-node=1
+#     #SBATCH --mem=10gb
+#     #SBATCH --output={}.output
+#     #SBATCH --error={}.error
+#     #SBATCH --export=all
+
+#     module use /home/app/modulefiles
+#     module load casacore/cpu-py3.6.5-3.1.0
+
+#     time -p python {} {} {}
+
+#     time -p python {} {}
+#     """.format(
+#         idx, 
+#         os.path.join(path_logs, 'slurm_FIXDATA_'+affix), 
+#         os.path.join(path_logs, 'slurm_FIXDATA_'+affix), 
+#         os.path.join(loc, 'askapsoft_rescale.py'), 
+#         filename, 
+#         filename+'.corrected', 
+#         os.path.join(loc, 'fix_dir.py'), 
+
+#     )
+
+#     return string 
+
+
 for idx in range(36):
     savename = os.path.join(path_scripts, 'slurm_FIXDATA_beam{:02d}.sh'.format(idx))
     affix = 'SB{}_beam{:02d}'.format(sbid, idx)
@@ -243,7 +279,7 @@ for idx in range(36):
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
-        filename = vis[idx]['filename']
+        filename = vis[idx]['filename'][:-4]
         path_file = os.path.join(path_data, filename)
 
         text = 'time -p python {} {} {}'.format(
@@ -283,8 +319,8 @@ for idx in range(36):
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
         fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
         fw.write('#SBATCH --mem=50gb' + '\n')
-        fw.write('--output='+os.path.join(path_logs, 'slurm_MODELING_{}.output'.format(affix)) + '\n')
-        fw.write('--error='+os.path.join(path_logs, 'slurm_MODELING_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_MODELING_{}.output'.format(affix)) + '\n')
+        fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_MODELING_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
         fw.write('\n')
 
@@ -295,8 +331,8 @@ for idx in range(36):
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
-        filename = vis[idx]['filename']
-        path_file = os.path.join(path_data, filename) + '.corrected'
+        filename = vis[idx]['filename'][:-4] + '.corrected'
+        path_file = os.path.join(path_data, filename)
 
         text = 'time casa --logfile {} --nogui -c {} {} {}'.format(
             os.path.join(path_logs, 'casa_MODELING_{}.log'.format(affix)), 
@@ -329,8 +365,8 @@ for idx in range(36):
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
         fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
         fw.write('#SBATCH --mem=30gb' + '\n')
-        fw.write('--output='+os.path.join(path_logs, 'slurm_IMGFAST_{}.output'.format(affix)) + '\n')
-        fw.write('--error='+os.path.join(path_logs, 'slurm_IMGFAST_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_IMGFAST_{}.output'.format(affix)) + '\n')
+        fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_IMGFAST_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
         fw.write('\n')
 
@@ -341,8 +377,8 @@ for idx in range(36):
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
-        filename = vis[idx]['filename']
-        path_file = os.path.join(path_data, filename) + '.corrected'
+        filename = vis[idx]['filename'][:-4] + '.corrected'
+        path_file = os.path.join(path_data, filename)
 
         text = 'time casa --logfile {} --nogui -c {} {} {} {}'.format(
             os.path.join(path_logs, 'casa_IMGFAST_{}.log'.format(affix)), 
@@ -355,6 +391,10 @@ for idx in range(36):
         fw.write('\n')
 
     print('Writing {}'.format(savename))
+
+
+
+
 
 
 
