@@ -28,7 +28,36 @@ import xmltodict
 
 
 sbid = sys.argv[-2]  # number only
-loc = sys.argv[-1] # output location 
+path = sys.argv[-1] # output parent location 
+
+
+############################
+# Build file saving system structure 
+############################
+path_data = os.join.path(path, 'data') # saving visibilities, selavy catalogues 
+path_models = os.join.path(path, 'models') 
+path_images = os.join.path(path, 'images')
+path_cand = os.join.path(path, 'candidates')
+
+path_scripts = os.join.path(path, 'scripts')
+path_logs = os.join.path(path, 'logfiles')
+
+
+def create_dir(dir):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+        print('Create new directory', dir)
+    else:
+        print('Directory {} exists.'.format(dir))
+
+
+create_dir(path)
+create_dir(path_data)
+create_dir(path_models)
+create_dir(path_images)
+create_dir(path_cand)
+create_dir(path_scripts)
+create_dir(path_logs)
 
 
 ############################
@@ -84,7 +113,7 @@ def get_url(access_url):
 ############################
 
 for idx in range(36):
-    savename = os.path.join(loc, 'bash_GETDATA_beam{:02d}.sh'.format(idx))
+    savename = os.path.join(path_scripts, 'bash_GETDATA_beam{:02d}.sh'.format(idx))
 
     with open(savename, 'w') as fw:
         fw.write("#!/bin/bash" + '\n')
@@ -100,14 +129,15 @@ for idx in range(36):
 
         url = get_url(vis[idx]['access_url'])
         filename = vis[idx]['filename']
+        path_file = os.path.join(path_data, filename)
 
-        text = 'wget -O {} {} -t 0'.format(filename, url)
+        text = 'wget -O {} {} -t 0'.format(path_file, url)
         fw.write("echo " + '\n')
         fw.write(text + '\n')
         fw.write(text + ' -c' + '\n')
         fw.write('\n')
 
-        text = 'tar xvf {}'.format(filename)
+        text = 'tar xvf {} -C {}'.format(path_file, path_data)
         fw.write("echo " + '\n')
         fw.write(text + '\n')
         fw.write('\n')
@@ -118,7 +148,7 @@ for idx in range(36):
 ############################
 # Generate download_selavy.sh
 ############################
-savename = os.path.join(loc, 'download_selavy.sh')
+savename = os.path.join(path_scripts, 'download_selavy.sh')
 
 with open(savename, 'w') as fw:
     fw.write("#!/bin/bash" + '\n')
@@ -132,8 +162,9 @@ with open(savename, 'w') as fw:
     for i, access_url in enumerate(cat['access_url']):
         url = get_url(access_url)
         filename = cat[i]['filename']
+        path_file = os.path.join(path_data, filename)
 
-        text = 'wget -O {} {} -t 0'.format(filename, url)
+        text = 'wget -O {} {} -t 0'.format(path_file, url)
 
         fw.write("echo " + '\n')
         fw.write("echo progress {}/{}".format(i+1, len(cat)) + '\n')
@@ -148,7 +179,7 @@ print('Generate {} finished. '.format(savename))
 ############################
 # Generate download_mosaic_images.sh
 ############################
-savename = os.path.join(loc, 'download_mosaic_images.sh')
+savename = os.path.join(path_scripts, 'download_mosaic_images.sh')
 
 with open(savename, 'w') as fw:
     fw.write("#!/bin/bash" + '\n')
@@ -162,8 +193,9 @@ with open(savename, 'w') as fw:
     for i, access_url in enumerate(img['access_url']):
         url = get_url(access_url)
         filename = img[i]['filename']
+        path_file = os.path.join(path_data, filename)
 
-        text = 'wget -O {} {} -t 0'.format(filename, url)
+        text = 'wget -O {} {} -t 0'.format(path_file, url)
 
         fw.write("echo " + '\n')
         fw.write("echo progress {}/{}".format(i+1, len(img)) + '\n')
@@ -173,6 +205,11 @@ with open(savename, 'w') as fw:
         fw.write('\n')
 
 print('Generate {} finished. '.format(savename))
+
+
+
+
+
 
 
 
