@@ -762,28 +762,40 @@ class Candidates:
         self.catalogue = Table.read(catalogue)
         # logger.info(self.catalogue.info)
         
-        
+        ####################
         # for Aegean convention
-        # deep catalogue sources coordinates
-        self.deep_src = SkyCoord(self.catalogue['ra'], 
-                                 self.catalogue['dec'], 
+        ####################
+        # # deep catalogue sources coordinates
+        # self.deep_src = SkyCoord(self.catalogue['ra'], 
+        #                          self.catalogue['dec'], 
+        #                          unit=u.degree)
+        
+        # # peak flux
+        # self.deep_peak_flux = np.array(self.catalogue['peak_flux'])
+        
+        # # integrated flux
+        # self.deep_int_flux = np.array(self.catalogue['int_flux'])
+        
+        # # get name
+        # # for selavy just read the column 'col_component_name'
+        # # for aegean you want to use following code to read from scratch 
+        # self.deep_name = ['J' + \
+        #      src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
+        #      src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
+        #      for src in self.deep_src
+        #     ]
+
+        ####################
+        # for selavy convention
+        ####################
+        self.deep_src = SkyCoord(self.catalogue['col_ra_deg_cont'], 
+                                 self.catalogue['col_dec_deg_cont'], 
                                  unit=u.degree)
         
-        # peak flux
-        self.deep_peak_flux = np.array(self.catalogue['peak_flux'])
-        
-        # integrated flux
-        self.deep_int_flux = np.array(self.catalogue['int_flux'])
-        
-        # get name
-        # for selavy just read the column 'col_component_name'
-        # for aegean you want to use following code to read from scratch 
-        self.deep_name = ['J' + \
-             src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
-             src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
-             for src in self.deep_src
-            ]
-        
+        self.deep_peak_flux = np.array(self.catalogue['col_flux_peak'])
+        self.deep_int_flux = np.array(self.catalogue['col_flux_int'])
+        self.deep_name = self.catalogue['col_component_name']
+
         
         
     def plot_fits(self, fitsname, imagename='plot_fits'):
