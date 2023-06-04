@@ -33,8 +33,7 @@ path = sys.argv[-1] # output parent location
 loc='/home/ymwang/vast_fastdetection' # code location 
 
 #nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(1, 11) if j not in [4]] 
-exclude_nodes = ['purley-x86-cpu08', 'hw-x86-cpu04', 'hw-x86-cpu11']
-
+exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
 
 ############################
 # Build file saving system structure 
@@ -283,14 +282,14 @@ for idx in range(36):
         path_file = os.path.join(path_data, filename)
 
         text = 'time -p python {} {} {}'.format(
-            os.path.join(loc, 'askapsoft_rescale.py'), 
+            os.path.join(loc, 'tools', 'askapsoft_rescale.py'), 
             path_file, path_file+'.corrected'
             )        
         fw.write(text + '\n')
         fw.write('\n')
 
         text = 'time -p python {} {}'.format(
-            os.path.join(loc, 'fix_dir.py'), 
+            os.path.join(loc, 'tools', 'fix_dir.py'), 
             path_file+'.corrected'
             )    
         fw.write(text + '\n')
@@ -326,6 +325,7 @@ for idx in range(36):
 
         fw.write('module use /home/app/modulefiles' + '\n')
         fw.write('module load casa/5.0.0-218.el6' + '\n')
+        fw.write('module load python/cpu-3.6.5' + '\n')
         fw.write('\n')
 
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
@@ -372,6 +372,7 @@ for idx in range(36):
 
         fw.write('module use /home/app/modulefiles' + '\n')
         fw.write('module load casa/5.0.0-218.el6' + '\n')
+        fw.write('module load python/cpu-3.6.5' + '\n')
         fw.write('\n')
 
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
