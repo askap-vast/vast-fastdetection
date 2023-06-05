@@ -771,10 +771,10 @@ class Candidates:
         #                          unit=u.degree)
         
         # # peak flux
-        # self.deep_peak_flux = np.array(self.catalogue['peak_flux'])
+        # self.deep_peak_flux = np.array(self.catalogue['peak_flux']) # unit of Jy
         
         # # integrated flux
-        # self.deep_int_flux = np.array(self.catalogue['int_flux'])
+        # self.deep_int_flux = np.array(self.catalogue['int_flux']) # unit of Jy
         
         # # get name
         # # for selavy just read the column 'col_component_name'
@@ -792,8 +792,8 @@ class Candidates:
                                  self.catalogue['col_dec_deg_cont'], 
                                  unit=u.degree)
         
-        self.deep_peak_flux = np.array(self.catalogue['col_flux_peak'])
-        self.deep_int_flux = np.array(self.catalogue['col_flux_int'])
+        self.deep_peak_flux = np.array(self.catalogue['col_flux_peak']) / 1e3 # unit of Jy
+        self.deep_int_flux = np.array(self.catalogue['col_flux_int']) / 1e3 # unit of Jy
         self.deep_name = self.catalogue['col_component_name']
 
         

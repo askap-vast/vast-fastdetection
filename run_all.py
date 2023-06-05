@@ -52,7 +52,7 @@ maplist = ['chisquare', 'peak', 'gaussian']
 ## get the imagelist with correct order
 imagelist = []
 for size in ["?", "??", "???", "????"]:
-    tmp = glob.glob(folder + f'{beam}_{size}.fits')
+    tmp = glob.glob(folder + f'*{beam}_{size}.fits')
     # tmp = glob.glob(folder + f'image_{size}.fits') # for FRB field 
     tmp.sort()
     imagelist += tmp
