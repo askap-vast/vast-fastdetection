@@ -426,7 +426,7 @@ for idx in range(36):
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
-        text = 'time python {} {} {} {} {} {}'.format(
+        text = 'time python {} {} {} {} {} {} {}'.format(
             os.path.join(loc, 'run_all.py'), # scripts
             os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
             os.path.join(path_data, cat[0]['filename']), # selavy catalogue
