@@ -395,7 +395,50 @@ for idx in range(36):
 
 
 
+############################
+# Generate slurm_SELCAND_??.sh
+############################
 
+for idx in range(36):
+    savename = os.path.join(path_scripts, 'slurm_SELCAND_beam{:02d}.sh'.format(idx))
+    affix = 'SB{}_beam{:02d}'.format(sbid, idx)
+
+    with open(savename, 'w') as fw:
+        fw.write("#!/bin/bash" + '\n')
+        fw.write('\n')
+
+        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        fw.write('#SBATCH --time=2:00:00' + '\n')
+        fw.write('#SBATCH --job-name=SEL-{:02d}'.format(idx) + '\n')
+        fw.write('#SBATCH --nodes=1' + '\n')
+        fw.write('#SBATCH --ntasks-per-node=1' + '\n')
+        fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        fw.write('#SBATCH --mem=30gb' + '\n')
+        fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_SELCAND_{}.output'.format(affix)) + '\n')
+        fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_SELCAND_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --export=all' + '\n')
+        fw.write('\n')
+
+        fw.write('module use /home/app/modulefiles' + '\n')
+        fw.write('module load python/cpu-3.7.4' + '\n')
+        fw.write('\n')
+
+        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+
+        text = 'time python {} {} {} {} {} {}'.format(
+            os.path.join(loc, 'run_all.py'), # scripts
+            os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
+            os.path.join(path_data, cat[0]['filename']), # selavy catalogue
+            path_images, # short images location
+            'beam{:02d}'.format(idx), # beam number
+            path_cand, # output directory 
+            affix# affix
+        )
+        fw.write(text + '\n')
+        fw.write('\n')
+
+    print('Writing {}'.format(savename))
 
 
 
