@@ -5,7 +5,7 @@ path=$2
 
 # move to SCRIPTS directory first 
 # Download and untar visibility
-# bash $path/scripts/bash_CHECKDATA.sh
+bash $path/scripts/bash_GETDATA_"$beam".sh
 
 # Rescale data (from askapsoft convention to CASA convention)
 # And fix beam positions
