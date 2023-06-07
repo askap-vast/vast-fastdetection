@@ -443,3 +443,28 @@ for idx in range(36):
 
 
 
+############################
+# Generate kill_all_jobs.sh
+############################
+savename = os.path.join(path_scripts, 'kill_all_jobs.sh')
+
+with open(savename, 'w') as fw:
+    fw.write("#!/bin/bash" + '\n')
+    fw.write('\n')
+    fw.write('# Generate automatically from a python script' + '\n')
+    fw.write('# Kill all jobs running for SB{}'.format(sbid) + '\n')
+    fw.write('# You can run this in terminal directly, simply use "bash {}" '.format(
+        savename) + '\n')
+    fw.write('\n\n\n')
+
+    fw.write('for i in {00..35}' + '\n')
+    fw.write('do' + '\n')
+    fw.write('  bash ' + os.path.join(path_scripts, 'kill_beam"$i"_jobs.sh') + '\n')
+    fw.write('done' + '\n')
+    fw.write('\n')
+
+print('Writing {}'.format(savename))
+
+
+
+
