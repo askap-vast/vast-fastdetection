@@ -137,7 +137,8 @@ for idx in range(36):
 
         text = 'wget -O {} {} -t 0'.format(path_file, url)
         fw.write("echo " + '\n')
-        fw.write(text + '\n')
+        fw.write(text + ' -c' + '\n')
+        fw.write("sleep 1s")
         fw.write(text + ' -c' + '\n')
         fw.write('\n')
 
