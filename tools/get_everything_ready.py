@@ -32,8 +32,10 @@ path = sys.argv[-1] # output parent location
 
 loc='/home/ymwang/vast_fastdetection' # code location 
 
-#nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(1, 11) if j not in [4]] 
-exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(1, 11) if j not in [4]] 
+# exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
+nodelist = (nodes * 4)[:36]
+
 
 ############################
 # Build file saving system structure 
@@ -154,34 +156,34 @@ for idx in range(36):
 # Generate bash_CHECKDATA.sh
 ############################
 
-savename = os.path.join(path_scripts, 'bash_CHECKDATA.sh')
+# savename = os.path.join(path_scripts, 'bash_CHECKDATA.sh')
 
-with open(savename, 'w') as fw:
-    fw.write("#!/bin/bash" + '\n')
-    fw.write('\n')
-    fw.write('# Generate automatically from a python script' + '\n')
-    fw.write('# Download visibility for SB{} '.format(sbid) + '\n')
-    fw.write('# You can run this in terminal directly, simply use "bash {}" '.format(
-        savename) + '\n')
-    fw.write('\n\n\n')
+# with open(savename, 'w') as fw:
+#     fw.write("#!/bin/bash" + '\n')
+#     fw.write('\n')
+#     fw.write('# Generate automatically from a python script' + '\n')
+#     fw.write('# Download visibility for SB{} '.format(sbid) + '\n')
+#     fw.write('# You can run this in terminal directly, simply use "bash {}" '.format(
+#         savename) + '\n')
+#     fw.write('\n\n\n')
 
-    for idx in range(36):
+#     for idx in range(36):
 
-        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
-            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+#         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+#             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
-        url = get_url(vis[idx]['access_url'])
-        filename = vis[idx]['filename']
-        path_file = os.path.join(path_data, filename)
+#         url = get_url(vis[idx]['access_url'])
+#         filename = vis[idx]['filename']
+#         path_file = os.path.join(path_data, filename)
 
-        text = 'wget -O {} {} -t 0 -c'.format(path_file, url)
-        fw.write("echo " + '\n')
-        fw.write("echo progress {}/{}".format(idx+1, len(vis)) + '\n')
-        fw.write(text + '\n')
-        fw.write("sleep 1s" + '\n')
-        fw.write('\n')
+#         text = 'wget -O {} {} -t 0 -c'.format(path_file, url)
+#         fw.write("echo " + '\n')
+#         fw.write("echo progress {}/{}".format(idx+1, len(vis)) + '\n')
+#         fw.write(text + '\n')
+#         fw.write("sleep 1s" + '\n')
+#         fw.write('\n')
 
-print('Writing {}'.format(savename))
+# print('Writing {}'.format(savename))
 
 
 
@@ -301,7 +303,7 @@ for idx in range(36):
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
         # fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
-        fw.write('#SBATCH --mem=10gb' + '\n')
+        fw.write('#SBATCH --mem=50gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_FIXDATA_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_FIXDATA_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
@@ -348,12 +350,17 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=10:00:00' + '\n')
+        fw.write('#SBATCH --time=50:00:00' + '\n')
         fw.write('#SBATCH --job-name=MOD-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
-        fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
-        fw.write('#SBATCH --mem=50gb' + '\n')
+
+        if 'exclude_nodes' in locals():
+            fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        elif 'nodelist' in locals():
+            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n')
+
+        fw.write('#SBATCH --mem=200gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_MODELING_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_MODELING_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
@@ -395,12 +402,17 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=10:00:00' + '\n')
+        fw.write('#SBATCH --time=30:00:00' + '\n')
         fw.write('#SBATCH --job-name=IMG-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
-        fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
-        fw.write('#SBATCH --mem=30gb' + '\n')
+
+        if 'exclude_nodes' in locals():
+            fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        elif 'nodelist' in locals():
+            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
+        
+        fw.write('#SBATCH --mem=50gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_IMGFAST_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_IMGFAST_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
@@ -444,12 +456,17 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=2:00:00' + '\n')
+        fw.write('#SBATCH --time=10:00:00' + '\n')
         fw.write('#SBATCH --job-name=SEL-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
-        fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
-        fw.write('#SBATCH --mem=30gb' + '\n')
+        
+        if 'exclude_nodes' in locals():
+            fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        elif 'nodelist' in locals():
+            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
+
+        fw.write('#SBATCH --mem=50gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_SELCAND_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_SELCAND_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
