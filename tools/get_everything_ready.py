@@ -113,20 +113,21 @@ def get_url(access_url):
 
 
 ############################
-# Generate bash_GETDATA_beam??.sh
+# Generate bash_GETDATA.sh
 ############################
 
-for idx in range(36):
-    savename = os.path.join(path_scripts, 'bash_GETDATA_beam{:02d}.sh'.format(idx))
+savename = os.path.join(path_scripts, 'bash_GETDATA.sh')
 
-    with open(savename, 'w') as fw:
-        fw.write("#!/bin/bash" + '\n')
-        fw.write('\n')
-        fw.write('# Generate automatically from a python script' + '\n')
-        fw.write('# Download and untar visibility for SB{} beam{:02d}'.format(sbid, idx) + '\n')
-        fw.write('# You can run this in terminal directly, simply use "bash {}" '.format(
-            savename) + '\n')
-        fw.write('\n\n\n')
+with open(savename, 'w') as fw:
+    fw.write("#!/bin/bash" + '\n')
+    fw.write('\n')
+    fw.write('# Generate automatically from a python script' + '\n')
+    fw.write('# Download visibility for SB{} '.format(sbid) + '\n')
+    fw.write('# You can run this in terminal directly, simply use "bash {}" '.format(
+        savename) + '\n')
+    fw.write('\n\n\n')
+
+    for idx in range(36):
 
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
@@ -135,19 +136,53 @@ for idx in range(36):
         filename = vis[idx]['filename']
         path_file = os.path.join(path_data, filename)
 
-        text = 'wget -O {} {} -t 0'.format(path_file, url)
+        text = 'wget -O {} {} -t 0 -c'.format(path_file, url)
         fw.write("echo " + '\n')
-        fw.write(text + ' -c' + '\n')
-        fw.write("sleep 1s")
-        fw.write(text + ' -c' + '\n')
+        fw.write("echo progress {}/{}".format(idx+1, len(vis)) + '\n')
+
+        if (idx+1)%12 == 0 or idx == 35:
+            fw.write(text + '\n')
+        else:
+            fw.write(text + ' &' + '\n')
+            
+        fw.write("sleep 1s" + '\n')
         fw.write('\n')
 
-        text = 'tar xvf {} -C {}'.format(path_file, path_data)
+print('Writing {}'.format(savename))
+
+
+############################
+# Generate bash_CHECKDATA.sh
+############################
+
+savename = os.path.join(path_scripts, 'bash_CHECKDATA.sh')
+
+with open(savename, 'w') as fw:
+    fw.write("#!/bin/bash" + '\n')
+    fw.write('\n')
+    fw.write('# Generate automatically from a python script' + '\n')
+    fw.write('# Download visibility for SB{} '.format(sbid) + '\n')
+    fw.write('# You can run this in terminal directly, simply use "bash {}" '.format(
+        savename) + '\n')
+    fw.write('\n\n\n')
+
+    for idx in range(36):
+
+        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+
+        url = get_url(vis[idx]['access_url'])
+        filename = vis[idx]['filename']
+        path_file = os.path.join(path_data, filename)
+
+        text = 'wget -O {} {} -t 0 -c'.format(path_file, url)
         fw.write("echo " + '\n')
+        fw.write("echo progress {}/{}".format(idx+1, len(vis)) + '\n')
         fw.write(text + '\n')
+        fw.write("sleep 1s" + '\n')
         fw.write('\n')
 
-    print('Writing {}'.format(savename))
+print('Writing {}'.format(savename))
 
 
 ############################
