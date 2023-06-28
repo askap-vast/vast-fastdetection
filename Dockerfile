@@ -35,7 +35,9 @@ RUN apt-get update && apt-get upgrade -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-COPY ./pyproject.toml ./poetry.lock /code/
+WORKDIR /code
+
+COPY pyproject.toml poetry.lock /code/
 
 # Install project dependencies
 RUN poetry install --no-interaction --no-ansi
