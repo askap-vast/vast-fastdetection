@@ -52,7 +52,7 @@ maplist = ['chisquare', 'peak', 'gaussian']
 ## get the imagelist with correct order
 imagelist = []
 for size in ["?", "??", "???", "????"]:
-    tmp = glob.glob(folder + f'{beam}_{size}.fits')
+    tmp = glob.glob(os.path.join(folder, f'*{beam}_{size}.fits'))
     # tmp = glob.glob(folder + f'image_{size}.fits') # for FRB field 
     tmp.sort()
     imagelist += tmp
@@ -113,9 +113,9 @@ for ktype in ktypelist:
 logger.info("======== Select candidates ==========")
 
 # read fits
-chisquare_map = "{}/{}_{}.fits".format(outdir, name, 'chisquare')
-peak_map = "{}/{}_{}.fits".format(outdir, name, 'peak')
-std_map = "{}/{}_{}.fits".format(outdir, name, 'std')
+chisquare_map = os.path.join(outdir, name+'_chisquare.fits')
+peak_map = os.path.join(outdir, name+'_peak.fits')
+std_map = os.path.join(outdir, name+'_std.fits')
 
 
 
@@ -127,7 +127,7 @@ for maptype in maplist:
         
     else:
         ## include Gaussian map during candidates selection 
-        gaussian_map = "{}/{}_{}.fits".format(outdir, name, 'gaussian')
+        gaussian_map = os.path.join(outdir, name+'_gaussian.fits')
         c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map)
         
 

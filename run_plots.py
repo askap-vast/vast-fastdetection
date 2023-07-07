@@ -42,6 +42,7 @@ for size in ["?", "??", "???", "????"]:
     tmp.sort()
     imagelist += tmp
 
+imagelist = imagelist[:-1]
 
 logger.info("Loading foler {}".format(folder))
 logger.info("Processing {} images...".format(len(imagelist)))
