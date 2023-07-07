@@ -21,8 +21,11 @@ import os
 
 sbid = sys.argv[-1]
 
-base_folder = "/import/ada2/ywan3191/fast_pipeline/results/SB{}/".format(sbid)
-base_url = 'ada.physics.usyd.edu.au:1028/view/fast_pipeline/results/SB{}/'.format(sbid)
+# base_folder = "/import/ada2/ywan3191/fast_pipeline/results/SB{}/".format(sbid)
+# base_url = 'ada.physics.usyd.edu.au:1028/view/fast_pipeline/results/SB{}/'.format(sbid)
+
+base_folder = "/import/ada2/ywan3191/fast_survey/SB{}/".format(sbid)
+base_url = 'ada.physics.usyd.edu.au:1028/view/fast_survey/SB{}/'.format(sbid)
 
 
 cand_list = []
