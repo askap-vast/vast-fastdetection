@@ -32,7 +32,7 @@ path = sys.argv[-1] # output parent location
 
 loc='/home/ymwang/vast_fastdetection' # code location 
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(5, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(1, 11) if j not in [4, 5, 9]] 
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(4, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(3, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
 nodelist = (nodes * 4)[:36]
 
@@ -139,14 +139,14 @@ for idx in range(36):
 
         text = 'wget -O {} {} -t 0'.format(path_file, url)
         fw.write("echo " + '\n')
-        fw.write(text + '\n')
+#        fw.write(text + '\n')
         fw.write(text + ' -c' + '\n')
         fw.write('\n')
 
-        text = 'tar xvf {} -C {}'.format(path_file, path_data)
-        fw.write("echo " + '\n')
-        fw.write(text + '\n')
-        fw.write('\n')
+#        text = 'tar xvf {} -C {}'.format(path_file, path_data)
+#        fw.write("echo " + '\n')
+#        fw.write(text + '\n')
+#        fw.write('\n')
 
     print('Writing {}'.format(savename))
 
