@@ -25,7 +25,8 @@ sbid = sys.argv[-1]
 # base_url = 'ada.physics.usyd.edu.au:1028/view/fast_pipeline/results/SB{}/'.format(sbid)
 
 base_folder = "/import/ada2/ywan3191/fast_survey/SB{}/".format(sbid)
-base_url = 'ada.physics.usyd.edu.au:1028/view/fast_survey/SB{}/'.format(sbid)
+# base_folder = 'c:/Users/wym19/OneDrive/Melbourne/06 Fast Transients GP Survey/Results/SB{}/'.format(sbid)
+base_url = 'ada.physics.usyd.edu.au:1029/fast_survey/SB{}/'.format(sbid)
 
 
 cand_list = []
@@ -80,6 +81,6 @@ print('Mid priority:', sum(new_csv['priority'] == 'mid'))
 print('Low priority', sum(new_csv['priority'] == 'low'))
 
 
-new_csv.write(os.path.join(base_folder, "SB{}_final.csv").format(sbid))
+new_csv.write(os.path.join(base_folder, "SB{}.csv").format(sbid), overwrite=True)
 
 
