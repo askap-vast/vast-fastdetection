@@ -57,6 +57,8 @@ for size in ["?", "??", "???", "????"]:
     tmp.sort()
     imagelist += tmp
 
+# imagelist = glob.glob(os.path.join(folder, f"{beam}*cutout.fits"))
+# imagelist.sort()
 
 logger.info("Loading foler {}".format(folder))
 logger.info("Processing {} images...".format(len(imagelist)))

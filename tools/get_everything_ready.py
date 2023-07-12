@@ -32,10 +32,11 @@ path = sys.argv[-1] # output parent location
 
 loc='/home/ymwang/vast_fastdetection' # code location 
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(4, 8)] + ['hw-x86-cpu{:02d}'.format(j) for j in range(3, 11) if j not in [4, 5, 9]] 
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [3]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(2, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
-nodelist = (nodes * 4)[:36]
+nodelist = (nodes * 6)[:36]
 
+print('nodelist', nodelist)
 
 ############################
 # Build file saving system structure 
@@ -99,8 +100,9 @@ if len(vis) != 36:
 ############################
 # Get download urls
 ############################
-username = 'wym20131028@gmail.com'
-print('OPAL username:', username)
+# username = 'wym20131028@gmail.com'
+# print('OPAL username:', username)
+username = input("Enter OPAL username: ")
 password = getpass.getpass(str("Enter OPAL password: "))
 
 

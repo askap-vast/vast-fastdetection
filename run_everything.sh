@@ -16,8 +16,7 @@ module load python/cpu-3.7.4
 python $loc/tools/get_everything_ready.py $sbid $path
 bash $SCRIPTS/download_selavy.sh
 
-ls $SCRIPTS/bash_GETDATA_beam*.sh | xargs -n 1 -P 10 --replace bash {}
-ls $SCRIPTS/bash_GETDATA_beam*.sh | xargs -n 1 -P 7 --replace bash {}
+ls $SCRIPTS/bash_GETDATA_beam*.sh | xargs -n 1 -P 8 --replace bash {}
 ls $SCRIPTS/bash_GETDATA_beam*.sh | xargs -n 1 --replace bash {}
 
 cd $DATA
