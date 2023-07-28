@@ -90,6 +90,7 @@ logger.info("============")
 logger.info("Remove bad images...")
 cube.remove_bad_images()
 logger.info(cube.sigcube.shape)
+num = cube.sigcube.shape[0]
 
 
 ## ====================================
@@ -125,13 +126,13 @@ std_map = os.path.join(outdir, name+'_std.fits')
 for maptype in maplist:
     
     if 'gaussian' not in maplist:
-        c = Candidates(chisquare_map, peak_map, std_map, num=len(imagelist))
+        c = Candidates(chisquare_map, peak_map, std_map, num=num)
         
     else:
         ## include Gaussian map during candidates selection 
         gaussian_map = os.path.join(outdir, name+'_gaussian.fits')
         c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map, 
-                       num=len(imagelist))
+                       num=num)
         
 
     # find local maximum

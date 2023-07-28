@@ -398,7 +398,7 @@ def get_threshold_peak(value=None, sigma=None, num=70):
     if value is None:
         value = norm.ppf(np.power(norm.cdf(sigma), 1/num))
         logger.info("Calculating peak threshold for {} images...".format(num))
-        logger.info("Threshold is {} sigma = {:.2f}".format(sigma, value))
+        logger.info("{} sigma threshold (peak) is {:.2f}".format(sigma, value))
         return value
     
     # from threshold/given value to calculate theoritical sigma 
@@ -414,7 +414,7 @@ def get_threshold_chisquare(value=None, sigma=None, num=70):
     if value is None:
         value = chi2.ppf(norm.cdf(sigma), df) / df
         logger.info("Calculating chi2 threshold for {} images...".format(num))
-        logger.info("Threshold is {} sigma = {:.2f}".format(sigma, value))
+        logger.info("{} sigma threshold (chi2) is {:.2f}".format(sigma, value))
         return value
     
     elif sigma is None:
