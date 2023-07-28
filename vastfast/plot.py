@@ -15,6 +15,7 @@ from matplotlib.ticker import MaxNLocator
 
 import aplpy
 from skimage.feature import peak_local_max
+from scipy.stats import chi2, norm
 
 from astropy.wcs import WCS
 from astropy.io import fits
@@ -377,7 +378,7 @@ def get_sigma_logspace(data, flux):
     return sigma
 
 
-def get_threshold_logspace(data, sigma=3):
+def get_threshold_logspace(data, sigma=5):
     
     # get log statistics
     logmean = np.nanmean(np.log10(data))
@@ -389,6 +390,36 @@ def get_threshold_logspace(data, sigma=3):
     logger.info('Threshold log space is {} sigma = {}'.format(sigma, threshold))
 
     return threshold
+
+
+def get_threshold_peak(value=None, sigma=None, num=70):
+
+    # from sigma to calculate the theoritical value/threshold
+    if value is None:
+        value = norm.ppf(np.power(norm.cdf(sigma), 1/num))
+        logger.info("Calculating peak threshold for {} images...".format(num))
+        logger.info("Threshold is {} sigma = {:.2f}".format(sigma, value))
+        return value
+    
+    # from threshold/given value to calculate theoritical sigma 
+    elif sigma is None:
+        sigma = norm.ppf(norm.cdf(value)**num)
+        return sigma
+    
+
+def get_threshold_chisquare(value=None, sigma=None, num=70):
+
+    df = num - 1 # degree of freedom
+
+    if value is None:
+        value = chi2.ppf(norm.cdf(sigma), df) / df
+        logger.info("Calculating chi2 threshold for {} images...".format(num))
+        logger.info("Threshold is {} sigma = {:.2f}".format(sigma, value))
+        return value
+    
+    elif sigma is None:
+        sigma = norm.ppf(chi2.cdf(value*df, df))
+        return sigma
 
 
 
@@ -462,7 +493,7 @@ class Candidates:
     """Generate the vot table for final candidates
     """
     
-    def __init__(self, chisq_map, peak_map, std_map, gaussian_map=''):
+    def __init__(self, chisq_map, peak_map, std_map, gaussian_map='', num=70):
         """chisq_map: str
             chisquare map location, should be FITS file
         """
@@ -486,6 +517,8 @@ class Candidates:
                                     self.fi.header['CRVAL2'], unit=u.degree)
         # FWHM of primary beam
         self.fwhm = 3e8/self.fi.header['CRVAL3']/12 * 180/np.pi * u.degree
+        # number of images
+        self.num = num
         
         
         # peak map
@@ -507,18 +540,22 @@ class Candidates:
         
         sigma: identify blobs above a specfic sigma threshold
         min_distance: pixel number of the minimal distance of two neighbours blobs
+        num: number of short images 
         '''
         if data == None or data == 'chisquare':
             data = self.chisq_map
+            threshold = get_threshold_chisquare(sigma=sigma, num=self.num)
             
         elif data == 'peak':
             data = self.peak_map
+            threshold = get_threshold_peak(sigma=sigma, num=self.num)
             
         elif data == "gaussian":
             data = self.gaussian_map
+            threshold = get_threshold_logspace(data, sigma=sigma)
         
-        # get threshold in log space
-        threshold = get_threshold_logspace(data, sigma=sigma)
+        # # get threshold in log space
+        # threshold = get_threshold_logspace(data, sigma=sigma)
         
         # find local maximum 
         xy = peak_local_max(data, min_distance=min_distance, 
@@ -658,14 +695,18 @@ class Candidates:
         # read the chisq value at each pixel
         t['chi_square'] = self.chisq_map[self.yp, self.xp][self.final_idx]
         # calculate the sigma
-        t['chi_square_sigma'] = get_sigma_logspace(self.chisq_map, 
-                                                   np.array(t['chi_square']))
+        # t['chi_square_sigma'] = get_sigma_logspace(self.chisq_map, 
+        #                                            np.array(t['chi_square']))
+        t['chi_square_sigma'] = get_threshold_chisquare(value=np.array(t['chi_square']), 
+                                                        num=self.num)
         
         # read the peak value at each pixel 
         t['peak_map'] = self.peak_map[self.yp, self.xp][self.final_idx]
         # calculate the sigma
-        t['peak_map_sigma'] = get_sigma_logspace(self.peak_map, 
-                                                 np.array(t['peak_map']))
+        # t['peak_map_sigma'] = get_sigma_logspace(self.peak_map, 
+        #                                          np.array(t['peak_map']))
+        t['peak_map_sigma'] = get_threshold_peak(value=np.array(t['peak_map']), 
+                                                 num=self.num)
         
         # if there's Gaussian map 
         if hasattr(self, 'gaussian_map'):

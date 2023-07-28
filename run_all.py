@@ -125,17 +125,18 @@ std_map = os.path.join(outdir, name+'_std.fits')
 for maptype in maplist:
     
     if 'gaussian' not in maplist:
-        c = Candidates(chisquare_map, peak_map, std_map)
+        c = Candidates(chisquare_map, peak_map, std_map, num=len(imagelist))
         
     else:
         ## include Gaussian map during candidates selection 
         gaussian_map = os.path.join(outdir, name+'_gaussian.fits')
-        c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map)
+        c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map, 
+                       num=len(imagelist))
         
 
     # find local maximum
     logger.info("Find local maximum....")
-    c.local_max(min_distance=30, sigma=5, data=maptype)
+    c.local_max(min_distance=30, sigma=6, data=maptype)
     logger.info("Find local maximum done. ")
     
     ## plot a map with all of candidates above the threshold 
