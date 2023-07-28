@@ -8,11 +8,11 @@ imagename = sys.argv[-1]  # recommend in format of SBxxx_beamxxx
 
 print("** NOTICE  ** path passed as arg:", vis, imagename)
 
-imsize = 4096
+imsize = 6144
 cell = ['2.5arcsec']
 deconvolver = 'mtmfs'
 nterm = 2
-scales = [0, 5, 10, 15, 25]
+scales = [0, 10, 30]
 niter = 5000
 weighting = 'briggs'  # natural, uniform, briggs
 robust = 0.5
@@ -55,7 +55,7 @@ tclean(
     restfreq=[],
     interpolation='linear',
     gridder='widefield',
-    facets=1,
+    facets=2,
     chanchunks=1,
     wprojplanes=-1,
     vptable='',
@@ -80,8 +80,8 @@ tclean(
     npixels=0,
     uvtaper=[],
     niter=niter,
-    gain=0.1,
-    threshold=0.0,
+    gain=0.2,
+    threshold="0.75mJy",
     cycleniter=-1,
     cyclefactor=1.0,
     minpsffraction=0.02,
