@@ -36,15 +36,15 @@ name = sys.argv[-1]
 
 ### exclude Gaussian mao 
 ## generating how many different types of map
-#ktypelist = ['chisquare', 'peak', 'std'] 
+ktypelist = ['chisquare', 'peak', 'std'] 
 
 ## how many different types of map to select candidates 
 # maplist = ['chisquare']
-#maplist = ['chisquare', 'peak']
+maplist = ['chisquare', 'peak']
 
 ### include Gaussian map
-ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
-maplist = ['chisquare', 'peak', 'gaussian']
+#ktypelist = ['chisquare', 'peak', 'std', 'gaussian']
+#maplist = ['chisquare', 'peak', 'gaussian']
 
 
 
