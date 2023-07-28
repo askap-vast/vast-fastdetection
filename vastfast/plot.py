@@ -569,6 +569,15 @@ class Candidates:
         
         self.cand_src = pixel_to_skycoord(xp, yp, wcs=self.wcs)
         logger.info("Selected {} candidates...".format(self.cand_src.shape[0]))
+
+
+    # Depends if we preformed primary beam correction on short images or not 
+    # if no primary beam correction previously, we should apply for below factor 
+    def primary_correction(self, x0:float):
+        '''x0 is the distance to the beam centre, unit of degree
+        '''
+        sigma = self.fwhm.to_value(u.degree) / (2*np.sqrt(2*np.log(2)))
+        return norm.pdf(x0, scale=sigma) / norm.pdf(0, scale=sigma)
         
         
         
@@ -607,7 +616,9 @@ class Candidates:
         self.deepidx, self.d2d, d3d = self.cand_src.match_to_catalog_sky(self.deep_src)
         
         # calculate the modulation index 
-        self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx]
+        fc = self.primary_correction(x0=self.cand_src.separation(self.beam_center).degree)
+        self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx] / fc # primary beam correction factor
+        # self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx] 
         logger.info("Candidates with modulation index > {:.1%}: {}".format(
             mdlim, sum(self.md > mdlim)
             ))
