@@ -45,6 +45,7 @@ path_data = os.path.join(path, 'data') # saving visibilities, selavy catalogues
 path_models = os.path.join(path, 'models') 
 path_images = os.path.join(path, 'images')
 path_cand = os.path.join(path, 'candidates')
+path_fits = os.path.join(path, 'fitsfiles')
 
 path_scripts = os.path.join(path, 'scripts')
 path_logs = os.path.join(path, 'logfiles')
@@ -65,6 +66,7 @@ create_dir(path_images)
 create_dir(path_cand)
 create_dir(path_scripts)
 create_dir(path_logs)
+create_dir(path_fits)
 
 
 ############################
@@ -495,5 +497,47 @@ for idx in range(36):
 
     print('Writing {}'.format(savename))
 
+
+############################
+# Generate slurm_CLNDATA_??.sh
+############################
+
+for idx in range(36):
+    savename = os.path.join(path_scripts, 'slurm_CLNDATA_beam{:02d}.sh'.format(idx))
+    affix = 'SB{}_beam{:02d}'.format(sbid, idx)
+
+    with open(savename, 'w') as fw:
+        fw.write("#!/bin/bash" + '\n')
+        fw.write('\n')
+
+        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        fw.write('#SBATCH --time=1:00:00' + '\n')
+        fw.write('#SBATCH --job-name=FIX-{:02d}'.format(idx) + '\n')
+        fw.write('#SBATCH --nodes=1' + '\n')
+        fw.write('#SBATCH --ntasks-per-node=1' + '\n')
+        fw.write('#SBATCH --mem=50gb' + '\n')
+        fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_CLNDATA_{}.output'.format(affix)) + '\n')
+        fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_CLNDATA_{}.error'.format(affix)) + '\n')
+        fw.write('#SBATCH --export=all' + '\n')
+        fw.write('\n')
+        fw.write('\n')
+
+        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+
+        filename = vis[idx]['filename'][:-4]
+        path_file = os.path.join(path_data, filename)
+
+        fw.write('rm {}.tar'.format(path_file) + '\n')
+        fw.write('rm -r {}'.format(path_file) + '\n')
+        fw.write('\n')
+
+        fw.write('mv {} {}'.format(os.path.join(path_models, '*.fits'), path_fits) + '\n')
+        fw.write('mv {} {}'.format(os.path.join(path_images, '*.fits'), path_fits) + '\n')
+        fw.write('rm -r {}'.format(path_models) + '\n')
+        fw.write('rm -r {}'.format(path_images) + '\n')
+        fw.write('\n')
+
+    print('Writing {}'.format(savename))
 
 
