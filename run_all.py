@@ -134,10 +134,15 @@ for maptype in maplist:
         c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map, 
                        num=num)
         
+    if maptype == "chisquare":
+        sigma = 8
+    else:
+        sigma = 6
+
 
     # find local maximum
     logger.info("Find local maximum....")
-    c.local_max(min_distance=30, sigma=6, data=maptype)
+    c.local_max(min_distance=30, sigma=sigma, data=maptype)
     logger.info("Find local maximum done. ")
     
     ## plot a map with all of candidates above the threshold 
@@ -154,14 +159,6 @@ for maptype in maplist:
     ## plot a final map with promising candidates 
     c.plot_fits(fitsname=vars()[maptype+'_map'], 
                 imagename="{}/{}_{}_map2".format(outdir, name, maptype))
-    
-    # # plot!
-    # for i, candname in enumerate(c.cand_name):
-    #     logger.info("Plot slices {}/{}: {}".format(i, len(c.cand_name), candname))
-    #     plot.plot_slices(src_name=candname, 
-    #                      imagelist=imagelist, 
-    #                      name="{}/{}_{}".format(outdir, name, candname))
-    
 
 
 
