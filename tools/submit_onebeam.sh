@@ -22,4 +22,8 @@ IMGFAST=`sbatch -d afterok:${MODELING} "$path"/scripts/slurm_IMGFAST_"$beam".sh 
 # Candidates selection 
 SELCAND=`sbatch -d afterok:${IMGFAST} "$path"/scripts/slurm_SELCAND_"$beam".sh | awk '{print $4}'`
 
-echo scancel $FIXDATA $MODELING $IMGFAST $SELCAND > $path/scripts/kill_"$beam"_jobs.sh
+# Clean intermediate data products
+CLNDATA=`sbatch -d afterok:${SELCAND} "$path"/scripts/slurm_CLNDATA_"$beam".sh | awk '{print $4}'`
+
+
+echo scancel $FIXDATA $MODELING $IMGFAST $SELCAND $CLNDATA > $path/scripts/kill_"$beam"_jobs.sh

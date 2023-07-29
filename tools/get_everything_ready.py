@@ -32,7 +32,7 @@ path = sys.argv[-1] # output parent location
 
 loc='/home/ymwang/vast_fastdetection' # code location 
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [3]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(2, 11) if j not in [4, 5, 9]] 
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8) if i not in []] + ['hw-x86-cpu{:02d}'.format(j) for j in range(2, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
 nodelist = (nodes * 6)[:36]
 
@@ -512,7 +512,7 @@ for idx in range(36):
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
         fw.write('#SBATCH --time=1:00:00' + '\n')
-        fw.write('#SBATCH --job-name=FIX-{:02d}'.format(idx) + '\n')
+        fw.write('#SBATCH --job-name=CLN-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
         fw.write('#SBATCH --mem=50gb' + '\n')
@@ -532,10 +532,10 @@ for idx in range(36):
         fw.write('rm -r {}'.format(path_file) + '\n')
         fw.write('\n')
 
-        fw.write('mv {} {}'.format(os.path.join(path_models, '*.fits'), path_fits) + '\n')
-        fw.write('mv {} {}'.format(os.path.join(path_images, '*.fits'), path_fits) + '\n')
-        fw.write('rm -r {}'.format(path_models) + '\n')
-        fw.write('rm -r {}'.format(path_images) + '\n')
+        fw.write('mv {} {}'.format(os.path.join(path_models, '*beam{:02d}*.fits'.format(idx)), path_fits) + '\n')
+        fw.write('mv {} {}'.format(os.path.join(path_images, '*beam{:02d}*.fits'.format(idx)), path_fits) + '\n')
+        fw.write('rm -r {}/*beam{:02d}*'.format(path_models, idx) + '\n')
+        fw.write('rm -r {}/*beam{:02d}*'.format(path_images, idx) + '\n')
         fw.write('\n')
 
     print('Writing {}'.format(savename))
