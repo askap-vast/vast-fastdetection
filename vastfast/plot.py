@@ -918,13 +918,18 @@ class Products:
     """Generate the vot table for final candidates
     """
     
-    def __init__(self, final_csv):
+    def __init__(self, final_csv, limit=None):
         """
         final_csv: str
             location of the csv catalogue for (final) candidates
+        limit: int
+            only plot first limit number of candidates 
         """
-        
-        self.final_csv = Table.read(final_csv)
+        if limit is None:
+            self.final_csv = Table.read(final_csv)
+        else:
+            self.final_csv = Table.read(final_csv)[:limit]
+
         self.cand_name = self.final_csv['name']
         self.cand_src = SkyCoord(self.final_csv['ra'], self.final_csv['dec'], 
                                   unit=u.degree)
