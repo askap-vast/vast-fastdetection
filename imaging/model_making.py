@@ -96,6 +96,11 @@ tclean(
 )
 print('Made a deep image finished %s' % imagename)
 
+# gain phase self-calibration
+gaincal(vis=vis, caltable='calib_{}.pcal'.format(imagename), selectdata=True, uvrange='>200m', solint='int', calmode='ap')
+
+# apply calibration
+applycal(vis=vis, gaintable='calib_{}.pcal'.format(imagename))
 
 # subtract model
 uvsub(vis=vis)
