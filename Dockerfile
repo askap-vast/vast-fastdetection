@@ -45,5 +45,5 @@ RUN poetry install --no-interaction --no-ansi
 COPY . /code/
 
 # Set the default command to run
-#CMD ["poetry", "run", "python", "process_beam.py", "14"]
+#CMD ["poetry", "run", "python", "process_beam.py", "00"]
 CMD ["python", "process_beam.py", "00"]

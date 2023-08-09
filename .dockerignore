@@ -2,3 +2,4 @@ data/
 venv/
 tests/
 docker/
+new_data/

@@ -25,7 +25,8 @@ except Exception as e:
     print(e)
 else:
     try:
-        KTYPELIST = config["RUN_SETTINGS"]["KTYPELIST"]
+        k_type_list = config["RUN_SETTINGS"]["KTYPELIST"]
+        KTYPELIST = [k.strip() for k in k_type_list.split(',')]
     except:
         pass
 
