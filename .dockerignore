@@ -3,3 +3,5 @@ venv/
 tests/
 docker/
 new_data/
+new_data_beam00/
+ubuntu.Dockerfile
