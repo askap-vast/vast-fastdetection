@@ -35,15 +35,15 @@ RUN apt-get update && apt-get upgrade -y \
   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /
+WORKDIR /code/
 
-COPY pyproject.toml poetry.lock /
+COPY pyproject.toml poetry.lock /code/
 
 # Install project dependencies
 RUN poetry install --no-interaction --no-ansi
 
-COPY . /
+COPY . /code/
 
 # Set the default command to run
 #CMD ["poetry", "run", "python", "process_beam.py", "00"]
-CMD ["python", "process_beam.py", "00"]
+CMD ["python", "/code/process_beam.py", "00"]

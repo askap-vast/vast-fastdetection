@@ -89,3 +89,26 @@ Here's how to do it:
    ```
 
 After a successful push, your Docker image will be available on Docker Hub. You can access it using the URL `https://hub.docker.com/r/dockerhub_username/vast_fast`.
+
+# Running the container in OzSTAR (using Apptainer)
+
+You can use Apptainer by loading the module
+
+```bash
+module load apptainer/latest
+```
+
+You can pull existing images from repositories or build your own as follows:
+
+```bash
+apptainer build vast_fast.sif docker://dockerhub_username/vast_fast
+```
+
+You can then run the container using the following command:
+
+```bash
+apptainer run -B </path/to/your/input/data>:/input vast_fast.sif
+```
+
+As above, you must have a ```app_settings.ini``` file to describe the settings for this run in the data directory. The 
+output would be placed inside ```output_docker``` directory inside the input directory.

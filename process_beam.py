@@ -15,7 +15,7 @@ beam = int(beam)
 
 ## ========= read in config file =========
 config = configparser.ConfigParser()		
-config.read("run_vastfast.ini")
+config.read("/code/run_vastfast.ini")
 
 input_path = config["PATH"]["input_dir"]
 
