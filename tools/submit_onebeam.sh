@@ -14,6 +14,7 @@ FIXDATA=`sbatch "$path"/scripts/slurm_FIXDATA_"$beam".sh | awk '{print $4}'`
 # Create a deep sky model and subtract it
 cd $path/models
 MODELING=`sbatch -d afterok:${FIXDATA} "$path"/scripts/slurm_MODELING_"$beam".sh | awk '{print $4}'`
+#MODELING=`sbatch "$path"/scripts/slurm_MODELING_"$beam".sh | awk '{print $4}'`
 
 # Generate short images 
 cd $path/images
