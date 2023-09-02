@@ -926,7 +926,7 @@ class Products:
             only plot first limit number of candidates. -1 means plot all candidates
         """
         cat = Table.read(final_csv)
-        if len(cat) <= limit: 
+        if limit==-1: 
             self.final_csv = cat
         else:
             cat.sort(keys=['peak_map', 'chi_square'], reverse=True)
