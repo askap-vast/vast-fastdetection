@@ -918,7 +918,7 @@ class Products:
     """Generate the vot table for final candidates
     """
     
-    def __init__(self, final_csv, limit=-1):
+    def __init__(self, final_csv, limit=-1, cand_name=None):
         """
         final_csv: str
             location of the csv catalogue for (final) candidates
@@ -936,6 +936,9 @@ class Products:
         self.cand_name = self.final_csv['name']
         self.cand_src = SkyCoord(self.final_csv['ra'], self.final_csv['dec'], 
                                   unit=u.degree)
+
+        if cand_name is not None:
+            self.cand_name = cand_name
         
         
         
