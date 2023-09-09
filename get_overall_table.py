@@ -67,12 +67,14 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
         lc = os.path.join(base_url, "SB{}_{}_lightcurve_{}.png".format(sbid, beam, cand['name']))
         dc = os.path.join(base_url, "SB{}_{}_deepcutout_{}.png".format(sbid, beam, cand['name']))
         sl = os.path.join(base_url, "SB{}_{}_slices_{}.gif".format(sbid, beam, cand['name']))
+        map1 = os.path.join(base_url, "SB{}_{}_chisquare_map2.png".format(sbid, beam))
+        map2 = os.path.join(base_url, "SB{}_{}_peak_map2.png".format(sbid, beam))
         
-        new_cols.append([priority, lc, dc, sl, beam, sbid])
+        new_cols.append([priority, lc, dc, sl, map1, map2, beam, sbid])
         
         
     cands.add_columns(np.array(new_cols).T.tolist(), 
-                      names=['priority', 'lightcurve', 'deepcutout', 'slices', 'beam', 'sbid'])
+                      names=['priority', 'lightcurve', 'deepcutout', 'slices', 'chisq_map2', 'peak_map2', 'beam', 'sbid'])
     
     cand_list.append(cands)
     
