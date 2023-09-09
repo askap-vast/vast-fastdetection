@@ -14,7 +14,7 @@ step = float(step)
 datacolumn = "corrected"
 imsize = 2800  # 3000? 4096? 2048?
 cell = ['2.5arcsec']
-uvrange = '>1m'
+uvrange = '>200m'
 # mtmfs, multiscale
 deconvolver = 'multiscale'
 scales = [0]
