@@ -125,6 +125,10 @@ for i, beam in enumerate(beamlist):
 
     imagelist = imagelist[:-1]
 
+    if len(imagelist) == 0:
+        logging.info("WARNING: No short images, skip {}".format(beam))
+        continue
+
     logger.info("Loading foler {}".format(folder))
     logger.info("Processing {} images...".format(len(imagelist)))
     logger.info(imagelist)
