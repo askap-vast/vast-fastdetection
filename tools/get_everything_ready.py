@@ -30,9 +30,10 @@ import xmltodict
 sbid = sys.argv[-2]  # number only
 path = sys.argv[-1] # output parent location 
 
-loc='/home/ymwang/vast_fastdetection' # code location 
+loc='/o9000/ASKAP/VAST/ywlee_testing//vast-fastdetection' # code location 
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8) if i not in []] + ['hw-x86-cpu{:02d}'.format(j) for j in range(2, 11) if j not in [4, 5, 9]] 
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8) if i not in []]
+# + ['hw-x86-cpu{:02d}'.format(j) for j in range(2, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
 nodelist = (nodes * 6)[:36]
 
@@ -354,7 +355,7 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=50:00:00' + '\n')
+        fw.write('#SBATCH --time=40:00:00' + '\n')
         fw.write('#SBATCH --job-name=MOD-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
@@ -380,7 +381,9 @@ for idx in range(36):
 
         filename = vis[idx]['filename'][:-4] + '.corrected'
         path_file = os.path.join(path_data, filename)
-
+        
+        cddir = 'cd {}'.format(path_models)
+        fw.write(cddir + '\n')
         text = 'time casa --logfile {} --nogui -c {} {} {}'.format(
             os.path.join(path_logs, 'casa_MODELING_{}.log'.format(affix)), 
             os.path.join(loc, 'imaging', 'model_making.py'), 
@@ -406,7 +409,7 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=30:00:00' + '\n')
+        fw.write('#SBATCH --time=150:00:00' + '\n')
         fw.write('#SBATCH --job-name=IMG-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
@@ -433,6 +436,8 @@ for idx in range(36):
         filename = vis[idx]['filename'][:-4] + '.corrected'
         path_file = os.path.join(path_data, filename)
 
+        cddir = 'cd {}'.format(path_images)
+        fw.write(cddir + '\n')
         text = 'time casa --logfile {} --nogui -c {} {} {} {}'.format(
             os.path.join(path_logs, 'casa_IMGFAST_{}.log'.format(affix)), 
             os.path.join(loc, 'imaging', 'short_imaging.py'), 
@@ -460,7 +465,7 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=10:00:00' + '\n')
+        fw.write('#SBATCH --time=15:00:00' + '\n')
         fw.write('#SBATCH --job-name=SEL-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
