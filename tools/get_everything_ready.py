@@ -30,7 +30,7 @@ import xmltodict
 sbid = sys.argv[-2]  # number only
 path = sys.argv[-1] # output parent location 
 
-loc='/o9000/ASKAP/VAST/ywlee_testing//vast-fastdetection' # code location 
+loc='/o9000/ASKAP/VAST/ywlee_testing/vast-fastdetection' # code location 
 
 nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8) if i not in []]
 # + ['hw-x86-cpu{:02d}'.format(j) for j in range(2, 11) if j not in [4, 5, 9]] 
