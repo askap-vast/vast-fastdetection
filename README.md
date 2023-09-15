@@ -81,17 +81,19 @@ A `SBID.csv` file will be produced at the end.
 
 ## Paramter customisation
 **Short timescle imaging setting**
+
 10-second images are generated using the task `tclean` from CASA. Paramters can be adjusted in `/vast-fastdetection/imaging/short_imaging.py` to accommodate for the scientific goal. Relevant parameters may include:
 
 `imsize` controls the size of the image in unit of pixels and `cell` sets the angular size of one pixel. Increase `cell` when imaging a larger image to reduce runtime.
 
 `uvrange` sets the uv-range of data to be imaged. Greater value represents more compact object.
 
-`gridder` and `wprojplanes` determine the type of gridder used and the amount of w-values employed for W-projection. `gridder = widefield` and `wprojplanes = -1` accounts for the w-term and generates spatially accurate image but requires longer runtime. `gridder` and `wprojplanes = 1` ignores w-projection and produces inaccurate image, especially when the source is away from the beam center, but the imaging is roughly 5 times faster.
+`gridder` and `wprojplanes` determine the type of gridder used and the amount of w-values employed for W-projection. `gridder = widefield` and `wprojplanes = -1` accounts for the w-term and generates spatially accurate image but requires longer runtime. `gridder = standard` and `wprojplanes = 1` ignores w-projection and produces inaccurate image, especially when the source is away from the beam center, but the imaging is roughly 5 times faster.
 
 Refer to CASA documentation for further details on `tclean`.
 
 **Candidate selection threshold**
+
 The sigma-level of the chi-square map and peak map can be adjusted in `/vast-fastdetection/run_all.py`.
 The limit of candidates plotted is also set in that python code.
 
