@@ -18,17 +18,19 @@ Some flowcharts can be found in [this Google slides](https://docs.google.com/pre
 This instruction assumes the pipeline runs on a computer cluster, so commands like `sbatch <script name>` are used. If it is run on a local machine, copy the line inside the script and run it with python.
 
 **Prepare the scripts for the pipeline**
+
 Change the `loc` to the folder where the pipeline is saved.
+
 If running the pipeline on a cluster, adjust the runtime of `MODELING`, `IMGFAST`, and `SELCAND` as appropriate.
 ```python
 python /your/folder/to/pipeline/tools/get_everything_ready.py <SBID> <output_folder>
 ```
 
 **Download the visibility data**
+Download the data one by one for 36 beams.
 ```bash
 bash /your/output/folder/scripts/bash_GETDATA_beamXX.sh
 ```
-This has to be compiled one by one for 36 beams.
 Download selavy components and mosaiced fits images.
 ```bash
 bash /your/output/folder/scripts/download_selavy.sh
@@ -40,7 +42,8 @@ bash /your/output/folder/scripts/download_mosaic_images.sh
 cd /your/output/folder/data
 tar xvf scienceData.XXX.YYY.ZZZ.beamXX_averaged_cal_leakage.ms.tar
 ```
-Repeat this step for all 36 beams
+Repeat this step for all 36 beams.
+
 A folder of the same name without the tar extension can be seen in the data folder after the process completes.
 
 **Rescale and fix the data**
@@ -71,16 +74,21 @@ Chi-square and peak fits images of each beam will be saved in the candidates fol
 ```python
 python /your/folder/to/pipeline/get_overall_table.py <SBID>
 ```
-change the `base_folder` to the pathname of the candidates folder.
+Change the `base_folder` to the pathname of the candidates folder.
 `base_url` is used when the lightcurve, deep image and snapshot are saved to an online server.
+
 A `SBID.csv` file will be produced at the end.
 
 ## Paramter customisation
 **Short timescle imaging setting**
 10-second images are generated using the task `tclean` from CASA. Paramters can be adjusted in `/vast-fastdetection/imaging/short_imaging.py` to accommodate for the scientific goal. Relevant parameters may include:
+
 `imsize` controls the size of the image in unit of pixels and `cell` sets the angular size of one pixel. Increase `cell` when imaging a larger image to reduce runtime.
+
 `uvrange` sets the uv-range of data to be imaged. Greater value represents more compact object.
+
 `gridder` and `wprojplanes` determine the type of gridder used and the amount of w-values employed for W-projection. `gridder = widefield` and `wprojplanes = -1` accounts for the w-term and generates spatially accurate image but requires longer runtime. `gridder` and `wprojplanes = 1` ignores w-projection and produces inaccurate image, especially when the source is away from the beam center, but the imaging is roughly 5 times faster.
+
 Refer to CASA documentation for further details on `tclean`.
 
 **Candidate selection threshold**
