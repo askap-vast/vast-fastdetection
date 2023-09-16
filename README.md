@@ -37,9 +37,9 @@ git clone
 
 ### Package Requirements
 
-* numpy                              (1.23.1)
+* numpy                              >=1.23.1
 * scipy                              (1.5.2)
-* astropy                            (5.1)  
+* astropy                            >=5.3.3  
 * aplpy                              (2.1.0)   
 * matplotlib                         (3.5.2)  
 * scikit-image                       (0.19.3)      
