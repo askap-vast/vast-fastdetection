@@ -32,7 +32,7 @@ For each transient candidate, VASTER generates the following outputs:
 ## Installation
 
 ```
-git clone 
+git clone git@github.com:askap-vast/vast-fastdetection.git
 ```
 
 ### Package Requirements
