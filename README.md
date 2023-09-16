@@ -12,6 +12,9 @@ Some flowcharts can be found in [this Google slides](https://docs.google.com/pre
 * aplpy                              (2.1.0)   
 * matplotlib                         (3.5.2)  
 * scikit-image                       (0.19.3)      
+* astroquery
+* xmltodict                          https://github.com/conda-forge/xmltodict-feedstock
+* python-casacore 
 
 
 ## Simple usage
