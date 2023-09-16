@@ -641,7 +641,7 @@ class Candidates:
                                  coords2=self.deep_src, 
                                  seplimit=sep*u.arcsec)
         unique_idx, unique_counts = np.unique(idx1, return_counts=True)
-        num_deep_close = np.zeros_like(self.cand_src, dtype=np.int)
+        num_deep_close = np.zeros_like(self.cand_src, dtype=int)
         num_deep_close[unique_idx] = unique_counts
         self.deep_num = num_deep_close
         

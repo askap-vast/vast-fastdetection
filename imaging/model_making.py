@@ -56,7 +56,6 @@ tclean(
     interpolation='linear',
     gridder='widefield',
     facets=2,
-    chanchunks=1,
     wprojplanes=-1,
     vptable='',
     aterm=True,
