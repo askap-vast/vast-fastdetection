@@ -1,10 +1,41 @@
-# vast-fastdetection
+# VASTER - ASKAP Intra-Observation Transient Search Pipeline
 
-From short model-subtracted FITS images to top transients candidates. 
+VASTER is a noval pipeline designed for the efficient detection and characterization of intra-observation transients in data from the Australian Square Kilometre Array Pathfinder (ASKAP) telescope. 
+This pipeline streamlines the entire process, from data retrieval to candidate selection, providing valuable insights into transient astrophysical phenomena.
 
-Some flowcharts can be found in [this Google slides](https://docs.google.com/presentation/d/1ODIjt0YC_LiqUu84r6AsVh4wcZmS4R0KW523N--9PD0/edit?usp=sharing)
+See details in the paper [Wang Y. et al. (2023)](https://ui.adsabs.harvard.edu/abs/2023MNRAS.523.5661W/abstract)
 
-## Requirements (recommand)
+Some flowcharts can also be found in [this Google slides](https://docs.google.com/presentation/d/1ODIjt0YC_LiqUu84r6AsVh4wcZmS4R0KW523N--9PD0/edit?usp=sharing)
+
+## Features
+
+### Workflow 
+
+1. **Automated Data Retrieval:** VASTER can automatically download ASKAP data from [CASDA](https://data.csiro.au/domain/casdaObservation?redirected=true) based on given SBID, simplifying the initial data acquisition process.
+
+2. **Model Creation:** The pipeline generates a deep sky model from calibrated visibilities to serve as a reference for data analysis.
+
+3. **Model Subtraction:** VASTER performs model-subtraction to isolate deviations from the deep sky model, potentially revealing transient sources.
+
+4. **Short Image Creation:** Users can specify timescales (e.g., 10 seconds or 15 minutes), and VASTER creates short residual images for further analysis.
+
+5. **Statistical Map Analysis:** The pipeline generates statistical maps (chi-square map, peak map, standard deviation map, and Gaussian map) based on the short residual images, aiding in the identification of transient objects.
+
+6. **Transient Selection**: VAST can select transient candidates based on the generated statistical maps.
+
+###  Outputs
+For each transient candidate, VASTER generates the following outputs:  
+* candidate catalogues (csv)
+* model image cutouts (png)
+* animations created from model-subtracted snapshot images (gif)
+
+## Installation
+
+```
+git clone 
+```
+
+### Package Requirements
 
 * numpy                              (1.23.1)
 * scipy                              (1.5.2)
@@ -15,6 +46,24 @@ Some flowcharts can be found in [this Google slides](https://docs.google.com/pre
 * astroquery
 * xmltodict                          https://github.com/conda-forge/xmltodict-feedstock
 * python-casacore 
+
+## Quick Usage
+
+Running in slurm supercomputer system - only tested for Shanghai SKA regional prototype
+```
+bash run_everything.sh <sbid>
+```
+It will then automatically download data from CASDA and then submit a bunch of sbatch jobs 
+
+Rnning in bash
+```
+bash run_everything_for_bash.sh <sbid>
+```
+
+## Processing steps
+
+1. 
+
 
 
 ## Simple usage
