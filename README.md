@@ -37,6 +37,7 @@ git clone
 
 ### Package Requirements
 
+* python                             >=3.9
 * numpy                              >=1.23.1
 * scipy                              (1.5.2)
 * astropy                            >=5.3.3  
