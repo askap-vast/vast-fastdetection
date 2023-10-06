@@ -72,7 +72,7 @@ for j in range(times.shape[0]):
 
     print '%s, %s' % (os.getcwd(), timerange)
 
-    tclean(vis=vis, selectdata=True, field='', spw='', timerange=timerange, uvrange=uvrange, antenna='', scan='', observation='', intent='', datacolumn=datacolumn, imagename=imagename_j, imsize=imsize, cell=cell, phasecenter='', stokes='I', projection='SIN', startmodel='', specmode='mfs', reffreq='', nchan=-1, start='', width='', outframe='LSRK', veltype='radio', restfreq=[], interpolation='linear', gridder='widefield', facets=1, chanchunks=1, wprojplanes=-1, vptable='', aterm=True,
+    tclean(vis=vis, selectdata=True, field='', spw='', timerange=timerange, uvrange=uvrange, antenna='', scan='', observation='', intent='', datacolumn=datacolumn, imagename=imagename_j, imsize=imsize, cell=cell, phasecenter='', stokes='I', projection='SIN', startmodel='', specmode='mfs', reffreq='', nchan=-1, start='', width='', outframe='LSRK', veltype='radio', restfreq=[], interpolation='linear', gridder='standard', facets=1, chanchunks=1, wprojplanes=1, vptable='', aterm=True,
            psterm=False, wbawp=True, conjbeams=False, cfcache='', computepastep=360.0, pblimit=-0.2, normtype='flatnoise', deconvolver=deconvolver, scales=scales, nterms=nterms, smallscalebias=0.0, restoration=True, restoringbeam=[], pbcor=False, outlierfile='', weighting=weighting, robust=robust, npixels=0, uvtaper=[], niter=niter, gain=0.1, threshold=0.0, cycleniter=-1, cyclefactor=1.0, minpsffraction=0.02, maxpsffraction=0.8, interactive=False, usemask='user', mask='', pbmask=0.0, savemodel=savemodel)
 
     # change to fits format

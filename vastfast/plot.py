@@ -396,14 +396,14 @@ def get_threshold_peak(value=None, sigma=None, num=70):
 
     # from sigma to calculate the theoritical value/threshold
     if value is None:
-        value = norm.isf(np.power(norm.sf(sigma), 1/num))
+        value = norm.isf(-norm.logcdf(sigma)/num))
         logger.info("Calculating peak threshold for {} images...".format(num))
         logger.info("{} sigma threshold (peak) is {:.2f}".format(sigma, value))
         return value
     
     # from threshold/given value to calculate theoritical sigma 
     elif sigma is None:
-        sigma = norm.isf(norm.sf(value)**num)
+        sigma = norm.isf(-norm.logcdf(value)*num)
         return sigma
     
 

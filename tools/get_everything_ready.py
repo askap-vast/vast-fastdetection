@@ -409,7 +409,7 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=150:00:00' + '\n')
+        fw.write('#SBATCH --time=180:00:00' + '\n')
         fw.write('#SBATCH --job-name=IMG-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
@@ -465,7 +465,7 @@ for idx in range(36):
         fw.write('\n')
 
         fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=15:00:00' + '\n')
+        fw.write('#SBATCH --time=24:00:00' + '\n')
         fw.write('#SBATCH --job-name=SEL-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
