@@ -39,11 +39,11 @@ git clone git@github.com:askap-vast/vast-fastdetection.git
 
 * python                             >=3.9
 * numpy                              >=1.23.1
-* scipy                              (1.5.2)
+* scipy                              
 * astropy                            >=5.3.3  
-* aplpy                              (2.1.0)   
-* matplotlib                         (3.5.2)  
-* scikit-image                       (0.19.3)      
+* aplpy                              
+* matplotlib                         <3.6
+* scikit-image                          
 * astroquery
 * xmltodict                          https://github.com/conda-forge/xmltodict-feedstock
 * python-casacore 
@@ -61,19 +61,71 @@ Rnning in bash
 bash run_everything_for_bash.sh <sbid>
 ```
 
+It will create a new folder named "SBxxxx" under current directory. 
+Within the new folder, it will generate the following sub directories
+* data/ (to store visibilities)
+* models/ (to store time-averaged model images)
+* images/ (to store model-subtracted short images)
+* candidates/ (to store final candidates including csv and png)
+* fitsfiles/ (intermeidate folder)
+* scripts/ (to store scripts that will be used)
+* logfiles/ (to store logfiles)
+
+
 ## Processing steps
 
-1. 
+For bash shell 
+
+1. prepare data structure 
+```
+python tools/get_everything_ready_for_bash.py <sbid number> <path to save results>
+```
+It will create data structure under defined path, with sub directories mentioned above. 
 
 
-
-## Simple usage
-
-```python
-python run_cube.py <deep_source_catalog> <folder_short_fits_images> <beam_number> <output_name>
+2. download visibilities
+```
+bash <path>/scripts/download_selavy.sh
+bash <path>/scripts/bash_CHECKDATA.sh 
 ```
 
-The `run_cube.py` scripts can automatically build a cube, generate final significance maps, select candidates and generate final products using optimised parameters. 
+**All of the following steps are stored in <path>/scripts/bash_PROCESSING_beam??.sh**, i.e.
+```
+bash <path>/scripts/bash_PROCESSING_beam??.sh
+```
+Read the following if you want to do it manually. 
+
+3. untar visibilities
+```
+tar xvf <path>/data/scienceData.....tar
+```
+
+4. fix askap soft flux scale and beam positions
+```
+python tools/askapsoft_rescale.py <input visibilities> <output visibilities name>
+python tools/fix_dir.py <visibilities name>
+```
+
+5. create sky model and subtract
+```
+casa --logfile <path>/logfiles/<name of logfile> -c imaging/model_making.py <input visibilities> <output name>
+```
+
+6. create model-subtracted short images
+```
+casa --logfile <path>/logfiles/<name of logfile> -c imaging/short_imaging.py <input visibilities> <output name>
+```
+
+7. candidates selection
+```python
+python select_candidates.py <time-averaged model image> <deep_source_selavy_catalog> <folder_short_fits_images> <beam_number> <output folder> <output_name>
+```
+
+
+
+### Detailed instruction for candidates selection 
+
+The `select_candidates.py` scripts can automatically build a cube, generate final significance maps, select candidates and generate final products using optimised parameters. 
 
 If you are interested in modifying some parameters, please see below. 
 
