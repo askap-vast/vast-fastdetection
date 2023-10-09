@@ -325,9 +325,10 @@ class Cube:
         logger.info(rmslist[rmslist>threshold])
         logger.info([self.imagelist[i] for i in np.where(rmslist > threshold)[0]])
         
-        # remove image with rms > threshold
-        self.sigcube = self.sigcube[~(rmslist>threshold)]
-        logger.info("Remove {} of {} images".format(sum(rmslist>threshold), 
+        # remove image with rms >= threshold and remove empty images
+        ind = (rmslist<threshold) & (rmslist>0)
+        self.sigcube = self.sigcube[ind]
+        logger.info("Remove {} of {} images".format(sum(~ind), 
                                                  len(self.imagelist)))
 
         
