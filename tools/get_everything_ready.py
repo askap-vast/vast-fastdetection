@@ -30,11 +30,14 @@ import xmltodict
 sbid = sys.argv[-2]  # number only
 path = sys.argv[-1] # output parent location 
 
-loc='/home/ymwang/vast_fastdetection' # code location 
+loc = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # code location
+print("Processing observation", 'SB'+sbid)
+print("Saving outptus to", path)
+print("Using code in", loc)
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(2, 8) if i not in []] + ['hw-x86-cpu{:02d}'.format(j) for j in range(2, 11) if j not in [4, 5, 9]] 
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [1]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(11, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
-nodelist = (nodes * 6)[:36]
+nodelist = (nodes * 100)[:36]
 
 print('nodelist', nodelist)
 
@@ -301,12 +304,17 @@ for idx in range(36):
         fw.write("#!/bin/bash" + '\n')
         fw.write('\n')
 
-        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        fw.write('#SBATCH --partition=purley-cpu' + '\n')
         fw.write('#SBATCH --time=1:00:00' + '\n')
         fw.write('#SBATCH --job-name=FIX-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
-        # fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        
+#        if 'exclude_nodes' in locals():
+#            fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+#        elif 'nodelist' in locals():
+#            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n')
+        
         fw.write('#SBATCH --mem=50gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_FIXDATA_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_FIXDATA_{}.error'.format(affix)) + '\n')
@@ -510,7 +518,7 @@ for idx in range(36):
         fw.write("#!/bin/bash" + '\n')
         fw.write('\n')
 
-        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        fw.write('#SBATCH --partition=purley-cpu' + '\n')
         fw.write('#SBATCH --time=1:00:00' + '\n')
         fw.write('#SBATCH --job-name=CLN-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
@@ -536,6 +544,8 @@ for idx in range(36):
         fw.write('mv {} {}'.format(os.path.join(path_images, '*beam{:02d}*.fits'.format(idx)), path_fits) + '\n')
         fw.write('rm -r {}/*beam{:02d}*'.format(path_models, idx) + '\n')
         fw.write('rm -r {}/*beam{:02d}*'.format(path_images, idx) + '\n')
+        fw.write('mv {} {}'.format(os.path.join(path_fits, '*beam{:02d}*image*fits'.format(idx)), path_models) + '\n')
+        fw.write('mv {} {}'.format(os.path.join(path_fits, '*beam{:02d}*fits'.format(idx)), path_images) + '\n')
         fw.write('\n')
 
     print('Writing {}'.format(savename))
