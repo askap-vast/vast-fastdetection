@@ -396,14 +396,14 @@ def get_threshold_peak(value=None, sigma=None, num=70):
 
     # from sigma to calculate the theoritical value/threshold
     if value is None:
-        value = norm.ppf(np.power(norm.cdf(sigma), 1/num))
+        value = norm.isf(-norm.logcdf(sigma)/num)
         logger.info("Calculating peak threshold for {} images...".format(num))
         logger.info("{} sigma threshold (peak) is {:.2f}".format(sigma, value))
         return value
     
     # from threshold/given value to calculate theoritical sigma 
     elif sigma is None:
-        sigma = norm.ppf(norm.cdf(value)**num)
+        sigma = norm.isf(-norm.logcdf(value)*num)
         return sigma
     
 
@@ -412,13 +412,13 @@ def get_threshold_chisquare(value=None, sigma=None, num=70):
     df = num - 1 # degree of freedom
 
     if value is None:
-        value = chi2.ppf(norm.cdf(sigma), df) / df
+        value = chi2.isf(norm.sf(sigma), df) / df
         logger.info("Calculating chi2 threshold for {} images...".format(num))
         logger.info("{} sigma threshold (chi2) is {:.2f}".format(sigma, value))
         return value
     
     elif sigma is None:
-        sigma = norm.ppf(chi2.cdf(value*df, df))
+        sigma = norm.isf(chi2.sf(value*df, df))
         return sigma
 
 
@@ -706,16 +706,16 @@ class Candidates:
         # read the chisq value at each pixel
         t['chi_square'] = self.chisq_map[self.yp, self.xp][self.final_idx]
         # calculate the sigma
-        # t['chi_square_sigma'] = get_sigma_logspace(self.chisq_map, 
-        #                                            np.array(t['chi_square']))
+        t['chi_square_log_sigma'] = get_sigma_logspace(self.chisq_map, 
+                                                   np.array(t['chi_square']))
         t['chi_square_sigma'] = get_threshold_chisquare(value=np.array(t['chi_square']), 
                                                         num=self.num)
         
         # read the peak value at each pixel 
         t['peak_map'] = self.peak_map[self.yp, self.xp][self.final_idx]
         # calculate the sigma
-        # t['peak_map_sigma'] = get_sigma_logspace(self.peak_map, 
-        #                                          np.array(t['peak_map']))
+        t['peak_map_log_sigma'] = get_sigma_logspace(self.peak_map, 
+                                                 np.array(t['peak_map']))
         t['peak_map_sigma'] = get_threshold_peak(value=np.array(t['peak_map']), 
                                                  num=self.num)
         
