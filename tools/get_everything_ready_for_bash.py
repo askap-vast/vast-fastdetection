@@ -321,7 +321,7 @@ for idx in range(36):
         # ====== Candidates selection ===========
 
         text = 'python {} {} {} {} {} {} {}'.format(
-            os.path.join(loc, 'run_all.py'), # scripts
+            os.path.join(loc, 'select_candidates.py'), # scripts
             os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
             os.path.join(path_data, cat[0]['filename']), # selavy catalogue
             path_images, # short images location

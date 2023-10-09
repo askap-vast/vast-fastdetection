@@ -35,7 +35,7 @@ print("Processing observation", 'SB'+sbid)
 print("Saving outptus to", path)
 print("Using code in", loc)
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [1]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(11, 11) if j not in [4, 5, 9]] 
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [1, 3, 4, 5, 7]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(11, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
 nodelist = (nodes * 100)[:36]
 
@@ -492,7 +492,7 @@ for idx in range(36):
             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
         text = 'time python {} {} {} {} {} {} {}'.format(
-            os.path.join(loc, 'run_all.py'), # scripts
+            os.path.join(loc, 'select_candidates.py'), # scripts
             os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
             os.path.join(path_data, cat[0]['filename']), # selavy catalogue
             path_images, # short images location
