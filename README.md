@@ -7,6 +7,8 @@ See details in the paper [Wang Y. et al. (2023)](https://ui.adsabs.harvard.edu/a
 
 Some flowcharts can also be found in [this Google slides](https://docs.google.com/presentation/d/1ODIjt0YC_LiqUu84r6AsVh4wcZmS4R0KW523N--9PD0/edit?usp=sharing)
 
+Example outputs: [SB11676](https://unisydneyedu-my.sharepoint.com/:f:/g/personal/ywan3191_uni_sydney_edu_au/Em-RqhrRKdBGmnvJzd1CU4UBZyFnSh4E6jvBzu9icCux2g?e=e6FAow)
+
 ## Features
 
 ### Workflow 
