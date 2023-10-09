@@ -123,13 +123,11 @@ python select_candidates.py <time-averaged model image> <deep_source_selavy_cata
 
 
 
-### Detailed instruction for candidates selection 
+## Detailed instruction for candidates selection 
 
 The `select_candidates.py` scripts can automatically build a cube, generate final significance maps, select candidates and generate final products using optimised parameters. 
 
 If you are interested in modifying some parameters, please see below. 
-
-## Instruction 
 
 ```python
 from vastcube.cube import Cube, Filter
