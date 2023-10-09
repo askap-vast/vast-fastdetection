@@ -3,7 +3,16 @@
 sbid=$1
 
 path=`pwd`/SB$sbid
-loc='/home/ymwang/vast_fastdetection' # code location 
+loc=$(dirname "$0")
+
+echo "The script you are running has:"
+echo "basename: [$(basename "$0")]"
+echo "dirname : [$(dirname "$0")]"
+echo "pwd     : [$(pwd)]"
+echo
+echo The output will store to $path
+echo The scripts are located in $loc
+echo 
 
 
 SCRIPTS=$path/scripts
