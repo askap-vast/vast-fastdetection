@@ -751,67 +751,39 @@ class Candidates:
         logger.info("Read deep catalogue {}...".format(catalogue))
         self.catalogue = Table.read(catalogue)
 
-        if tabletype == "aegean":
-            # for Aegean convention
-            label_ra, label_dec = "ra", "dec"
-            label_peak_flux, label_int_flux = "peak_flux", "int_flux"
-        elif tabletype == "selavy":
-            label_ra, label_dec = "col_ra_deg_cont", "col_dec_deg_cont"
-            label_peak_flux, label_int_flux = "col_flux_peak", "col_flux_int"
+        ####################
+        # for Aegean convention
+        ####################
+        # # deep catalogue sources coordinates
+        # self.deep_src = SkyCoord(self.catalogue['ra'], 
+        #                          self.catalogue['dec'], 
+        #                          unit=u.degree)
+        
+        # # peak flux
+        # self.deep_peak_flux = np.array(self.catalogue['peak_flux']) # unit of Jy
+        
+        # # integrated flux
+        # self.deep_int_flux = np.array(self.catalogue['int_flux']) # unit of Jy
+        
+        # # get name
+        # # for selavy just read the column 'col_component_name'
+        # # for aegean you want to use following code to read from scratch 
+        # self.deep_name = ['J' + \
+        #      src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
+        #      src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
+        #      for src in self.deep_src
+        #     ]
 
-        # deep catalogue sources coordinates
-        self.deep_src = SkyCoord(self.catalogue[label_ra],
-                                 self.catalogue[label_dec],
+        ####################
+        # for selavy convention
+        ####################
+        self.deep_src = SkyCoord(self.catalogue['col_ra_deg_cont'], 
+                                 self.catalogue['col_dec_deg_cont'], 
                                  unit=u.degree)
-
-        # peak flux
-        self.deep_peak_flux = np.array(self.catalogue[label_peak_flux])
-
-        # integrated flux
-        self.deep_int_flux = np.array(self.catalogue[label_int_flux])
-
-        # get name
-        # for selavy just read the column 'col_component_name'
-        # for aegean you want to use following code to read from scratch 
-        self.deep_name = ['J' + \
-             src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
-             src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
-             for src in self.deep_src
-            ]  
         
-    # def read_catalogue(self, catalogue, tabletype="aegean"):
-    #     """Read the deep image catalogue
-        
-        
-    #     tabletype: "aegean" or "selavy"
-    #         current only support aegean
-    #     """
-        
-    #     logger.info("Read deep catalogue {}...".format(catalogue))
-    #     self.catalogue = Table.read(catalogue)
-    #     # logger.info(self.catalogue.info)
-        
-        
-    #     # for Aegean convention
-    #     # deep catalogue sources coordinates
-    #     self.deep_src = SkyCoord(self.catalogue['ra'], 
-    #                              self.catalogue['dec'], 
-    #                              unit=u.degree)
-        
-    #     # peak flux
-    #     self.deep_peak_flux = np.array(self.catalogue['peak_flux'])
-        
-    #     # integrated flux
-    #     self.deep_int_flux = np.array(self.catalogue['int_flux'])
-        
-    #     # get name
-    #     # for selavy just read the column 'col_component_name'
-    #     # for aegean you want to use following code to read from scratch 
-    #     self.deep_name = ['J' + \
-    #          src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
-    #          src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
-    #          for src in self.deep_src
-    #         ]
+        self.deep_peak_flux = np.array(self.catalogue['col_flux_peak']) / 1e3 # unit of Jy
+        self.deep_int_flux = np.array(self.catalogue['col_flux_int']) / 1e3 # unit of Jy
+        self.deep_name = self.catalogue['col_component_name']
         
         
         
