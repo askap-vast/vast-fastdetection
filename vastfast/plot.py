@@ -544,7 +544,8 @@ class Candidates:
         '''
         if data == None or data == 'chisquare':
             data = self.chisq_map
-            threshold = get_threshold_chisquare(sigma=sigma, num=self.num)
+            # threshold = get_threshold_chisquare(sigma=sigma, num=self.num)
+            threshold = get_threshold_logspace(data, sigma=sigma)
             
         elif data == 'peak':
             data = self.peak_map
