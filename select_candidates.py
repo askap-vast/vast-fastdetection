@@ -182,7 +182,7 @@ logger.info("========= Plotting =============")
 final_csv = "{}/{}_final.csv".format(outdir, name)
 
 if os.path.exists(final_csv):
-    p = Products(final_csv, limit=5)
+    p = Products(final_csv, limit=50)
     p.generate_slices(imagelist=imagelist, 
                       savename='{}/{}_slices'.format(outdir, name))
     p.generate_cutout(fitsname=deepimage, 
