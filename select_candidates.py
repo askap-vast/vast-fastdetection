@@ -135,7 +135,7 @@ for maptype in maplist:
                        num=num)
         
     if maptype == "chisquare":
-        sigma = 5
+        sigma = 8
     else:
         sigma = 6
 
