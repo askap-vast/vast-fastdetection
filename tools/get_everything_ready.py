@@ -35,7 +35,7 @@ print("Processing observation", 'SB'+sbid)
 print("Saving outptus to", path)
 print("Using code in", loc)
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [1, 3, 4, 5, 7]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(11, 11) if j not in [4, 5, 9]] 
+nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [1, 4]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(11, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
 nodelist = (nodes * 100)[:36]
 
@@ -86,13 +86,13 @@ cat = r[r['dataproduct_subtype'] == 'catalogue.continuum.component']
 img = r[r['dataproduct_subtype'] == 'cont.restored.t0']
 
 print('Found {} visibilities'.format(len(vis)))
-print(vis['filename'])
+print(vis[['filename', 'access_url']])
 print('')
 print('Found {} selavy catalogues'.format(len(cat)))
-print(cat['filename'])
+print(cat[['filename', 'access_url']])
 print('')
 print('Found {} images'.format(len(img)))
-print(img['filename'])
+print(img[['filename', 'access_url']])
 print('')
 
 if len(vis) != 36:
@@ -209,18 +209,22 @@ with open(savename, 'w') as fw:
     fw.write('\n\n\n')
 
     for i, access_url in enumerate(cat['access_url']):
-        url = get_url(access_url)
         filename = cat[i]['filename']
-        path_file = os.path.join(path_data, filename)
+        try:
+            url = get_url(access_url)
+            path_file = os.path.join(path_data, filename)
+            cat_ind = i
 
-        text = 'wget -O {} {} -t 0'.format(path_file, url)
+            text = 'wget -O {} {} -t 0'.format(path_file, url)
 
-        fw.write("echo " + '\n')
-        fw.write("echo progress {}/{}".format(i+1, len(cat)) + '\n')
-        fw.write("echo " + text + '\n')
-        fw.write(text + '\n')
-        fw.write("sleep 1s" + '\n')
-        fw.write('\n')
+            fw.write("echo " + '\n')
+            fw.write("echo progress {}/{}".format(i+1, len(cat)) + '\n')
+            fw.write("echo " + text + '\n')
+            fw.write(text + '\n')
+            fw.write("sleep 1s" + '\n')
+            fw.write('\n')
+        except:
+            print(i, filename, access_url, 'doesnt work')
 
 print('Writing {}'.format(savename))
 
@@ -240,18 +244,21 @@ with open(savename, 'w') as fw:
     fw.write('\n\n\n')
 
     for i, access_url in enumerate(img['access_url']):
-        url = get_url(access_url)
         filename = img[i]['filename']
-        path_file = os.path.join(path_data, filename)
+        try:
+            url = get_url(access_url)
+            path_file = os.path.join(path_data, filename)
 
-        text = 'wget -O {} {} -t 0'.format(path_file, url)
+            text = 'wget -O {} {} -t 0'.format(path_file, url)
 
-        fw.write("echo " + '\n')
-        fw.write("echo progress {}/{}".format(i+1, len(img)) + '\n')
-        fw.write("echo " + text + '\n')
-        fw.write(text + '\n')
-        fw.write("sleep 1s" + '\n')
-        fw.write('\n')
+            fw.write("echo " + '\n')
+            fw.write("echo progress {}/{}".format(i+1, len(img)) + '\n')
+            fw.write("echo " + text + '\n')
+            fw.write(text + '\n')
+            fw.write("sleep 1s" + '\n')
+            fw.write('\n')
+        except:
+            print(i, filename, access_url, 'doesnt work')
 
 print('Writing {}'.format(savename))
 
@@ -494,7 +501,7 @@ for idx in range(36):
         text = 'time python {} {} {} {} {} {} {}'.format(
             os.path.join(loc, 'select_candidates.py'), # scripts
             os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
-            os.path.join(path_data, cat[0]['filename']), # selavy catalogue
+            os.path.join(path_data, cat[cat_ind]['filename']), # selavy catalogue
             path_images, # short images location
             'beam{:02d}'.format(idx), # beam number
             path_cand, # output directory 
