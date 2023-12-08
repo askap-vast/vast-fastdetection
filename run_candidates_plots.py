@@ -30,7 +30,8 @@ sbid = sys.argv[-1]
 num = 36 # number of beams
 
 # just assume it follows standard naming convention 
-path = os.path.join('/o9000/ASKAP/VAST/fast_survey', "SB"+sbid)
+#path = os.path.join('/o9000/ASKAP/VAST/fast_survey', "SB"+sbid)
+path = os.path.join(os.getcwd(), "SB"+sbid)
 path_models = os.path.join(path, 'models') 
 path_images = os.path.join(path, 'images')
 path_cand = os.path.join(path, 'candidates')
