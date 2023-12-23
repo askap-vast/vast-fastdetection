@@ -19,9 +19,9 @@ SCRIPTS=$path/scripts
 
 python $loc/tools/get_everything_ready_for_bash.py $sbid $path
 bash $SCRIPTS/download_selavy.sh
-bash $SCRIPTS/bash_CHECKDATA.sh
+#bash $SCRIPTS/bash_CHECKDATA.sh
 
- ls $SCRIPTS/bash_PROCESSING_beam*.sh | xargs -n 1 -t -P $num bash
+ls $SCRIPTS/bash_PROCESSING_beam*.sh | xargs -n 1 -t -P $num bash
 
 echo $sbid Finished!! 
 
