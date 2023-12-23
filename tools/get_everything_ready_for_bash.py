@@ -108,9 +108,11 @@ if len(vis) != 36:
 # Get download urls
 ############################
 # username = 'wym20131028@gmail.com'
-# logger.info('OPAL username: %s', username)
-username = input("Enter OPAL username: ")
-password = getpass.getpass(str("Enter OPAL password: "))
+username = os.getenv('OPAL_USER')
+logger.info('OPAL username: %s', username)
+password = os.getenv('OPAL_PWD')
+# username = input("Enter OPAL username: ")
+# password = getpass.getpass(str("Enter OPAL password: "))
 
 
 def get_url(access_url):
@@ -340,7 +342,7 @@ for idx in range(36):
         path_file = os.path.join(path_data, filename)
 
         fw.write("echo beam{:02d}: Clean intermediate products...".format(idx) + '\n')
-        fw.write('# rm {}.tar'.format(path_file) + '\n')
+        fw.write('rm {}.tar'.format(path_file) + '\n')
         fw.write('rm -r {}'.format(path_file) + '\n')
         fw.write('mv {} {}'.format(os.path.join(path_models, '*beam{:02d}*.fits'.format(idx)), path_fits) + '\n')
         fw.write('mv {} {}'.format(os.path.join(path_images, '*beam{:02d}*.fits'.format(idx)), path_fits) + '\n')
