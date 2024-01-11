@@ -85,6 +85,8 @@ vis = r[r['dataproduct_type'] == 'visibility']
 cat = r[r['dataproduct_subtype'] == 'catalogue.continuum.component']
 img = r[r['dataproduct_subtype'] == 'cont.restored.t0']
 
+vis.sort('filename')
+
 print('Found {} visibilities'.format(len(vis)))
 print(vis[['filename', 'access_url']])
 print('')
