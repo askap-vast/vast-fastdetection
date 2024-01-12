@@ -37,7 +37,8 @@ base_url = "http://localhost:8053/SB{}/candidates/".format(sbid)
 print(base_folder)
 
 cand_list = []
-goodcat = Table.read('/import/ada2/ywan3191/fast_pipeline/vast_fastdetection/collections/atnf_psrcat_good_astrometry.csv')
+psrcat_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'collections', 'atnf_psrcat_good_astrometry.csv') # code location
+goodcat = Table.read(psrcat_path)
 psrsrc = SkyCoord(goodcat['ra_deg'], goodcat['dec_deg'], unit=u.degree)
 
 
@@ -83,7 +84,6 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
 
         candsrc = SkyCoord(cand['ra'], cand['dec'], unit=u.degree)
         ind = candsrc.separation(selpsrsrc) < 20*u.arcsec
-        print('number of pulsars in', beam, 'is:', sum(ind))
 
         if sum(ind) == 0:
             atnfmatch = ''
@@ -94,7 +94,8 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
         
         new_cols.append([priority, lc, dc, sl, map1, map2, beam, sbid, atnfmatch, atnfsep])
         
-        
+    print(beam+':', 'Total', len(cands), 'Pulsars', sum(ind))
+
     cands.add_columns(np.array(new_cols).T.tolist(), 
                       names=['priority', 'lightcurve', 'deepcutout', 'slices', 'chisq_map2', 'peak_map2', 'beam', 'sbid', 'PSR_name', 'PSR_sep'])
     
