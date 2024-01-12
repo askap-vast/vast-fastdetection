@@ -33,6 +33,8 @@ base_url = "http://localhost:8053/SB{}/candidates/".format(sbid)
 
 
 cand_list = []
+goodcat = Table.read('/import/ada2/ywan3191/fast_pipeline/vast_fastdetection/collections/atnf_psrcat_good_astrometry.csv')
+psrsrc = SkyCoord(goodcat['ra_deg'], goodcat['dec_deg'], unit=u.degree)
 
 
 for beam in ['beam{:02d}'.format(i) for i in range(36)]:
@@ -42,9 +44,14 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
         print(name, "doesn't exist. ")
         continue
     
-    
     cands = Table.read(name)
-    
+    beamsrc = SkyCoord(cands['beam_ra'], cands['beam_dec'], unit=u.degree)[0]
+
+    # select pulsars with the primary beam 
+    ind = beamsrc.separation(psrsrc) < 3*u.degree
+    selpsrcat = goodcat[ind]
+    selpsrsrc = psrsrc[ind]
+
     new_cols = []
     
     for cand in cands:
@@ -69,12 +76,23 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
         sl = os.path.join(base_url, "SB{}_{}_slices_{}.gif".format(sbid, beam, cand['name']))
         map1 = os.path.join(base_url, "SB{}_{}_chisquare_map2.png".format(sbid, beam))
         map2 = os.path.join(base_url, "SB{}_{}_peak_map2.png".format(sbid, beam))
+
+        candsrc = SkyCoord(cand['ra'], cand['dec'], unit=u.degree)
+        ind = candsrc.separation(selpsrsrc) < 20*u.arcsec
+        print('number of pulsars in', beam, 'is:', sum(ind))
+
+        if sum(ind) == 0:
+            atnfmatch = ''
+            atnfsep = ''
+        else:
+            atnfmatch = selpsrcat[ind]['PSRJ'][0]
+            atnfsep = candsrc.separation(selpsrsrc)[ind].arcsec[0]
         
-        new_cols.append([priority, lc, dc, sl, map1, map2, beam, sbid])
+        new_cols.append([priority, lc, dc, sl, map1, map2, beam, sbid, atnfmatch, atnfsep])
         
         
     cands.add_columns(np.array(new_cols).T.tolist(), 
-                      names=['priority', 'lightcurve', 'deepcutout', 'slices', 'chisq_map2', 'peak_map2', 'beam', 'sbid'])
+                      names=['priority', 'lightcurve', 'deepcutout', 'slices', 'chisq_map2', 'peak_map2', 'beam', 'sbid', 'PSR_name', 'PSR_sep'])
     
     cand_list.append(cands)
     
