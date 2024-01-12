@@ -24,13 +24,17 @@ sbid = sys.argv[-1]
 # base_folder = "/import/ada2/ywan3191/fast_pipeline/results/SB{}/".format(sbid)
 # base_url = 'ada.physics.usyd.edu.au:1028/view/fast_pipeline/results/SB{}/'.format(sbid)
 
-base_folder = "/import/ada2/ywan3191/fast_survey/SB{}/".format(sbid)
+# base_folder = "/import/ada2/ywan3191/fast_survey/SB{}/".format(sbid)
 # base_folder = 'c:/Users/wym19/OneDrive/Melbourne/06 Fast Transients GP Survey/Results/SB{}/'.format(sbid)
 # base_url = 'ada.physics.usyd.edu.au:1029/fast_survey/SB{}/'.format(sbid)
 
 # base_folder = "/o9000/ASKAP/VAST/fast_survey/SB{}/candidates/".format(sbid)
+
+
+base_folder = os.path.join(os.getcwd(), f'SB{sbid}', 'candidates')
 base_url = "http://localhost:8053/SB{}/candidates/".format(sbid)
 
+print(base_folder)
 
 cand_list = []
 
@@ -78,6 +82,10 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
     
     cand_list.append(cands)
     
+if len(cand_list) == 0:
+    print(f'no final csv for SB{sbid}')
+    sys.exit()
+
     
     
 new_csv = vstack(cand_list)
@@ -87,5 +95,5 @@ print('Low priority', sum(new_csv['priority'] == 'low'))
 
 
 new_csv.write(os.path.join(base_folder, "SB{}.csv").format(sbid), overwrite=True)
-
+print(f'Saved final results to {os.path.join(base_folder, "SB{}.csv").format(sbid)}')
 
