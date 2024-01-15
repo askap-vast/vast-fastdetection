@@ -324,7 +324,7 @@ for idx in range(36):
 
         # ====== Candidates selection ===========
 
-        text = 'python {} {} {} {} {} {} {}'.format(
+        text = 'python {} {} {} {} {} {} {} > {} 2>&1'.format(
             os.path.join(loc, 'select_candidates.py'), # scripts
             os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
             os.path.join(path_data, cat[0]['filename']), # selavy catalogue
@@ -332,7 +332,7 @@ for idx in range(36):
             'beam{:02d}'.format(idx), # beam number
             path_cand, # output directory 
             affix, # affix
-            # os.path.join(path_logs, 'bash_SELCAND_{}.log'.format(affix)), # output log files 
+            os.path.join(path_logs, 'bash_SELCAND_{}.log'.format(affix)), # output log files 
         )
         fw.write("echo beam{:02d}: Select candidates...".format(idx) + '\n')
         fw.write(text + '\n')
