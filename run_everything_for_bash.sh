@@ -25,3 +25,8 @@ ls $SCRIPTS/bash_PROCESSING_beam*.sh | xargs -n 1 -t -P $num bash
 
 echo $sbid Finished!! 
 
+# uplode final file and email alert
+python $loc/get_overall_table.py $sbid
+python $loc/tools/email_alert.py $sbid -e yuanmingwang@swin.edu.au
+
+
