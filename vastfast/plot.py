@@ -639,7 +639,7 @@ class Candidates:
         # 2. have no countparts in deep image
         # 3. or have a countpart with md > 0.05 and ext < 1.5
         # 4. with chisq log space > 5sigma (remove rubbish)
-        self.final_idx = beamidx & ((self.d2d.arcsec > sep) | ((self.md > mdlim) & (ext < extlim))) & (chisq_log>5)
+        self.final_idx = beamidx & ((self.d2d.arcsec > sep) | ((self.md > mdlim) & (ext < extlim))) & (chisq_log>6)
         logger.info("Final candidates: {}".format(sum(self.final_idx)))
         
         # check number of close deep conterparts within 30 arcsec 
