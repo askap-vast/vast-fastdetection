@@ -27,19 +27,20 @@ import requests
 import xmltodict
 
 
-sbid = sys.argv[-2]  # number only
-path = sys.argv[-1] # output parent location 
+sbid = sys.argv[-1]  # number only
+# path = sys.argv[-1] # output parent location 
+path = os.path.join(os.getcwd(), 'SB'+sbid) # create a SB directory in the current location 
 
 loc = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # code location
 print("Processing observation", 'SB'+sbid)
 print("Saving outptus to", path)
 print("Using code in", loc)
 
-nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [1, 4]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(11, 11) if j not in [4, 5, 9]] 
+# nodes = ['purley-x86-cpu{:02d}'.format(i) for i in range(1, 8) if i not in [1, 4]] + ['hw-x86-cpu{:02d}'.format(j) for j in range(11, 11) if j not in [4, 5, 9]] 
 # exclude_nodes = 'purley-x86-cpu[02,08],hw-x86-cpu[01-15]' # hw-x86 is extremely slow!!!
-nodelist = (nodes * 100)[:36]
+# nodelist = (nodes * 100)[:36]
 
-print('nodelist', nodelist)
+# print('nodelist', nodelist)
 
 ############################
 # Build file saving system structure 
@@ -84,6 +85,8 @@ r = job.get_results()
 vis = r[r['dataproduct_type'] == 'visibility']
 cat = r[r['dataproduct_subtype'] == 'catalogue.continuum.component']
 img = r[r['dataproduct_subtype'] == 'cont.restored.t0']
+
+vis.sort('filename')
 
 print('Found {} visibilities'.format(len(vis)))
 print(vis[['filename', 'access_url']])
@@ -311,7 +314,7 @@ for idx in range(36):
         fw.write("#!/bin/bash" + '\n')
         fw.write('\n')
 
-        fw.write('#SBATCH --partition=purley-cpu' + '\n')
+        # fw.write('#SBATCH --partition=purley-cpu' + '\n')
         fw.write('#SBATCH --time=1:00:00' + '\n')
         fw.write('#SBATCH --job-name=FIX-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
@@ -328,8 +331,11 @@ for idx in range(36):
         fw.write('#SBATCH --export=all' + '\n')
         fw.write('\n')
 
-        fw.write('module use /home/app/modulefiles' + '\n')
-        fw.write('module load casacore/cpu-py3.6.5-3.1.0' + '\n')
+        # fw.write('module use /home/app/modulefiles' + '\n')
+        # fw.write('module load casacore/cpu-py3.6.5-3.1.0' + '\n')
+        fw.write('source ~/.activate_conda' + '\n')
+        fw.write('conda activate vaster' + '\n')
+
         fw.write('\n')
 
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
@@ -338,19 +344,21 @@ for idx in range(36):
         filename = vis[idx]['filename'][:-4]
         path_file = os.path.join(path_data, filename)
 
-        text = 'time -p python {} {} {}'.format(
+        text = 'srun time -p python {} {} {}'.format(
             os.path.join(loc, 'tools', 'askapsoft_rescale.py'), 
             path_file, path_file+'.corrected'
             )        
         fw.write(text + '\n')
         fw.write('\n')
 
-        text = 'time -p python {} {}'.format(
+        text = 'srun time -p python {} {}'.format(
             os.path.join(loc, 'tools', 'fix_dir.py'), 
             path_file+'.corrected'
             )    
         fw.write(text + '\n')
         fw.write('\n')
+
+        fw.write('conda deactivate' + '\n')
 
     print('Writing {}'.format(savename))
 
@@ -360,52 +368,52 @@ for idx in range(36):
 # Generate slurm_MODELING_??.sh
 ############################
 
-for idx in range(36):
-    savename = os.path.join(path_scripts, 'slurm_MODELING_beam{:02d}.sh'.format(idx))
-    affix = 'SB{}_beam{:02d}'.format(sbid, idx)
+# for idx in range(36):
+#     savename = os.path.join(path_scripts, 'slurm_MODELING_beam{:02d}.sh'.format(idx))
+#     affix = 'SB{}_beam{:02d}'.format(sbid, idx)
 
-    with open(savename, 'w') as fw:
-        fw.write("#!/bin/bash" + '\n')
-        fw.write('\n')
+#     with open(savename, 'w') as fw:
+#         fw.write("#!/bin/bash" + '\n')
+#         fw.write('\n')
 
-        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
-        fw.write('#SBATCH --time=50:00:00' + '\n')
-        fw.write('#SBATCH --job-name=MOD-{:02d}'.format(idx) + '\n')
-        fw.write('#SBATCH --nodes=1' + '\n')
-        fw.write('#SBATCH --ntasks-per-node=1' + '\n')
+#         # fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+#         fw.write('#SBATCH --time=50:00:00' + '\n')
+#         fw.write('#SBATCH --job-name=MOD-{:02d}'.format(idx) + '\n')
+#         fw.write('#SBATCH --nodes=1' + '\n')
+#         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
 
-        if 'exclude_nodes' in locals():
-            fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
-        elif 'nodelist' in locals():
-            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n')
+#         # if 'exclude_nodes' in locals():
+#         #     fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+#         # elif 'nodelist' in locals():
+#         #     fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n')
 
-        fw.write('#SBATCH --mem=200gb' + '\n')
-        fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_MODELING_{}.output'.format(affix)) + '\n')
-        fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_MODELING_{}.error'.format(affix)) + '\n')
-        fw.write('#SBATCH --export=all' + '\n')
-        fw.write('\n')
+#         fw.write('#SBATCH --mem=200gb' + '\n')
+#         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_MODELING_{}.output'.format(affix)) + '\n')
+#         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_MODELING_{}.error'.format(affix)) + '\n')
+#         fw.write('#SBATCH --export=all' + '\n')
+#         fw.write('\n')
 
-        fw.write('module use /home/app/modulefiles' + '\n')
-        fw.write('module load casa/5.0.0-218.el6' + '\n')
-        fw.write('module load python/cpu-3.6.5' + '\n')
-        fw.write('\n')
+#         fw.write('module use /home/app/modulefiles' + '\n')
+#         fw.write('module load casa/5.0.0-218.el6' + '\n')
+#         fw.write('module load python/cpu-3.6.5' + '\n')
+#         fw.write('\n')
 
-        if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
-            print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
+#         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
+#             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
-        filename = vis[idx]['filename'][:-4] + '.corrected'
-        path_file = os.path.join(path_data, filename)
+#         filename = vis[idx]['filename'][:-4] + '.corrected'
+#         path_file = os.path.join(path_data, filename)
 
-        text = 'time casa --logfile {} --nogui -c {} {} {}'.format(
-            os.path.join(path_logs, 'casa_MODELING_{}.log'.format(affix)), 
-            os.path.join(loc, 'imaging', 'model_making.py'), 
-            path_file, 
-            affix
-        )
-        fw.write(text + '\n')
-        fw.write('\n')
+#         text = 'time casa --logfile {} --nogui -c {} {} {}'.format(
+#             os.path.join(path_logs, 'casa_MODELING_{}.log'.format(affix)), 
+#             os.path.join(loc, 'imaging', 'model_making.py'), 
+#             path_file, 
+#             affix
+#         )
+#         fw.write(text + '\n')
+#         fw.write('\n')
 
-    print('Writing {}'.format(savename))
+#     print('Writing {}'.format(savename))
 
 
 ############################
@@ -420,16 +428,16 @@ for idx in range(36):
         fw.write("#!/bin/bash" + '\n')
         fw.write('\n')
 
-        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        # fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
         fw.write('#SBATCH --time=30:00:00' + '\n')
         fw.write('#SBATCH --job-name=IMG-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
 
-        if 'exclude_nodes' in locals():
-            fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
-        elif 'nodelist' in locals():
-            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
+        # if 'exclude_nodes' in locals():
+        #     fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        # elif 'nodelist' in locals():
+        #     fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
         
         fw.write('#SBATCH --mem=50gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_IMGFAST_{}.output'.format(affix)) + '\n')
@@ -437,9 +445,9 @@ for idx in range(36):
         fw.write('#SBATCH --export=all' + '\n')
         fw.write('\n')
 
-        fw.write('module use /home/app/modulefiles' + '\n')
-        fw.write('module load casa/5.0.0-218.el6' + '\n')
-        fw.write('module load python/cpu-3.6.5' + '\n')
+        # fw.write('module use /home/app/modulefiles' + '\n')
+        # fw.write('module load casa/5.0.0-218.el6' + '\n')
+        # fw.write('module load python/cpu-3.6.5' + '\n')
         fw.write('\n')
 
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
@@ -448,12 +456,12 @@ for idx in range(36):
         filename = vis[idx]['filename'][:-4] + '.corrected'
         path_file = os.path.join(path_data, filename)
 
-        text = 'time casa --logfile {} --nogui -c {} {} {} {}'.format(
+        text = 'srun time casa --logfile {} --nogui -c {} {} {} {}'.format(
             os.path.join(path_logs, 'casa_IMGFAST_{}.log'.format(affix)), 
             os.path.join(loc, 'imaging', 'short_imaging.py'), 
             path_file, 
             affix, 
-            10
+            900
         )
         fw.write(text + '\n')
         fw.write('\n')
@@ -474,16 +482,16 @@ for idx in range(36):
         fw.write("#!/bin/bash" + '\n')
         fw.write('\n')
 
-        fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
+        # fw.write('#SBATCH --partition=all-x86-cpu' + '\n')
         fw.write('#SBATCH --time=10:00:00' + '\n')
         fw.write('#SBATCH --job-name=SEL-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
         
-        if 'exclude_nodes' in locals():
-            fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
-        elif 'nodelist' in locals():
-            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
+        # if 'exclude_nodes' in locals():
+        #     fw.write('#SBATCH --exclude={}'.format(exclude_nodes) + '\n')
+        # elif 'nodelist' in locals():
+        #     fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
 
         fw.write('#SBATCH --mem=50gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_SELCAND_{}.output'.format(affix)) + '\n')
@@ -491,16 +499,19 @@ for idx in range(36):
         fw.write('#SBATCH --export=all' + '\n')
         fw.write('\n')
 
-        fw.write('module use /home/app/modulefiles' + '\n')
-        fw.write('module load python/cpu-3.7.4' + '\n')
+        # fw.write('module use /home/app/modulefiles' + '\n')
+        # fw.write('module load python/cpu-3.7.4' + '\n')
+        fw.write('source ~/.activate_conda' + '\n')
+        fw.write('conda activate vaster' + '\n')
         fw.write('\n')
 
         if 'beam{:02d}'.format(idx) not in vis[idx]['filename']:
             print('WARNING: no. {} -- beam number/order might be wrong. Continue running...'.format(idx))
 
-        text = 'time python {} {} {} {} {} {} {}'.format(
+        text = 'srun time python {} {} {} {} {} {} {}'.format(
             os.path.join(loc, 'select_candidates.py'), # scripts
-            os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
+            # os.path.join(path_models, affix+'.image.tt0.fits'), # deep image
+            os.path.join(path_data, img[0]['filename']), # deep image
             os.path.join(path_data, cat[cat_ind]['filename']), # selavy catalogue
             path_images, # short images location
             'beam{:02d}'.format(idx), # beam number
@@ -509,6 +520,8 @@ for idx in range(36):
         )
         fw.write(text + '\n')
         fw.write('\n')
+
+        fw.write('conda deactivate')
 
     print('Writing {}'.format(savename))
 
@@ -525,7 +538,7 @@ for idx in range(36):
         fw.write("#!/bin/bash" + '\n')
         fw.write('\n')
 
-        fw.write('#SBATCH --partition=purley-cpu' + '\n')
+        # fw.write('#SBATCH --partition=purley-cpu' + '\n')
         fw.write('#SBATCH --time=1:00:00' + '\n')
         fw.write('#SBATCH --job-name=CLN-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')

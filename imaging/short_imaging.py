@@ -11,8 +11,8 @@ print("** NOTICE  ** the args passed to casa was:" + vis + imagename + step)
 
 step = float(step)
 # corrected, data
-datacolumn = "corrected"
-imsize = 2800  # 3000? 4096? 2048?
+datacolumn = "data"
+imsize = 2880  # 3000? 4096? 2048?
 cell = ['2.5arcsec']
 uvrange = '>200m'
 # mtmfs, multiscale
@@ -25,7 +25,7 @@ niter = 0
 # weigithing
 weighting = 'briggs'
 robust = 0.5
-
+pol = 'V'
 
 # open table and read time column
 tb.open(vis)
@@ -52,13 +52,21 @@ tb.open(vis)
 #                       stop=np.max(times)+interval/2, step=step)
 #     print "Input time length is {}s, i.e., {:.1f}m".format(step, step/60)
 
-from collections import Counter
-times = list(Counter(tb.getcol('TIME')).keys())
-times.sort()
-# time in fits is the middle time (but it doesn't matter as 10s is the sampling time, so it's the start, middle, and end time as well)
-times = np.array(times) - step/2
-print("Input time length is {}s, using a slightly different way to get short images".format(step))
+# # mode for 10s data
+# from collections import Counter
+# times = list(Counter(tb.getcol('TIME')).keys())
+# times.sort()
+# # time in fits is the middle time (but it doesn't matter as 10s is the sampling time, so it's the start, middle, and end time as well)
+# times = np.array(times) - step/2
+# print("Input time length is {}s, using a slightly different way to get short images".format(step))
 
+# mode for 15min data
+times = tb.getcol('TIME')
+interval = step
+# get the times array, change unit to second
+# time in fits is therefore the START time 
+times = np.arange(start=np.min(times)-interval/2, stop=np.max(times)+interval/2, step=step)
+print("Input time length is {}s, i.e., {:.1f}m".format(step, step/60))
 
 tb.close()
 
@@ -72,7 +80,7 @@ for j in range(times.shape[0]):
 
     print('%s, %s' % (os.getcwd(), timerange))
 
-    tclean(vis=vis, selectdata=True, field='', spw='', timerange=timerange, uvrange=uvrange, antenna='', scan='', observation='', intent='', datacolumn=datacolumn, imagename=imagename_j, imsize=imsize, cell=cell, phasecenter='', stokes='I', projection='SIN', startmodel='', specmode='mfs', reffreq='', nchan=-1, start='', width='', outframe='LSRK', veltype='radio', restfreq=[], interpolation='linear', gridder='widefield', facets=2, wprojplanes=-1, vptable='', aterm=True,
+    tclean(vis=vis, selectdata=True, field='', spw='', timerange=timerange, uvrange=uvrange, antenna='', scan='', observation='', intent='', datacolumn=datacolumn, imagename=imagename_j, imsize=imsize, cell=cell, phasecenter='', stokes=pol, projection='SIN', startmodel='', specmode='mfs', reffreq='', nchan=-1, start='', width='', outframe='LSRK', veltype='radio', restfreq=[], interpolation='linear', gridder='widefield', facets=1, wprojplanes=-1, vptable='', aterm=True,
            psterm=False, wbawp=True, conjbeams=False, cfcache='', computepastep=360.0, pblimit=-0.2, normtype='flatnoise', deconvolver=deconvolver, scales=scales, nterms=nterms, smallscalebias=0.0, restoration=True, restoringbeam=[], pbcor=False, outlierfile='', weighting=weighting, robust=robust, npixels=0, uvtaper=[], niter=niter, gain=0.1, threshold=0.0, cycleniter=-1, cyclefactor=1.0, minpsffraction=0.02, maxpsffraction=0.8, interactive=False, usemask='user', mask='', pbmask=0.0, savemodel=savemodel)
 
     # change to fits format
