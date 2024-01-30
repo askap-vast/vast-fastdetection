@@ -115,7 +115,7 @@ class Map:
         data = hdu[self.idx].data 
         
         hdu[self.idx].data = self.map.reshape(data.shape)
-        hdu.writeto(fitsname)
+        hdu.writeto(fitsname, overwrite=True)
         
         
         
@@ -388,7 +388,7 @@ class Filter:
         data = hdu.data 
        
         hdu.data = self.map.reshape(data.shape)
-        hdu.writeto(fitsname)
+        hdu.writeto(fitsname, overwrite=True)
         
         
         

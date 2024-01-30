@@ -137,7 +137,88 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     
     
     
+def save_fits_cube(src_name, imagelist, radius=5, name='cube'):
+    """Generate a fits cube containing images cutout in given position. 
+    src: 
+        astropy Skycoord object. 
+    imagelist: 
+        A list of short FITS images, in correct order. 
+    radius:
+        unit of arcmin, the cutout size
+    """
     
+    # get the source position 
+    src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
+    logger.info("Get source position ({}, {})...".format(src.ra.degree, src.dec.degree))
+
+    final_data = []
+    
+    # generate each frame
+    for i, image in enumerate(imagelist):
+        # logger.info("Processing image number %s/%s" % (i, len(imagelist)))
+        
+        # open the fits
+        hdu = fits.open(image)[0]
+        # get the fits data (drop-out extra dimensions)
+        data = hdu.data.squeeze()
+        # get wcs frame
+        wcs = WCS(header=hdu.header, naxis=2)
+        # generate cutout
+        cutout = Cutout2D(data, 
+                          position=src, 
+                          size=radius*u.arcmin, 
+                          wcs=wcs)
+        # Put the cutout image in the FITS HDU
+        final_data.append(cutout.data)
+
+        if i == 0:
+            final_header = cutout.wcs.to_header()
+            final_hdu = hdu
+    
+    # Update the FITS header with the cutout WCS
+    final_hdu.header.update(final_header)
+
+    # save the data cube to FITS
+    final_hdu.data = np.array(final_data)
+
+    # Write the cutout to a new FITS file
+    cutout_filename = name + '.fits'
+    final_hdu.writeto(cutout_filename, overwrite=True)
+    logger.info("Save fits cube %s", cutout_filename)
+
+    
+
+
+def save_fits_cutout(src_name, image, radius=5, name='cutout'):
+
+    # get the source position 
+    src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
+    # open the fits
+    hdu = fits.open(image)[0]
+    # get the fits data (drop-out extra dimensions)
+    data = hdu.data.squeeze()
+    # get wcs frame
+    wcs = WCS(header=hdu.header, naxis=2)
+    
+    # generate cutout
+    cutout = Cutout2D(data, 
+                      position=src, 
+                      size=radius*u.arcmin, 
+                      wcs=wcs
+                     )
+
+    # Put the cutout image in the FITS HDU
+    hdu.data = cutout.data
+
+    # Update the FITS header with the cutout WCS
+    hdu.header.update(cutout.wcs.to_header())
+
+    # Write the cutout to a new FITS file
+    cutout_filename = name + '.fits'
+    hdu.writeto(cutout_filename, overwrite=True)
+    logger.info("Save fits cutout %s", cutout_filename)
+
+        
         
     
     
@@ -472,7 +553,7 @@ def combine_csv(namelist, radius=10,
 
     # save csv table
     final_csv.write("{}.csv".format(tablename), overwrite=True)
-    logger.info("Save final csv {}".format(tablename))
+    logger.info("Save final csv {}.csv".format(tablename))
     logger.info("Final table length {}".format(len(final_csv)))
     
     # save vot table
@@ -481,7 +562,7 @@ def combine_csv(namelist, radius=10,
                         table_id="candidates", 
                         format="votable", 
                         overwrite=True)
-        logger.info("Save final vot {}".format(tablename))
+        logger.info("Save final vot {}.vot".format(tablename))
     
 
 
@@ -772,7 +853,7 @@ class Candidates:
         
         # save csv table
         t.write("{}.csv".format(tablename), overwrite=True)
-        logger.info("Save csv {}".format(tablename))
+        logger.info("Save csv {}.csv".format(tablename))
         
         # save vot table
         if savevot and len(t) != 0:
@@ -780,7 +861,7 @@ class Candidates:
                     table_id="candidates", 
                     format="votable", 
                     overwrite=True)
-            logger.info("Save vot {}".format(tablename))
+            logger.info("Save vot {}.vot".format(tablename))
         
         
         
@@ -955,7 +1036,25 @@ class Products:
             plot_cutout(src_name, fitsname, 
                         radius=5, 
                         name='{}_{}'.format(savename, src_name))
-            
+
+
+    def generate_fits_cutout(self, fitsname, radius=5, savename='output'):
+        
+        # run the cutout plot one by one 
+        for src_name in self.cand_name:
+            save_fits_cutout(src_name, fitsname, 
+                        radius=5, 
+                        name='{}_{}'.format(savename, src_name))
+
+
+    def generate_fits_cube(self, imagelist, radius=5, savename='output'):
+        
+        # run the slices plot one by one
+        for src_name in self.cand_name:
+            save_fits_cube(src_name, imagelist, 
+                            radius=5, 
+                            name='{}_{}'.format(savename, src_name))
+
             
             
     def generate_slices(self, imagelist, radius=5, vsigma=5, savename='output'):
@@ -965,8 +1064,6 @@ class Products:
             plot_slices(src_name, imagelist, 
                         radius=5, vsigma=5, 
                         name='{}_{}'.format(savename, src_name))
-
-
 
 
     def generate_lightcurve(self, imagelist, deepname, savename='output', 
@@ -999,10 +1096,10 @@ class Products:
         # save catalgoue 
         if savecsv:
             # save csv table
-            peak_flux_table.write("{}_peak_flux.csv".format(savename))
-            local_rms_table.write("{}_local_rms.csv".format(savename))
+            peak_flux_table.write("{}_peak_flux.csv".format(savename), overwrite=True)
+            local_rms_table.write("{}_local_rms.csv".format(savename), overwrite=True)
 
-            logger.info("Save csv {}".format(savename))
+            logger.info("Save csv {}.csv".format(savename))
             
             
             
