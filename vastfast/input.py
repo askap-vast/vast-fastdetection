@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 def read_shortimage(path, beam):
     """Read in short images"""
-    simage_files = path +"/" + "beam{:02}*.fits".format(beam)
+    simage_files = path +"/" + "SB*beam{:02}*.fits".format(beam)
     simagelist = sorted(glob.glob(simage_files))
     if len(simagelist) > 1:
         logger.info("Load folder: {}".format(path))

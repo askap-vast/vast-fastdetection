@@ -155,12 +155,16 @@ class Procedures():
             p = Products(final_csv)
             p.generate_slices(imagelist=self.imagelist, 
                             savename='{}/{}_slices'.format(self.outdir_beam, self.name))
+            p.generate_fits_cube(imagelist=self.imagelist, 
+                      savename='{}/{}_slices'.format(self.outdir_beam, self.name))
 
             if self.deepimage is None:
                 logger.warning("No deepcutout or lightcurve files are generated without deep image.")
             else:
                 p.generate_cutout(fitsname=self.deepimage, 
                                 savename='{}/{}_deepcutout'.format(self.outdir_beam, self.name))
+                p.generate_fits_cutout(fitsname=self.deepimage, 
+                      savename='{}/{}_deepcutout'.format(self.outdir_beam, self.name))
                 p.generate_lightcurve(imagelist=self.imagelist, 
                                     deepname=self.deepimage, 
                                     savename='{}/{}_lightcurve'.format(self.outdir_beam, self.name))
@@ -183,8 +187,8 @@ class Procedures():
                 tar.add(self.outdir_beam, arcname=os.path.basename(self.outdir_beam))
 
     def finalize_output(self):
-        logger.info("Removing fits files...")
-        self._remove_fits()
+        #logger.info("Removing fits files...")
+        #self._remove_fits()
 
         logger.info("Creating tarfile...")
         self._tar_file()
