@@ -12,7 +12,7 @@ print("** NOTICE  ** the args passed to casa was:" + vis + imagename + step)
 step = float(step)
 # corrected, data
 datacolumn = "corrected"
-imsize = 2800  # 3000? 4096? 2048?
+imsize = 2880  # 3000? 4096? 2048?
 cell = ['2.5arcsec']
 uvrange = '>200m'
 # mtmfs, multiscale
