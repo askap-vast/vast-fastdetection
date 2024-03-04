@@ -79,7 +79,7 @@ create_dir(path_fits)
 ############################
 tap = TapPlus(url="https://casda.csiro.au/casda_vo_tools/tap")
 job = tap.launch_job_async("SELECT * FROM ivoa.obscore WHERE obs_id='{}' AND (dataproduct_type='{}' OR dataproduct_subtype='{}' OR dataproduct_subtype='{}') ".format(
-    sbid, 'visibility', 'catalogue.continuum.component', 'cont.restored.t0'))
+    'ASKAP-'+str(sbid), 'visibility', 'catalogue.continuum.component', 'cont.restored.t0'))
 
 r = job.get_results()
 
