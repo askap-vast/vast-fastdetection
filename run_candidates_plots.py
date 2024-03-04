@@ -86,6 +86,7 @@ for i in range(num):
 
     sep = src.separation(beam_position).degree
     if sep > 1.2*radius:
+        logging.info(coord+' outside of beam{:02d} with separation {:.2f} degree'.format(i, sep))
         continue
     
     logging.info(coord+' within beam{:02d} with separation {:.2f} degree'.format(i, sep))
