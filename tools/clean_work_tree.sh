@@ -4,7 +4,8 @@
 sbid=$1
 i=$2
 
-path=/o9000/ASKAP/VAST/fast_survey/SB$sbid
+#path=/o9000/ASKAP/VAST/fast_survey/SB$sbid
+path=`pwd`/SB$sbid
 echo cleaning work tree for SB$sbid beam$i in folder $path
 
 rm -r $path/data/*beam$i*
