@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "vast-fastdetection"
-version = "0.1.0"
-description = ""
-authors = ["Yuanming Wang ywan@swin.edu.au", "Dougal Dobie <ddobie@swin.edu.au>"]
+name = "vastfast"
+version = "1.0.0"
+description = "VAST fast imaging pipeline"
+authors = ["Yuanming Wang <ywan@swin.edu.au>", "Dougal Dobie <ddobie@swin.edu.au>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
