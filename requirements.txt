@@ -1,3 +1,4 @@
+aplpy
 astropy
 astroquery
 matplotlib<3.6.0
