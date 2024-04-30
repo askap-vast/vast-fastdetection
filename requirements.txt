@@ -1,0 +1,8 @@
+astropy
+astroquery
+matplotlib<3.6.0
+numpy>=1.23.1
+python-casacore==3.5.1
+scipy
+scikit-image
+xmltodict
