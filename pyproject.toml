@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vaster"
+version = "0.2.0"
+authors = [
+  { name="Yuanming Wang", email="yuanmingwang@swin.edu.au" },
+]
+description = "Pipeline for image-plane fast transients search with ASKAP data"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/askap-vast/vast-fastdetection"
+Issues = "https://github.com/askap-vast/vast-fastdetection/issues"

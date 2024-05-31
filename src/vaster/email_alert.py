@@ -1,19 +1,16 @@
-#!/user/bin/env python3
-
+#!/usr/bin/env python
+"""
+To check if a SBID was deposited/released
+Copyright (C) VAST 2024
+"""
 import sys
 import os
 import argparse
 import logging
 import smtplib
 from email.message import EmailMessage
-
 from astropy.table import Table
 
-'''
-To check if a SBID was deposited/released
-'''
-
-# log_stream = StringIO()
 log = logging.getLogger(__name__)
 
 __author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>"
@@ -26,6 +23,8 @@ def _main():
                         help='path where SBxxxx were stored')
     parser.add_argument('-e', '--email', default=None, nargs='+',
                         help='send email notification to a list of email addresses')
+    parser.add_argument('-rclone', default=None, 
+                        help='rclone final csv to other cloud disk, e.g. google')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='make it verbose')
     args = parser.parse_args()
@@ -54,6 +53,7 @@ def _main():
 
     if os.path.isfile(fname):
         cand = Table.read(fname)
+
         try: 
             body = 'Hi, ' + '\n\n' \
                 f'SB{args.sbid} finished processing' + '\n' + \
@@ -64,7 +64,13 @@ def _main():
                 f'SB{args.sbid} finished processing' + '\n' + \
                 f'BEAM={peak_num} ' + f'ROW={len(cand)} ' + '\n\n' \
                 'The csv should be uploded to google drive!'
-        os.system(f'rclone copy {fname} google: -P')
+            
+        if args.rclone is not None:
+            try:
+                os.system(f'rclone copy {fname} {args.rclone}: -P')
+            except:
+                log.warning('Wrong rclone shortcut name %s', args.rclone)
+
         log.info(body)
 
     else:

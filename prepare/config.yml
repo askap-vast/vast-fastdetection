@@ -1,0 +1,91 @@
+MACHINE: ozstar           # Processing HPC, can be bash, shao, or ozstar 
+TIMESTEP: int             # Short image timestep, can be int (integration time), 60s, 15m, or 1h
+SURVEY: emu               # emu, vast, other
+CASA: casa                # path or shortcut to call casa 
+
+
+MODELCLEAN:
+  EMU:
+    IMSIZE: 6144
+    CELL: ['2.5arcsec']
+    DATACOLUMN: data
+    DECONVOLVER: mtmfs
+    NTERM: 2
+    SCALES: [0, 10, 30]
+    NITER: 10000
+    WEIGHTING: briggs     # natural, uniform, briggs
+    ROBUST: 0.5
+    UVRANGE: '>200m'
+    PBCOR: False
+    PBLIMIT: -0.2
+    GAIN: 0.2
+    THRESHOLD: 0.0 
+    GRIDDER: widefield
+    FACETS: 2
+    WPROJPLANES: -1
+    RESETMODEL: True 
+    SAVEMODEL: modelcolumn
+
+  VAST:
+    IMSIZE: 6144
+    CELL: ['2.5arcsec']
+    DATACOLUMN: data
+    DECONVOLVER: "mtmfs"
+    NTERM: 2
+    SCALES: [0, 10, 30]
+    NITER: 5000
+    WEIGHTING: briggs     # natural, uniform, briggs
+    ROBUST: 0.5
+    UVRANGE: '>200m'
+    PBCOR: False
+    PBLIMIT: -0.2
+    GAIN: 0.2
+    THRESHOLD: 0.75mJy
+    GRIDDER: widefield
+    FACETS: 2
+    WPROJPLANES: -1
+    RESETMODEL: True 
+    SAVEMODEL: modelcolumn
+
+
+SELFCAL:
+  CAL: True               # run self cal or not 
+  UVRANGE: '>200m'
+  SOLINT: int
+  CALMODE: p              # p for phase, a for amplitude 
+
+
+SHORTIMAGE:
+  IMSIZE: 2880
+  CELL: ['2.5arcsec']
+  DATACOLUMN: corrected
+  DECONVOLVER: multiscale
+  NTERM: 1
+  SCALES: [0]
+  NITER: 0
+  WEIGHTING: briggs       # natural, uniform, briggs
+  ROBUST: 0.5
+  UVRANGE: '>200m'
+  PBCOR: False
+  PBLIMIT: -0.2
+  THRESHOLD: 0.0 
+  SAVEMODEL: none
+  STOKES: I 
+
+
+CANDIDATES:
+  KTYPE: ['chisquare', 'peak', 'std'] 
+  MAP: ['chisquare', 'peak']
+  THRESHOLD:
+    CHISQ: 8
+    PEAK: 6
+    GAUSSIAN: 6
+  LOG_THRESHOLD:
+    CHISQ: 5
+    PEAK: 5
+    GAUSSIAN: 6
+  SAVEVOT: False  
+    
+
+
+
