@@ -19,5 +19,11 @@ rm -r $path/data/scienceData*
 echo cleaning all short images
 rm $path/images/*fits
 
+echo cleaning all model images
+rm $path/models/*fits 
+
+echo cleaning statistical images
+rm $path/candidates/*{peak,std,chisquare,gaussian}.fits
+
 echo Finished
 echo 
