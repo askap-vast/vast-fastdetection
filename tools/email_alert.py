@@ -54,9 +54,15 @@ def _main():
 
     if os.path.isfile(fname):
         cand = Table.read(fname)
-        body = 'Hi, ' + '\n\n' \
+        try: 
+            body = 'Hi, ' + '\n\n' \
                 f'SB{args.sbid} finished processing' + '\n' + \
                 f'BEAM={peak_num} ' + f'ROW={len(cand)} ' + 'PSR={}'.format(sum(~cand['PSR_name'].mask)) + '\n\n' \
+                'The csv should be uploded to google drive!'
+        except:
+            body = 'Hi, ' + '\n\n' \
+                f'SB{args.sbid} finished processing' + '\n' + \
+                f'BEAM={peak_num} ' + f'ROW={len(cand)} ' + '\n\n' \
                 'The csv should be uploded to google drive!'
         os.system(f'rclone copy {fname} google: -P')
         log.info(body)
