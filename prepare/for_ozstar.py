@@ -78,7 +78,7 @@ create_dir(path_fits)
 ############################
 tap = TapPlus(url="https://casda.csiro.au/casda_vo_tools/tap")
 job = tap.launch_job_async("SELECT * FROM ivoa.obscore WHERE obs_id='{}' AND (dataproduct_type='{}' OR dataproduct_subtype='{}' OR dataproduct_subtype='{}') ".format(
-    sbid, 'visibility', 'catalogue.continuum.component', 'cont.restored.t0'))
+    'ASKAP-'+str(sbid), 'visibility', 'catalogue.continuum.component', 'cont.restored.t0'))
 
 r = job.get_results()
 
@@ -108,10 +108,11 @@ if len(vis) != 36:
 ############################
 # Get download urls
 ############################
-# username = 'wym20131028@gmail.com'
-# print('OPAL username:', username)
-username = input("Enter OPAL username: ")
-password = getpass.getpass(str("Enter OPAL password: "))
+# username = input("Enter OPAL username: ")
+# password = getpass.getpass(str("Enter OPAL password: "))
+username = os.getenv('OPAL_USER')
+print('OPAL username:', username)
+password = os.getenv('OPAL_PWD')
 
 
 def get_url(access_url):
@@ -325,7 +326,7 @@ for idx in range(36):
 #        elif 'nodelist' in locals():
 #            fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n')
         
-        fw.write('#SBATCH --mem=50gb' + '\n')
+        fw.write('#SBATCH --mem=10gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_FIXDATA_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_FIXDATA_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
@@ -380,7 +381,8 @@ for idx in range(36):
         fw.write('#SBATCH --job-name=MOD-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
-        fw.write('#SBATCH --mem=200gb' + '\n')
+        # fw.write('#SBATCH --cpus-per-task=4' + '\n')
+        fw.write('#SBATCH --mem=12gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_MODELING_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_MODELING_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
@@ -429,7 +431,7 @@ for idx in range(36):
         # elif 'nodelist' in locals():
         #     fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
         
-        fw.write('#SBATCH --mem=50gb' + '\n')
+        fw.write('#SBATCH --mem=10gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_IMGFAST_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_IMGFAST_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
@@ -483,7 +485,7 @@ for idx in range(36):
         # elif 'nodelist' in locals():
         #     fw.write('#SBATCH --nodelist={}'.format(nodelist[idx]) + '\n') 
 
-        fw.write('#SBATCH --mem=50gb' + '\n')
+        fw.write('#SBATCH --mem=10gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_SELCAND_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_SELCAND_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
@@ -533,7 +535,7 @@ for idx in range(36):
         fw.write('#SBATCH --job-name=CLN-{:02d}'.format(idx) + '\n')
         fw.write('#SBATCH --nodes=1' + '\n')
         fw.write('#SBATCH --ntasks-per-node=1' + '\n')
-        fw.write('#SBATCH --mem=50gb' + '\n')
+        # fw.write('#SBATCH --mem=5gb' + '\n')
         fw.write('#SBATCH --output='+os.path.join(path_logs, 'slurm_CLNDATA_{}.output'.format(affix)) + '\n')
         fw.write('#SBATCH --error='+os.path.join(path_logs, 'slurm_CLNDATA_{}.error'.format(affix)) + '\n')
         fw.write('#SBATCH --export=all' + '\n')
