@@ -1,7 +1,6 @@
 # clean all visibilities and images 
 
 sbid=$1
-num=1 # number of parallel processes 
 
 path=`pwd`/SB$sbid
 loc=$(dirname "$0")
