@@ -29,4 +29,6 @@ echo $sbid Finished!!
 python $loc/get_overall_table.py $sbid
 python $loc/tools/email_alert.py $sbid -e yuanmingwang@swin.edu.au
 
+# run dyspec for known sources
+python $loc/tools/run_dyspec_sbid.py $sbid
 

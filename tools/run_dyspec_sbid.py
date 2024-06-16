@@ -19,7 +19,7 @@ logging.basicConfig(
 
 def _main():
     parser = argparse.ArgumentParser(description='Create dynamic spectrum for known PSR sources for each SBID'\
-        'Example Usage: python ~/scripts/vast_fastdetection_tools/run_dyspec_sbid.py 62648' )
+        'Example Usage: python ~/scripts/vast_fastdetection/tools/run_dyspec_sbid.py 62648' )
     parser.add_argument('sbid', type=str, help='SBID, in format of pure number, e.g. 62648')
     parser.add_argument('--path', type=str, default='.', help='path to store SBID outputs')
     parser.add_argument('--dry-run', action='store_true', help='dry run')
