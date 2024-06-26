@@ -33,6 +33,8 @@ sbid = sys.argv[-1]
 
 base_folder = os.path.join(os.getcwd(), f'SB{sbid}', 'candidates')
 base_url = "http://localhost:8053/SB{}/candidates/".format(sbid)
+dyspec_url = "http://localhost:8053/dyspec/"
+#SB62423_J180513.64-212011.36_beam31/
 
 print(base_folder)
 
@@ -70,7 +72,9 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
             priority = 'high'
         else:
             priority = 'mid'
-        
+
+        if cand['deep_sep_arcsec'] <= 2:
+            priority = 'high'        
         
         if priority == 'high':
             print(sbid, beam, cand['name'], priority)
@@ -81,6 +85,7 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
         sl = os.path.join(base_url, "SB{}_{}_slices_{}.gif".format(sbid, beam, cand['name']))
         map1 = os.path.join(base_url, "SB{}_{}_chisquare_map2.png".format(sbid, beam))
         map2 = os.path.join(base_url, "SB{}_{}_peak_map2.png".format(sbid, beam))
+        dyspec = os.path.join(dyspec_url, "SB{}_{}_{}/".format(sbid, cand['name'], beam))
 
         candsrc = SkyCoord(cand['ra'], cand['dec'], unit=u.degree)
         ind = candsrc.separation(selpsrsrc) < 20*u.arcsec
@@ -92,12 +97,12 @@ for beam in ['beam{:02d}'.format(i) for i in range(36)]:
             atnfmatch = selpsrcat[ind]['PSRJ'][0]
             atnfsep = candsrc.separation(selpsrsrc)[ind].arcsec[0]
         
-        new_cols.append([priority, lc, dc, sl, map1, map2, beam, sbid, atnfmatch, atnfsep])
+        new_cols.append([priority, lc, dc, sl, map1, map2, dyspec, beam, sbid, atnfmatch, atnfsep])
         
     print(beam+':', 'Total', len(cands), 'Pulsars', sum(ind))
 
     cands.add_columns(np.array(new_cols).T.tolist(), 
-                      names=['priority', 'lightcurve', 'deepcutout', 'slices', 'chisq_map2', 'peak_map2', 'beam', 'sbid', 'PSR_name', 'PSR_sep'])
+                      names=['priority', 'lightcurve', 'deepcutout', 'slices', 'chisq_map2', 'peak_map2', 'dyspec', 'beam', 'sbid', 'PSR_name', 'PSR_sep'])
     
     cand_list.append(cands)
     
