@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jul 14 20:57:50 2022
@@ -26,14 +26,17 @@ from astropy.nddata.utils import Cutout2D
 from astropy.table import Table, vstack
 from astropy.time import Time
 
-import warnings
-warnings.filterwarnings("ignore")
+# import warnings
+# warnings.filterwarnings("ignore")
+
+# import logging
+
+# logging.basicConfig()
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
 
 import logging
-
-logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class ArgumentError(Exception):
@@ -450,6 +453,8 @@ def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
     
 def get_sigma_logspace(data, flux):
     # get log statistics
+    logger.debug(data.shape)
+    logger.debug(data)
     logmean = np.nanmean(np.log10(data))
     logstd = np.nanstd(np.log10(data))
     

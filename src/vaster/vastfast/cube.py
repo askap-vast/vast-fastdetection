@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jun  1 14:54:54 2022
@@ -26,18 +26,21 @@ from skimage.feature import peak_local_max
 from scipy.interpolate import interp2d
 
 
-from vastfast.fastFunc import G2D
+from vaster.vastfast.fastFunc import G2D
 
 
 
-warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
-warnings.filterwarnings('ignore',
-                        category=AstropyDeprecationWarning, append=True)
+# warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
+# warnings.filterwarnings('ignore',
+#                         category=AstropyDeprecationWarning, append=True)
 
 
-logging.basicConfig()
+# logging.basicConfig()
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
+
+import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class ArgumentError(Exception):
@@ -479,6 +482,8 @@ class Filter:
         """Get peak map, sensitive to single flare event
         """
         snr = self.sigcube / self.rmscube
+        logger.debug('snr')
+        logger.debug(snr)
         
         # return (np.nanmax(self.sigcube, axis=0) - np.nanmedian(self.sigcube, axis=0)) 
         return (np.nanmax(snr, axis=0) - np.nanmedian(snr, axis=0)) 

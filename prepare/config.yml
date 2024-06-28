@@ -1,13 +1,13 @@
-MACHINE: ozstar           # Processing HPC, can be bash, shao, or ozstar 
-TIMESTEP: int             # Short image timestep, can be int (integration time), 60s, 15m, or 1h
-SURVEY: emu               # emu, vast, other
+MACHINE: ozstar             # Processing HPC, can be bash, shao, or ozstar 
+TIMESTEP: 300             # Short image timestep, unit of seconds, if gives 'int' it is the integration time
+SURVEY: other               # emu, vast, other
 CASA: casa                # path or shortcut to call casa 
 
-
+RESETMODEL: False 
 MODELCLEAN:
   EMU:
     IMSIZE: 6144
-    CELL: ['2.5arcsec']
+    CELL: '2.5arcsec'
     DATACOLUMN: data
     DECONVOLVER: mtmfs
     NTERM: 2
@@ -23,12 +23,13 @@ MODELCLEAN:
     GRIDDER: widefield
     FACETS: 2
     WPROJPLANES: -1
-    RESETMODEL: True 
     SAVEMODEL: modelcolumn
+    TIMERANGE: ''
+    STOKES: I 
 
   VAST:
     IMSIZE: 6144
-    CELL: ['2.5arcsec']
+    CELL: '2.5arcsec'
     DATACOLUMN: data
     DECONVOLVER: "mtmfs"
     NTERM: 2
@@ -44,14 +45,37 @@ MODELCLEAN:
     GRIDDER: widefield
     FACETS: 2
     WPROJPLANES: -1
-    RESETMODEL: True 
     SAVEMODEL: modelcolumn
+    TIMERANGE: ''
+    STOKES: I 
+
+  OTHER:
+    IMSIZE: 6144
+    CELL: '2.5arcsec'
+    DATACOLUMN: 'data'
+    DECONVOLVER: 'mtmfs'
+    NTERM: 2
+    SCALES: [0, 10, 30]
+    NITER: 10000
+    WEIGHTING: 'briggs'     # natural, uniform, briggs
+    ROBUST: 0.5
+    UVRANGE: '>200m'
+    PBCOR: False
+    PBLIMIT: -0.2
+    GAIN: 0.2
+    THRESHOLD: 0.0 
+    GRIDDER: 'widefield'
+    FACETS: 2
+    WPROJPLANES: -1
+    SAVEMODEL: 'modelcolumn'
+    TIMERANGE: ''
+    STOKES: I 
 
 
+CAL: True                 # run self cal or not 
 SELFCAL:
-  CAL: True               # run self cal or not 
   UVRANGE: '>200m'
-  SOLINT: int
+  SOLINT: 1min              # int or 1min
   CALMODE: p              # p for phase, a for amplitude 
 
 
@@ -68,7 +92,11 @@ SHORTIMAGE:
   UVRANGE: '>200m'
   PBCOR: False
   PBLIMIT: -0.2
+  GAIN: 0.1
   THRESHOLD: 0.0 
+  GRIDDER: 'widefield'
+  FACETS: 2
+  WPROJPLANES: -1
   SAVEMODEL: none
   STOKES: I 
 
@@ -76,16 +104,43 @@ SHORTIMAGE:
 CANDIDATES:
   KTYPE: ['chisquare', 'peak', 'std'] 
   MAP: ['chisquare', 'peak']
-  THRESHOLD:
-    CHISQ: 8
+  THRESHOLD_SIMGA:
+    CHISQUARE: 8
     PEAK: 6
     GAUSSIAN: 6
-  LOG_THRESHOLD:
-    CHISQ: 5
+  LOG_THRESHOLD_SIGMA:
+    CHISQUARE: 5
     PEAK: 5
     GAUSSIAN: 6
-  SAVEVOT: False  
+  MIN_DISTANCE: 30
+  SAVEVOT: False
+  GAUSSIAN_WIDTH: 4
     
 
-
+OZSTAR:
+  FIXDATA:
+    TIME: '1:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 4gb  # VAST 0GB max  
+  MODELING:
+    TIME: '30:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 16gb  # VAST 11GB max 
+  IMGFAST:
+    TIME: '30:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 4gb  # VAST 1.2GB max
+  SELCAND:
+    TIME: '10:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 32gb  # VAST 16GB max (70 images)
+  CLNDATA:
+    TIME: '1:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 200mb  # VAST 0GB max
 
