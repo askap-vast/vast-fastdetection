@@ -2,8 +2,10 @@
 """
 Copyright (C) VAST 2024
 """
-import pandas as pd
+from vaster.structure import DataDir
 
+import pandas as pd
+import glob
 import sys
 import os
 import argparse
@@ -16,12 +18,15 @@ __author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>"
 
 def _main():
     parser = argparse.ArgumentParser(
-        prog='VOevent', 
-        description='VO Event trigger', 
-        epilog='Example usage: python ~/scripts/notebooks/notes/template.py -h', 
+        prog='InspectHPCUsage', 
+        description='Inspect HPC usage', 
+        epilog='Example usage: inspect_usage slurm_example.usage', 
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, 
         )
-    parser.add_argument('tb', type=str, nargs='+', help='usage statistics generate from slurm output')
+    parser.add_argument('-f', '--fname', type=str, nargs='+', default=None, 
+                        help='usage statistics generate from slurm sacct output')
+    parser.add_argument('--sbids', type=int, nargs='+', help='SBID, numbers')
+    parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='make it verbose')
     args = parser.parse_args()
@@ -31,10 +36,25 @@ def _main():
 
     colnames = ['MaxRSS', 'MaxVMSize']
 
-    for usage in args.tb:
-        tb = read_tb(usage)
+    if args.fname is None:
+        logger.info('Total of %s SBIDs to inspect', len(args.sbids))
+        fname_list = []
+        for i, sbid in enumerate(args.sbids):
+            logger.info("Processing observation SB%s (%s/%s)", sbid, i+1, len(args.sbids))
+            fname_sbid = get_logs(args, sbid)
+            fname_list += fname_sbid
+            logger.info('SB%s: Found %s usage logs', sbid, len(fname_sbid))
+        logger.info('Found total of %s usage logs', len(fname_list))
+        logger.debug(fname_list)
+    else:
+        fname_list = args.fname
+
+
+    for fname in fname_list:
+        tb = read_tb(fname)
         tb = convert_mem_unit(tb, colnames)
-        logger.info(tb)
+        logger.info(fname)
+        print(tb)
 
 
 
@@ -54,6 +74,12 @@ def make_verbose(args):
 
 def read_tb(fname):
     return pd.read_csv(fname, delimiter='|')
+
+
+def get_logs(args, sbid):
+    datadir= DataDir(sbid, args.dir)
+    fname_list = glob.glob(os.path.join(datadir.paths['path_logs'], '*.usage'))
+    return fname_list
 
 
 def convert_mem_unit(tb, colnames):

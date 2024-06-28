@@ -9,11 +9,9 @@ Created on Wed Jun  1 14:54:54 2022
 """
 Generate a significance cube for transients detection
 """
+from vaster.vastfast.fastFunc import G2D
 
-import logging
-import warnings
 import numpy as np
-
 from astropy.io import fits
 from astropy import units as u
 from astropy.nddata import Cutout2D
@@ -24,20 +22,6 @@ from astropy.utils.exceptions import AstropyWarning, AstropyDeprecationWarning
 
 from skimage.feature import peak_local_max
 from scipy.interpolate import interp2d
-
-
-from vaster.vastfast.fastFunc import G2D
-
-
-
-# warnings.filterwarnings('ignore', category=AstropyWarning, append=True)
-# warnings.filterwarnings('ignore',
-#                         category=AstropyDeprecationWarning, append=True)
-
-
-# logging.basicConfig()
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
 
 import logging
 logger = logging.getLogger(__name__)

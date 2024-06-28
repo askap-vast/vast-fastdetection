@@ -1,5 +1,15 @@
 import os
 
+class DataBasic:
+
+    def __init__(self, ):
+        self.nbeam = 36
+        self.steps = [
+            'GETDATA', 'UNTAR', 'FIXDATA', 'MODELING', 'IMGFAST', 'SELCAND', 'CLNDATA', 
+        ]
+
+
+
 class DataDir:
     '''
     Create VASTER folder saving system
@@ -9,6 +19,7 @@ class DataDir:
         self.sbid = sbid
         self.parent_dir = parent_dir 
         self.parent_dir_abs = os.path.abspath(parent_dir)
+
 
     def create_folder_tree(self, path):
         paths = {}
@@ -26,6 +37,25 @@ class DataDir:
     def paths(self, ):
         path = os.path.join(self.parent_dir_abs, f'SB{self.sbid}')
         return self.create_folder_tree(path)
+    
+
+    
+    # @property
+    # def files(self, ):
+    #     f = {}
+    #     f_beam = {}
+        
+    #     for step in self.steps:
+    #         for idx in range(self.nbeam):
+    #             name = f'{step}_SB{self.sbid}_beam{idx:02d}'
+    #             f_beam['log_usage'] = os.path.join(self.paths['path_logs'], f'slurm_{name}.usage')
+    #             f_beam['log_output'] = os.path.join(self.paths['path_logs'], f'slurm_{name}.output')
+    #             f_beam['log_error'] = os.path.join(self.paths['path_logs'], f'slurm_{name}.error')
+
+    #             f[idx] = f_beam
+
+    #     return f
+
 
 
 

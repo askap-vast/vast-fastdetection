@@ -34,6 +34,7 @@ if __name__ == '__main__':
                 'select_candidates=vaster.select_candidates:_main', 
                 'inspect_usage=vaster.inspect_usage:_main', 
                 'submit_slurm_jobs=vaster.submit_slurm_jobs:_main', 
+                'prepare_data=vaster.prepare_data:_main',
             ],
         },
         classifiers = [

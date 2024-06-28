@@ -17,8 +17,9 @@ untar visibilities)
 
 
 from astroquery.utils.tap.core import TapPlus
-from vaster.structure import DataDir
+from vaster.structure import DataDir, DataBasic
 
+import time
 import os
 import sys
 import yaml
@@ -34,6 +35,8 @@ __author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>"
 
 
 def _main():
+    start_time = time.time()
+
     parser = argparse.ArgumentParser(
         prog='prepare_scripts', 
         description='prepare various scripts to run VASTER', 
@@ -58,6 +61,10 @@ def _main():
     logger.info('Running in %s mode', config['MACHINE'])
     args.username, args.password = get_opal(args)
 
+    databasic = DataBasic()
+    args.steps = databasic.steps
+    logger.info('steps: %s', args.steps)
+
     for i, sbid in enumerate(args.sbids):
         datadir= DataDir(sbid, args.outdir)
         args.paths = datadir.paths
@@ -81,7 +88,8 @@ def _main():
 
         logger.info('SB%s preparation finish.', sbid)
 
-    logger.info('Processing finished. ')
+    end_time = time.time()
+    measure_running_time(start_time, end_time, 3)
 
   
 
@@ -110,6 +118,19 @@ def make_verbose(args):
             format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s',
             level=logging.INFO,
             datefmt='%Y-%m-%d %H:%M:%S')
+
+
+def measure_running_time(start_time, end_time, nround=2):
+    total_time = end_time - start_time
+    if total_time <= 60:
+        logger.info('Total running time %s seconds', round(total_time, nround))
+    elif total_time <= 60*60:
+        logger.info('Total running time %s minutes', round(total_time/60, nround))
+    elif total_time <= 60*60*24:
+        logger.info('Total running time %s hours', round(total_time/60/60, nround))
+    else:
+        logger.info('Total running time %s hours', round(total_time/60/60/24, nround))
+
 
 
 def build_folder_structure(paths):
@@ -209,39 +230,43 @@ def format_ozstar(args, config, sbid, vis, cat):
     for idx in range(36):
         oname = f'SB{sbid}_beam{idx:02d}'
 
-        # GETDATA
-        savename = os.path.join(args.paths['path_scripts'], f'bash_GETDATA_beam{idx:02d}.sh')
-        with open(savename, 'w') as fw:
-            write_basetxt_bash(fw, sbid, savename)
-            url = get_url(vis[idx]['access_url'], args.username, args.password)
-            filename = vis[idx]['filename']
-            write_download_vis_txt(args, fw, idx, filename, url)
-            write_untar_vis_txt(args, fw, idx, filename)
+        for step in args.steps:
+            logger.debug('%s: Run VASTER step %s...', oname, step)
+
+            if step == 'GETDATA' or step == 'UNTAR':
+                savename = os.path.join(args.paths['path_scripts'], f'bash_{step}_beam{idx:02d}.sh')
+                with open(savename, 'w') as fw:
+                    write_basetxt_bash(fw, sbid, savename)
+                    url = get_url(vis[idx]['access_url'], args.username, args.password)
+                    filename = vis[idx]['filename']
+                    if step == 'GETDATA':
+                        write_download_vis_txt(args, fw, idx, filename, url)
+                    elif step == 'UNTAR':
+                        write_untar_vis_txt(args, fw, idx, filename)
+
+            else:
+                params, savename = prepare_steps_ozstar(args, idx, config, oname, step)
+                with open(savename, 'w') as fw:
+                    write_basetxt_ozstar(fw, sbid, savename, params)
+                    if step == 'FIXDATA':
+                        write_moduleload_ozstar(fw)
+                        write_fixdata_txt(args, fw, idx, filename, prefix='srun time ')
+                        write_module_unload_ozstar(fw)
+                    elif step == 'MODELING':
+                        write_run_casa_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix='srun time ')
+                    elif step == 'IMGFAST':
+                        write_run_casa_txt(args, fw, idx, filename, oname, config, mode='imaging', prefix='srun time ')
+                    elif step == 'SELCAND':
+                        write_moduleload_ozstar(fw)
+                        write_selcand_txt(args, fw, idx, oname, cat, prefix='srun time ')
+                        write_module_unload_ozstar(fw)
+                    elif step == 'CLNDATA':
+                        write_clndata_txt(args, fw, idx)
+                        
+                    write_endtxt_ozstar(fw, sbid, savename, params)
+                
             logger.info('Writing {}'.format(savename))
 
-        # for other steps... 
-        for step in config['OZSTAR']:
-            logger.debug('Run VASTER step %s...', step)
-            params, savename = prepare_steps_ozstar(args, idx, config, oname, step)
-            with open(savename, 'w') as fw:
-                write_basetxt_ozstar(fw, sbid, savename, params)
-                if step == 'FIXDATA':
-                    write_moduleload_ozstar(fw)
-                    write_fixdata_txt(args, fw, idx, filename, prefix='srun time ')
-                    write_module_unload_ozstar(fw)
-                elif step == 'MODELING':
-                    write_run_casa_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix='srun time ')
-                elif step == 'IMGFAST':
-                    write_run_casa_txt(args, fw, idx, filename, oname, config, mode='imaging', prefix='srun time ')
-                elif step == 'SELCAND':
-                    write_moduleload_ozstar(fw)
-                    write_selcand_txt(args, fw, idx, oname, cat, prefix='srun time ')
-                    write_module_unload_ozstar(fw)
-                elif step == 'CLNDATA':
-                    write_clndata_txt(args, fw, idx)
-                    
-                write_endtxt_ozstar(fw, sbid, savename, params)
-                logger.info('Writing {}'.format(savename))
 
 
 def prepare_downloads(args, sbid, cat, img, vis):
@@ -324,7 +349,7 @@ def write_basetxt_ozstar(fw, sbid, savename, params):
 def write_endtxt_ozstar(fw, sbid, savename, params):
     logger.debug('write end txt ozstar for SB%s saving to %s', sbid, savename)
     logger.debug(params)
-    # fw.write('wait' + '\n')
+    fw.write('wait' + '\n')
     fw.write('sacct -j $SLURM_JOB_ID --parsable2 --format=' + params['format'] + ' > ' + params['usage'] + '\n')
     fw.write('\n')
 

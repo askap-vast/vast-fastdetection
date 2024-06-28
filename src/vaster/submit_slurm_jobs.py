@@ -39,7 +39,7 @@ def _main():
         datadir= DataDir(sbid, args.dir)
         args.paths = datadir.paths
         logger.debug(args.paths)
-
+        
 
 
 def make_verbose(args):

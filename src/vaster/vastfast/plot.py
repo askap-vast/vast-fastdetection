@@ -5,8 +5,6 @@ Created on Thu Jul 14 20:57:50 2022
 
 @author: ywan3191
 """
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -25,15 +23,6 @@ from astropy.wcs.utils import skycoord_to_pixel, pixel_to_skycoord
 from astropy.nddata.utils import Cutout2D
 from astropy.table import Table, vstack
 from astropy.time import Time
-
-# import warnings
-# warnings.filterwarnings("ignore")
-
-# import logging
-
-# logging.basicConfig()
-# logger = logging.getLogger(__name__)
-# logger.setLevel(logging.INFO)
 
 import logging
 logger = logging.getLogger(__name__)
