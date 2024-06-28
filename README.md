@@ -9,6 +9,21 @@ Some flowcharts can also be found in [this Google slides](https://docs.google.co
 
 Example outputs: [SB11676](https://unisydneyedu-my.sharepoint.com/:f:/g/personal/ywan3191_uni_sydney_edu_au/Em-RqhrRKdBGmnvJzd1CU4UBZyFnSh4E6jvBzu9icCux2g?e=e6FAow)
 
+## Install
+
+Recommand to install in a virtual environment with python==3.9
+
+Download or git clone this repo, and then install via pip
+```
+pip install .
+```
+
+Install an editable version (for development)
+
+```
+pip install -e .
+```
+
 ## Features
 
 ### Workflow 
