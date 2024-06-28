@@ -1,5 +1,7 @@
 # VASTER - ASKAP Intra-Observation Transient Search Pipeline
 
+**`stable-v0.1.0` is optimised for VAST field 10s imaging**
+
 VASTER is a noval pipeline designed for the efficient detection and characterization of intra-observation transients in data from the Australian Square Kilometre Array Pathfinder (ASKAP) telescope. 
 This pipeline streamlines the entire process, from data retrieval to candidate selection, providing valuable insights into transient astrophysical phenomena.
 
