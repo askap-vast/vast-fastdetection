@@ -2,8 +2,13 @@
 """
 Copyright (C) VAST 2024
 """
-from vaster.structure import DataDir
+from vaster.structure import DataBasic
+from vaster.vtools import measure_running_time, process_txt
 
+import subprocess
+
+import glob
+import time
 import sys
 import os
 import argparse
@@ -15,17 +20,22 @@ __author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>"
 
 
 def _main():
+    start_time = time.time()
+
     parser = argparse.ArgumentParser(
-        prog='VOevent', 
-        description='VO Event trigger', 
-        epilog='Example usage: python ~/scripts/notebooks/notes/template.py -h', 
+        prog='SubmitSlurm', 
+        description='Submit slurm jobs', 
+        epilog='Example usage: submit_slurm_jobs 62043 -b 0', 
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, 
         )
     parser.add_argument('sbids', type=int, nargs='+', help='input sbid for processing, number only')
-    parser.add_argument('--beams', type=int, nargs='+', default=None, 
-                        help='input beams for processing, number only')
+    parser.add_argument('-b', '--beams', type=int, nargs='+', default=None, 
+                        help='input beams for processing, number only, leave it blank for all of beams')
     parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
-    parser.add_argument('--mode', type=str, choices=['median', 'mean', 'max'], default='median', help='select coadd mode')
+    parser.add_argument('--steps', type=str, nargs='+', default=['FIXDATA', 'MODELING', 'IMGFAST', 'SELCAND', 'CLNDATA'], 
+                        help='tasks to process, following the order')
+    parser.add_argument('--clean', action='store_true', help='Delete any relevant files before re-submit')
+    parser.add_argument('--dry-run', action='store_true', help='perform a dry run')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='make it verbose')
     args = parser.parse_args()
@@ -36,10 +46,31 @@ def _main():
 
     for i, sbid in enumerate(args.sbids):
         logger.info("Processing observation SB%s (%s/%s)", sbid, i+1, len(args.sbids))
-        datadir= DataDir(sbid, args.dir)
-        args.paths = datadir.paths
+        databasic= DataBasic(sbid, args.dir)
+        args.databasic = databasic 
+        args.paths = databasic.paths
         logger.debug(args.paths)
-        
+
+        if args.beams is None:
+            beams = [idx for idx in range(databasic.nbeam)]
+        else: 
+            beams = args.beams
+
+        for idx in beams:
+            fnamelist = extract_joblist(args, idx)
+            logger.info(f'SB{sbid} beam{idx:02d}: find %s jobs for submission')
+            if args.clean:
+                clean_data(args, sbid, affix=f"*beam{idx:02d}*", command="rm -r")
+
+            if args.dry_run:
+                logger.warning(f'Dry run: SB{sbid} beam{idx:02d}: will submit below scripts in order')
+                logger.warning(fnamelist)
+            else:
+                job_id_list = submit_joblist(fnamelist)
+                write_scancel_scripts(args, idx, job_id_list)
+
+    end_time = time.time()
+    measure_running_time(start_time, end_time)
 
 
 def make_verbose(args):
@@ -54,7 +85,82 @@ def make_verbose(args):
             format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s',
             level=logging.INFO,
             datefmt='%Y-%m-%d %H:%M:%S')
+        
 
+def extract_joblist(args, idx, ):
+    fnames = args.databasic.files[idx]
+    fnames = fnames[fnames['function'] == 'run']
+
+    fnamelist = []
+    for step in args.steps:
+        fname = fnames[fnames['step'] == step]['fname'][0]
+        if not os.path.isfile(fname):
+            logger.error('file %s does not exist', fname)
+            break
+
+        fnamelist.append(fname)
+
+    logger.debug(fnamelist)
+    return fnamelist
+
+
+def write_scancel_scripts(args, idx, job_id_list):
+    savename = os.path.join(args.paths['path_scripts'], f'kill_beam{idx:02d}_jobs.sh')
+    logger.info('Writing scancel scripts to %s', savename)
+    with open(savename, 'w') as fw:
+        cmd = 'scancel ' + ' '.join(job_id_list)
+        logger.info(cmd)
+        fw.write(cmd)
+
+
+
+def clean_data(args, sbid, affix, command):
+    logger.debug('SB%s: clean %s', sbid, affix)
+    fnamelist = glob.glob(os.path.join(args.paths['path_models'], affix))
+    fnamelist += glob.glob(os.path.join(args.paths['path_images'], affix))
+    logger.debug('SB%s: found %s %s files', sbid, len(fnamelist), affix)
+    for fname in fnamelist:
+        txt = command + ' ' + fname
+        process_txt(args, txt)
+        
+
+
+def submit_joblist(fnamelist):
+    job_id_list = []
+    for i, fname in enumerate(fnamelist):
+        if i == 0:
+            job_id = submit_onejob(fname)
+        else:
+            job_id = submit_onejob(fname, dependency=True, dep_job_id=pre_job_id)
+
+        if job_id is None:
+            break 
+
+        job_id_list.append(job_id)
+        pre_job_id = job_id
+        time.sleep(1)
+
+    return job_id_list
+
+
+
+def submit_onejob(fname, dependency=False, dep_job_id=None):
+    if dependency:
+        cmd = ['sbatch', '-d', f'afterok:{dep_job_id}', fname]
+    else:
+        cmd = ['sbatch', fname]
+
+    logger.info('Exectuing "%s"', cmd)
+    job = subprocess.run(cmd, capture_output=True, text=True)
+    if job.returncode == 0:
+        job_id = job.stdout.strip().split()[-1]
+        logger.info('Job %s submiitted successfully with ID %s', fname, job_id)
+        return job_id
+    
+    else:
+        logger.warning('Failed to submit job %s', fname)
+        logger.warning(f'Error: {job.stderr.strip()}')
+        return None
 
 
 

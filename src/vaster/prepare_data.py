@@ -2,7 +2,9 @@
 """
 Copyright (C) VAST 2024
 """
-from vaster.structure import DataDir
+from vaster.structure import DataBasic
+from vaster.vtools import measure_running_time, process_txt
+
 
 import threading
 import time
@@ -18,6 +20,8 @@ __author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>"
 
 
 def _main():
+    start_time = time.time()
+
     parser = argparse.ArgumentParser(
         prog='DownloadASKAP', 
         description='Downloading ASKAP data, default will download visibilities and selavy catalogue', 
@@ -38,8 +42,6 @@ def _main():
     parser.add_argument('--dry-run', action='store_true', help='perform a dry run, nothing will be downloaded')
     args = parser.parse_args()
 
-    start_time = time.time()
-
     make_verbose(args)
     logger.info(args)
     logger.info('Total of %s SBIDs to prepare', len(args.sbids))
@@ -55,8 +57,8 @@ def _main():
 
     for i, sbid in enumerate(args.sbids):
         logger.info("Processing observation SB%s (%s/%s)", sbid, i+1, len(args.sbids))
-        datadir= DataDir(sbid, args.dir)
-        paths = datadir.paths
+        databasic= DataBasic(sbid, args.dir)
+        paths = databasic.paths
         logger.debug(paths)
 
         if args.no_selavy:
@@ -127,18 +129,6 @@ def get_beamlist(args, num=36):
     return beamlist
 
 
-def measure_running_time(start_time, end_time, nround=2):
-    total_time = end_time - start_time
-    if total_time <= 60:
-        logger.info('Total running time %s seconds', round(total_time, nround))
-    elif total_time <= 60*60:
-        logger.info('Total running time %s minutes', round(total_time/60, nround))
-    elif total_time <= 60*60*24:
-        logger.info('Total running time %s hours', round(total_time/60/60, nround))
-    else:
-        logger.info('Total running time %s hours', round(total_time/60/60/24, nround))
-        
-
 def download_selavy(args, paths):
     fname = os.path.join(paths['path_scripts'], "download_selavy.sh")
     txt = 'bash ' + fname
@@ -165,16 +155,6 @@ def clean_data(args, paths, sbid, affix, command):
         txt = command + ' ' + fname
         process_txt(args, txt)
         
-
-
-def process_txt(args, txt):
-    if args.dry_run:
-        logger.warning('Dry run: skip "%s"', txt)
-    else:
-        logger.info('Executing "%s"', txt)
-        exit_code = os.system(txt)
-        logger.debug('Exit with %s: %s', exit_code, txt)
-
 
 
 if __name__ == '__main__':

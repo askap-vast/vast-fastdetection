@@ -17,7 +17,8 @@ untar visibilities)
 
 
 from astroquery.utils.tap.core import TapPlus
-from vaster.structure import DataDir, DataBasic
+from vaster.structure import DataBasic
+from vaster.vtools import measure_running_time
 
 import time
 import os
@@ -61,15 +62,17 @@ def _main():
     logger.info('Running in %s mode', config['MACHINE'])
     args.username, args.password = get_opal(args)
 
-    databasic = DataBasic()
-    args.steps = databasic.steps
-    logger.info('steps: %s', args.steps)
+    
 
     for i, sbid in enumerate(args.sbids):
-        datadir= DataDir(sbid, args.outdir)
-        args.paths = datadir.paths
         logger.info("Processing observation SB%s (%s/%s)", sbid, i+1, len(args.sbids))
+
+        databasic = DataBasic(sbid, args.outdir)
+        args.paths = databasic.paths
+        args.steps = databasic.steps
+        logger.info('steps: %s', args.steps)
         build_folder_structure(args.paths)
+        copy_config(args, )
 
         vis, cat, img = query_casda(sbid)
         if len(vis) != 36:
@@ -105,6 +108,14 @@ def read_config(fname):
         logger.error('%s does not exists', fname)
         sys.exit()
 
+def copy_config(args, ):
+    config_in = args.config
+    config_out = os.path.join(args.paths['path'], 'config.yml')
+    logger.info('copy configuration file')
+    txt = f'cp {config_in} {config_out}'
+    logger.info('Executing "%s"', txt)
+    os.system(txt)
+
 
 def make_verbose(args):
     if args.verbose:
@@ -118,18 +129,6 @@ def make_verbose(args):
             format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s',
             level=logging.INFO,
             datefmt='%Y-%m-%d %H:%M:%S')
-
-
-def measure_running_time(start_time, end_time, nround=2):
-    total_time = end_time - start_time
-    if total_time <= 60:
-        logger.info('Total running time %s seconds', round(total_time, nround))
-    elif total_time <= 60*60:
-        logger.info('Total running time %s minutes', round(total_time/60, nround))
-    elif total_time <= 60*60*24:
-        logger.info('Total running time %s hours', round(total_time/60/60, nround))
-    else:
-        logger.info('Total running time %s hours', round(total_time/60/60/24, nround))
 
 
 
@@ -245,7 +244,7 @@ def format_ozstar(args, config, sbid, vis, cat):
                         write_untar_vis_txt(args, fw, idx, filename)
 
             else:
-                params, savename = prepare_steps_ozstar(args, idx, config, oname, step)
+                params, savename = prepare_steps_ozstar(args, idx, config, sbid, oname, step)
                 with open(savename, 'w') as fw:
                     write_basetxt_ozstar(fw, sbid, savename, params)
                     if step == 'FIXDATA':
@@ -392,14 +391,14 @@ def write_downloadtxt(args, fw, cat):
         fw.write('\n')
 
 
-def prepare_steps_ozstar(args, idx, config, oname, step='FIXDATA'):
+def prepare_steps_ozstar(args, idx, config, sbid, oname, step='FIXDATA'):
     savename = os.path.join(args.paths['path_scripts'], f'slurm_{step}_beam{idx:02d}.sh')
     params = config['OZSTAR'][step]
-    params['job_name'] = step[:3] + f'-{idx:02d}'
+    params['job_name'] = step[:3] + f'-{idx:02d}' + f'-{sbid}'
     params['output'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.output')
     params['error'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.error')
     params['usage'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.usage')
-    params['format'] = "JobID,JobName,Partition,Account,AllocCPUS,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,CPUTime,TotalCPU"
+    params['format'] = "JobID,JobName,Partition,Account,AllocCPUS,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,CPUTime,TotalCPU,Start,End"
     return params, savename
 
 
@@ -473,7 +472,7 @@ def write_selcand_txt(args, fw, idx, oname, cat, prefix='', affix=''):
 
     text = f'{prefix}{path_script} --deepimage {path_deepimage} --catalogue {path_catalogue} '\
         f'--folder {path_images} --beam beam{idx:02d} --outdir {path_cand} --name {oname} '\
-        f'--config {args.config}{affix}'
+        f'--ignore-warning --config {args.config}{affix}'
 
     fw.write("echo beam{:02d}: Select candidates...".format(idx) + '\n')
     fw.write(text + '\n')
@@ -490,6 +489,8 @@ def write_clndata_txt(args, fw, idx):
         elif key == 'path_models' or key == 'path_images':
             fw.write(f'find {value} -type d -name "*beam{idx:02d}*" | xargs -n 1 -t rm -r' + '\n')
             fw.write(f'find {value} -type f -name "*.last" | xargs -n 1 -t rm' + '\n')
+    
+    fw.write('\n')
 
 
 def write_casa_params(args, params, fw):

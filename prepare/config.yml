@@ -105,7 +105,7 @@ CANDIDATES:
   KTYPE: ['chisquare', 'peak', 'std'] 
   MAP: ['chisquare', 'peak']
   THRESHOLD_SIMGA:
-    CHISQUARE: 8
+    CHISQUARE: 6
     PEAK: 6
     GAUSSIAN: 6
   LOG_THRESHOLD_SIGMA:
