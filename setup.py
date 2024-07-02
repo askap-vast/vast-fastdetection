@@ -35,6 +35,8 @@ if __name__ == '__main__':
                 'inspect_usage=vaster.inspect_usage:_main', 
                 'submit_slurm_jobs=vaster.submit_slurm_jobs:_main', 
                 'prepare_data=vaster.prepare_data:_main',
+                'plot_candidates=vaster.plot_candidates:_main', 
+                'check_complete=vaster.check_complete:_main', 
             ],
         },
         classifiers = [

@@ -49,7 +49,7 @@ def _main():
     else:
         fname_list = args.fname
 
-    pd.options.display.max_columns = None
+    # pd.options.display.max_columns = None
     for fname in fname_list:
         tb = read_tb(fname)
         tb = convert_mem_unit(tb, colnames)

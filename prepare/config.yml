@@ -124,7 +124,7 @@ OZSTAR:
     NTASKS: 1
     MEM: 4gb  # VAST 0GB max  
   MODELING:
-    TIME: '30:00:00'
+    TIME: '50:00:00'
     NODES: 1
     NTASKS: 1
     MEM: 16gb  # VAST 11GB max 

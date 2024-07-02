@@ -398,7 +398,7 @@ def prepare_steps_ozstar(args, idx, config, sbid, oname, step='FIXDATA'):
     params['output'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.output')
     params['error'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.error')
     params['usage'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.usage')
-    params['format'] = "JobID,JobName,Partition,Account,AllocCPUS,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,CPUTime,TotalCPU,Start,End"
+    params['format'] = "JobID,JobName,Partition,NodeList,AllocCPUS,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,CPUTime,TotalCPU,Start,End"
     return params, savename
 
 
@@ -426,7 +426,11 @@ def write_fixdata_txt(args, fw, idx, filename, prefix=''):
     filename = filename.replace('.tar', '')
     path_file = os.path.join(args.paths['path_data'], filename)
     logger.debug('write fixdata txt %s', path_file)
-    fw.write(f'rm -r {path_file}.corrected' + '\n')
+
+    text = f'rm -r {path_file}.corrected'
+    fw.write('echo Executing: ' + text + '\n')
+    fw.write(text + '\n')
+    fw.write('\n')
 
     text = f'askapsoft_rescale {path_file} {path_file}.corrected'
     fw.write(f"echo beam{idx:02d}: Fix the measurement sets flux scaling" + '\n')

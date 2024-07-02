@@ -46,7 +46,7 @@ def _main():
 
     for i, sbid in enumerate(args.sbids):
         logger.info("Processing observation SB%s (%s/%s)", sbid, i+1, len(args.sbids))
-        databasic= DataBasic(sbid, args.dir)
+        databasic = DataBasic(sbid, args.dir)
         args.databasic = databasic 
         args.paths = databasic.paths
         logger.debug(args.paths)
@@ -58,7 +58,7 @@ def _main():
 
         for idx in beams:
             fnamelist = extract_joblist(args, idx)
-            logger.info(f'SB{sbid} beam{idx:02d}: find %s jobs for submission')
+            logger.info(f'SB{sbid} beam{idx:02d}: find {len(fnamelist)} jobs for submission')
             if args.clean:
                 clean_data(args, sbid, affix=f"*beam{idx:02d}*", command="rm -r")
 
@@ -116,8 +116,11 @@ def write_scancel_scripts(args, idx, job_id_list):
 
 def clean_data(args, sbid, affix, command):
     logger.debug('SB%s: clean %s', sbid, affix)
-    fnamelist = glob.glob(os.path.join(args.paths['path_models'], affix))
-    fnamelist += glob.glob(os.path.join(args.paths['path_images'], affix))
+    fnamelist = []
+    if 'MODELING' in args.steps:
+        fnamelist += glob.glob(os.path.join(args.paths['path_models'], affix))
+    if 'IMGFAST' in args.steps:
+        fnamelist += glob.glob(os.path.join(args.paths['path_images'], affix))
     logger.debug('SB%s: found %s %s files', sbid, len(fnamelist), affix)
     for fname in fnamelist:
         txt = command + ' ' + fname

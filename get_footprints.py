@@ -17,7 +17,7 @@ import glob
 import math
 import aplpy
 
-from vastfast import plot
+from vaster.vastfast import plot
 
 from astropy.io import fits
 from astropy.coordinates import SkyCoord
