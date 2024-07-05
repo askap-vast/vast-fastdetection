@@ -3,6 +3,9 @@ TIMESTEP: 300             # Short image timestep, unit of seconds, if gives 'int
 SURVEY: other               # emu, vast, other
 CASA: casa                # path or shortcut to call casa 
 
+CONDA: /fred/oz330/software/.activate_conda  # conda source file in HPC
+CONDAENV: vaster    # conda virtual environment name
+
 RESETMODEL: False 
 MODELCLEAN:
   EMU:

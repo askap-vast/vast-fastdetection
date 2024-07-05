@@ -248,7 +248,7 @@ def format_ozstar(args, config, sbid, vis, cat):
                 with open(savename, 'w') as fw:
                     write_basetxt_ozstar(fw, sbid, savename, params)
                     if step == 'FIXDATA':
-                        write_moduleload_ozstar(fw)
+                        write_moduleload_ozstar(fw, config)
                         write_fixdata_txt(args, fw, idx, filename, prefix='srun time ')
                         write_module_unload_ozstar(fw)
                     elif step == 'MODELING':
@@ -353,9 +353,9 @@ def write_endtxt_ozstar(fw, sbid, savename, params):
     fw.write('\n')
 
 
-def write_moduleload_ozstar(fw):
-    fw.write('source ~/.activate_conda' + '\n')
-    fw.write('conda activate vaster' + '\n')
+def write_moduleload_ozstar(fw, config):
+    fw.write('source ' + config['CONDA'] + '\n')
+    fw.write('conda activate ' + config['CONDAENV'] + '\n')
     fw.write('\n')
 
 
