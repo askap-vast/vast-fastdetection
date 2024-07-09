@@ -32,9 +32,11 @@ def _main():
     if os.path.isfile(fname):
 
         tb = read_table(fname)
-        real = select_real(tb)
-        cand = remove_duplication(real)
+        keyname = check_keyname(tb)
+        logger.info('SB%s crossmatch source keyname: %s', args.sbid, keyname)
 
+        real = select_real(tb, key=keyname)
+        cand = remove_duplication(real, key=keyname)
         run_dyspec_command(cand, args)
 
         logger.info('Program finished and exit as 0. ')
@@ -42,6 +44,18 @@ def _main():
     else:
         logger.warning('%s does not exists!!!', fname)
 
+
+def check_keyname(tb):
+    if 'PSR_name' in tb.columns:
+        keyname = 'PSR_name'
+    elif 'KNOWN_name' in tb.columns:
+        keyname = 'KNOWN_name'
+    else:
+        keyname = None
+        logger.error('Cannot find proper known source column name')
+        sys.exit()
+
+    return keyname
 
 
 def read_table(filename):
