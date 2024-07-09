@@ -29,11 +29,11 @@ def _main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, 
         )
     parser.add_argument('sbids', type=int, nargs='+', help='input sbid for processing, number only')
-    parser.add_argument('--beams', type=int, nargs='+', default=None, 
+    parser.add_argument('-b', '--beams', type=int, nargs='+', default=None, 
                         help='input beams for processing, number only')
     parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
     parser.add_argument('--untar', action='store_true', help='untar visibilities')
-    parser.add_argument('-p', '--parallel', type=int, default=1, help='parallel processing num')
+    parser.add_argument('-p', '--parallel', type=int, default=4, help='parallel processing num')
     parser.add_argument('--no-vis', action='store_true', help='do not download visibilities')
     parser.add_argument('--no-selavy', action='store_true', help='do not download selavy')
     parser.add_argument('--mosaic', action='store_true', help='download mosaic images')

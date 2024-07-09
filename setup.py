@@ -38,6 +38,7 @@ if __name__ == '__main__':
                 'plot_candidates=vaster.plot_candidates:_main', 
                 'check_complete=vaster.check_complete:_main', 
                 'get_footprints=vaster.get_footprints:_main', 
+                'run_bash_jobs=vaster.run_bash_jobs:_main', 
             ],
         },
         classifiers = [
