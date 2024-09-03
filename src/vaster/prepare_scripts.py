@@ -256,7 +256,7 @@ def format_ozstar(args, config, sbid, vis, cat):
                     elif step == 'IMGFAST':
                         write_run_casa_txt(args, fw, idx, filename, oname, config, mode='imaging', prefix='srun time ')
                     elif step == 'SELCAND':
-                        write_moduleload_ozstar(fw)
+                        write_moduleload_ozstar(fw, config)
                         write_selcand_txt(args, fw, idx, oname, cat, prefix='srun time ')
                         write_module_unload_ozstar(fw)
                     elif step == 'CLNDATA':
