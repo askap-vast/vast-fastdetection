@@ -158,6 +158,10 @@ def query_casda(sbid):
     cat = r[r['dataproduct_subtype'] == 'catalogue.continuum.component']
     img = r[r['dataproduct_subtype'] == 'cont.restored.t0']
 
+    # further filtering of visibility
+    mask = [True if filename[:11] == 'scienceData' else False for filename in r['filename']]
+    vis = r[mask]
+
     vis.sort('filename')
 
     logger.info('Found {} visibilities'.format(len(vis)))
