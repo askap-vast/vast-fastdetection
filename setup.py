@@ -41,6 +41,7 @@ if __name__ == '__main__':
                 'select_candidates=vaster.select_candidates:_main', 
                 'submit_slurm_jobs=vaster.submit_slurm_jobs:_main', 
                 'summarise_candidates=vaster.summarise_candidates:_main', 
+                'check_measurements=vaster.check_measurements:_main', 
             ],
         },
         classifiers = [

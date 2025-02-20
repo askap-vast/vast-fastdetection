@@ -658,7 +658,7 @@ class Candidates:
         
         
         
-    def select_candidates(self, deepcatalogue, deepimage=None, 
+    def select_candidates(self, deepcatalogue, tabletype='selavy', deepimage=None, 
                           sep=30, mdlim=0.05, extlim=1.5, beamlim=1.2, 
                           bright=0.05):
         """Select high priority candidates using deep image information
@@ -680,7 +680,7 @@ class Candidates:
         # read deep image 
         # self.read_deepfits(imagename=deepimage)
         # read deep catalogue
-        self.read_catalogue(catalogue=deepcatalogue)
+        self.read_catalogue(catalogue=deepcatalogue, tabletype=tabletype)
         
         # rule out candidates outside primary beam size
         self.beamlim = beamlim
@@ -692,9 +692,14 @@ class Candidates:
         self.deepidx, self.d2d, d3d = self.cand_src.match_to_catalog_sky(self.deep_src)
         
         # calculate the modulation index 
-        fc = self.primary_correction(x0=self.cand_src.separation(self.beam_center).degree)
-        self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx] / fc # primary beam correction factor
-        # self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx] 
+        if tabletype == 'aegean':
+            logger.info('Tabletype %s, No anti-primary beam correction...', tabletype)
+            self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx] 
+        else:
+            logger.info('Tabletype %s, Anti-primary beam correction...', tabletype)
+            fc = self.primary_correction(x0=self.cand_src.separation(self.beam_center).degree)
+            self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx] / fc # primary beam correction factor
+        
         logger.info("Candidates with modulation index > {:.1%}: {}".format(
             mdlim, sum(self.md > mdlim)
             ))
@@ -883,51 +888,59 @@ class Candidates:
         
         
         
-    def read_catalogue(self, catalogue, tabletype="aegean"):
+    def read_catalogue(self, catalogue, tabletype="selavy"):
         """Read the deep image catalogue
         
         
         tabletype: "aegean" or "selavy"
-            current only support aegean
         """
         
-        logger.info("Read deep catalogue {}...".format(catalogue))
-        self.catalogue = Table.read(catalogue)
-        # logger.info(self.catalogue.info)
-        
-        ####################
-        # for Aegean convention
-        ####################
-        # # deep catalogue sources coordinates
-        # self.deep_src = SkyCoord(self.catalogue['ra'], 
-        #                          self.catalogue['dec'], 
-        #                          unit=u.degree)
-        
-        # # peak flux
-        # self.deep_peak_flux = np.array(self.catalogue['peak_flux']) # unit of Jy
-        
-        # # integrated flux
-        # self.deep_int_flux = np.array(self.catalogue['int_flux']) # unit of Jy
-        
-        # # get name
-        # # for selavy just read the column 'col_component_name'
-        # # for aegean you want to use following code to read from scratch 
-        # self.deep_name = ['J' + \
-        #      src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
-        #      src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
-        #      for src in self.deep_src
-        #     ]
+        logger.info("Read deep catalogue {}, format with {}...".format(catalogue, tabletype))
 
-        ####################
-        # for selavy convention
-        ####################
-        self.deep_src = SkyCoord(self.catalogue['col_ra_deg_cont'], 
-                                 self.catalogue['col_dec_deg_cont'], 
-                                 unit=u.degree)
+        if tabletype == 'aegean':
+            self.catalogue = fits.open(catalogue)[1].data
+            ####################
+            # for Aegean convention
+            ####################
+            # deep catalogue sources coordinates
+            self.deep_src = SkyCoord(self.catalogue['ra'], 
+                                     self.catalogue['dec'], 
+                                     unit=u.degree)
+            
+            # peak flux
+            self.deep_peak_flux = np.array(self.catalogue['peak_flux']) # unit of Jy
+            
+            # integrated flux
+            self.deep_int_flux = np.array(self.catalogue['int_flux']) # unit of Jy
+            
+            # get name
+            # for selavy just read the column 'col_component_name'
+            # for aegean you want to use following code to read from scratch 
+            self.deep_name = ['J' + \
+                 src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
+                 src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
+                 for src in self.deep_src
+                ]
         
-        self.deep_peak_flux = np.array(self.catalogue['col_flux_peak']) / 1e3 # unit of Jy
-        self.deep_int_flux = np.array(self.catalogue['col_flux_int']) / 1e3 # unit of Jy
-        self.deep_name = self.catalogue['col_component_name']
+        else:
+            if tabletype != 'selavy':
+                logger.warning('Unidentified table type %s, continue using selavy formats...', tabletype)
+            
+            self.catalogue = Table.read(catalogue)
+            ####################
+            # for selavy convention
+            ####################
+            self.deep_src = SkyCoord(self.catalogue['col_ra_deg_cont'], 
+                                    self.catalogue['col_dec_deg_cont'], 
+                                    unit=u.degree)
+            
+            self.deep_peak_flux = np.array(self.catalogue['col_flux_peak']) / 1e3 # unit of Jy
+            self.deep_int_flux = np.array(self.catalogue['col_flux_int']) / 1e3 # unit of Jy
+            self.deep_name = self.catalogue['col_component_name']
+        
+        
+
+        
 
         
         

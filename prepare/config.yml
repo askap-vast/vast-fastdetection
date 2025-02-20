@@ -1,58 +1,75 @@
 MACHINE: ozstar             # Processing HPC, can be bash, shao, or ozstar 
-TIMESTEP: 300             # Short image timestep, unit of seconds, if gives 'int' it is the integration time
-SURVEY: other               # emu, vast, other
-CASA: casa                # path or shortcut to call casa 
+TIMESTEP: 600               # Short image timestep, unit of seconds, if gives 'int' it is the integration time
+IMAGER: wsclean             # Imaging method: casa, wslcean or flint 
+SOURCE_FINDER: aegean       # Source finder: aegean (run aegean per-beam source finder) or selavy (mosaiced selavy catalogue)
 
-CONDA: /fred/oz330/software/.activate_conda  # conda source file in HPC
-CONDAENV: vaster    # conda virtual environment name
 
-RESETMODEL: False 
-MODELCLEAN:
-  EMU:
-    IMSIZE: 6144
-    CELL: '2.5arcsec'
-    DATACOLUMN: data
-    DECONVOLVER: mtmfs
-    NTERM: 2
-    SCALES: [0, 10, 30]
-    NITER: 10000
-    WEIGHTING: briggs     # natural, uniform, briggs
-    ROBUST: 0.5
-    UVRANGE: '>200m'
-    PBCOR: False
-    PBLIMIT: -0.2
-    GAIN: 0.2
-    THRESHOLD: 0.0 
-    GRIDDER: widefield
-    FACETS: 2
-    WPROJPLANES: -1
-    SAVEMODEL: modelcolumn
-    TIMERANGE: ''
-    STOKES: I 
+#########################################################################
+########################### environment setup ###########################
+VIRTUAL_ENV: True
+VIRTUAL_ENV_ENABLE: [
+  'source /fred/oz330/software/.activate_conda', 
+  'conda activate vaster'
+  ]
+VIRTUAL_ENV_DISABLE: 'conda deactivate'
 
-  VAST:
-    IMSIZE: 6144
-    CELL: '2.5arcsec'
-    DATACOLUMN: data
-    DECONVOLVER: "mtmfs"
-    NTERM: 2
-    SCALES: [0, 10, 30]
-    NITER: 5000
-    WEIGHTING: briggs     # natural, uniform, briggs
-    ROBUST: 0.5
-    UVRANGE: '>200m'
-    PBCOR: False
-    PBLIMIT: -0.2
-    GAIN: 0.2
-    THRESHOLD: 0.75mJy
-    GRIDDER: widefield
-    FACETS: 2
-    WPROJPLANES: -1
-    SAVEMODEL: modelcolumn
-    TIMERANGE: ''
-    STOKES: I 
+SINGULARITY: True
+WSCLEAN_PATH: /fred/oz330/software/wsclean.sif # container path for wsclean; only useful when IMAGER is wsclean
+#########################################################################
 
-  OTHER:
+
+#########################################################################
+########################## wsclean parameters ###########################
+# only useful when IMAGER is wsclean
+WSCLEAN:
+  MODELCLEAN:
+    LOG_TIME: True
+    ABS_MEM: 10
+    PARALLEL_REORDERING: 8
+    DATA_COLUMN: DATA
+    SIZE: 6144 6144
+    SCALE: 2.5asec
+    GRIDDER: wgridder 
+    WEIGHT: 'briggs 0.5'
+    PARALLEL_DECONVOLUTION: 512
+    NITER: 80000
+    GAIN: 0.15
+    MGAIN: 0.9
+    CHANNELS_OUT: 2
+    FIT_SPECTRAL_POL: 1
+    JOIN_CHANNELS: True
+    AUTO_THRESHOLD: 1
+    AUTO_MASK: 10
+    LOCAL_RMS: True
+    MINUVW_M: 200
+    MULTISCALE: True
+    MULTISCALE_GAIN: 0.1
+    MULTISCALE_SCALE_BIAS: 0.6
+    MULTISCALE_SCALES: 0,10,30
+  SHORTIMAGE:
+    MAKE_PSF: True
+    NO_UPDATE_MODEL_REQUIRED: True
+    SUBTRACT_MODEL: True
+    LOG_TIME: True
+    ABS_MEM: 4
+    PARALLEL_REORDERING: 8
+    DATA_COLUMN: DATA
+    SIZE: 2880 2880
+    SCALE: 2.5asec
+    GRIDDER: wgridder
+    WEIGHT: 'briggs 0.5'
+    MINUVW_M: 200
+    CHANNELS_OUT: 1
+    INTERVALS_OUT: False # the number of images will be calcualted based on TIMESTEP
+#########################################################################
+
+
+#########################################################################
+############################ CASA parameters ############################
+# only useful when IMAGER is casa
+CASA:
+  RESETMODEL: False 
+  MODELCLEAN:
     IMSIZE: 6144
     CELL: '2.5arcsec'
     DATACOLUMN: 'data'
@@ -60,7 +77,7 @@ MODELCLEAN:
     NTERM: 2
     SCALES: [0, 10, 30]
     NITER: 10000
-    WEIGHTING: 'briggs'     # natural, uniform, briggs
+    WEIGHTING: 'briggs'       # natural, uniform, briggs
     ROBUST: 0.5
     UVRANGE: '>200m'
     PBCOR: False
@@ -73,37 +90,38 @@ MODELCLEAN:
     SAVEMODEL: 'modelcolumn'
     TIMERANGE: ''
     STOKES: I 
+  
+  CAL: True                   # run self cal or not 
+  SELFCAL:
+    UVRANGE: '>200m'
+    SOLINT: 1min              # int or 1min
+    CALMODE: p                # p for phase, a for amplitude 
+
+  SHORTIMAGE:
+    IMSIZE: 2880
+    CELL: ['2.5arcsec']
+    DATACOLUMN: corrected
+    DECONVOLVER: multiscale
+    NTERM: 1
+    SCALES: [0]
+    NITER: 0
+    WEIGHTING: briggs         # natural, uniform, briggs
+    ROBUST: 0.5
+    UVRANGE: '>200m'
+    PBCOR: False
+    PBLIMIT: -0.2
+    GAIN: 0.1
+    THRESHOLD: 0.0 
+    GRIDDER: 'widefield'
+    FACETS: 2
+    WPROJPLANES: -1
+    SAVEMODEL: none
+    STOKES: I 
+#########################################################################
 
 
-CAL: True                 # run self cal or not 
-SELFCAL:
-  UVRANGE: '>200m'
-  SOLINT: 1min              # int or 1min
-  CALMODE: p              # p for phase, a for amplitude 
-
-
-SHORTIMAGE:
-  IMSIZE: 2880
-  CELL: ['2.5arcsec']
-  DATACOLUMN: corrected
-  DECONVOLVER: multiscale
-  NTERM: 1
-  SCALES: [0]
-  NITER: 0
-  WEIGHTING: briggs       # natural, uniform, briggs
-  ROBUST: 0.5
-  UVRANGE: '>200m'
-  PBCOR: False
-  PBLIMIT: -0.2
-  GAIN: 0.1
-  THRESHOLD: 0.0 
-  GRIDDER: 'widefield'
-  FACETS: 2
-  WPROJPLANES: -1
-  SAVEMODEL: none
-  STOKES: I 
-
-
+#########################################################################
+##################### transients search parameters ######################
 CANDIDATES:
   KTYPE: ['chisquare', 'peak', 'std'] 
   MAP: ['chisquare', 'peak']
@@ -118,8 +136,11 @@ CANDIDATES:
   MIN_DISTANCE: 30
   SAVEVOT: False
   GAUSSIAN_WIDTH: 4
-    
+#########################################################################
 
+
+#########################################################################
+############################ HPC parameters #############################
 OZSTAR:
   FIXDATA:
     TIME: '1:00:00'
@@ -127,17 +148,17 @@ OZSTAR:
     NTASKS: 1
     MEM: 4gb  # VAST 0GB max  
   MODELING:
-    TIME: '50:00:00'
+    TIME: '10:00:00'
     NODES: 1
     NTASKS: 1
-    MEM: 16gb  # VAST 11GB max 
+    MEM: 12gb  # VAST 11GB max 
   IMGFAST:
-    TIME: '30:00:00'
+    TIME: '5:00:00'
     NODES: 1
     NTASKS: 1
     MEM: 4gb  # VAST 1.2GB max
   SELCAND:
-    TIME: '10:00:00'
+    TIME: '1:00:00'
     NODES: 1
     NTASKS: 1
     MEM: 32gb  # VAST 16GB max (70 images)
@@ -146,4 +167,5 @@ OZSTAR:
     NODES: 1
     NTASKS: 1
     MEM: 200mb  # VAST 0GB max
+#########################################################################
 

@@ -30,7 +30,8 @@ def _main():
         )
     parser.add_argument('sbids', type=int, nargs='+', help='input sbid for processing, number only')
     parser.add_argument('-b', '--beams', type=int, nargs='+', default=None, 
-                        help='input beams for processing, number only, leave it blank for all of beams')
+                        help=r'''input beams for processing, number only, leave it blank for all of beams;
+                                using {3..10} to constract a list''')
     parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
     parser.add_argument('--steps', type=str, nargs='+', default=['FIXDATA', 'MODELING', 'IMGFAST', 'SELCAND', 'CLNDATA'], 
                         help='tasks to process, following the order')

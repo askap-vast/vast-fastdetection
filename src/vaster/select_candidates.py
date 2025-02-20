@@ -105,7 +105,7 @@ def get_imagelist(args, ):
     #     tmp.sort()
     #     imagelist += tmp
 
-    imagelist = glob.glob(os.path.join(args.folder, f'*{args.beam}*.fits'))
+    imagelist = glob.glob(os.path.join(args.folder, f'*{args.beam}*image.fits'))
     imagelist.sort()
 
     logger.info("Loading foler {}".format(args.folder))
@@ -190,6 +190,8 @@ def select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, ga
             
         sigma = config['CANDIDATES']['THRESHOLD_SIMGA'][maptype.upper()]
         min_distance = config['CANDIDATES']['MIN_DISTANCE']
+        tabletype = config['SOURCE_FINDER']
+
         # find local maximum
         logger.info("Find local maximum....")
         c.local_max(min_distance=min_distance, sigma=sigma, data=maptype)
@@ -201,7 +203,7 @@ def select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, ga
                     imagename=imagename)
             
         logger.info("Deep image catalogue {}".format(args.catalogue))
-        c.select_candidates(deepcatalogue=args.catalogue)
+        c.select_candidates(deepcatalogue=args.catalogue, tabletype=tabletype)
         
         # save the table
         tablename = os.path.join(args.outdir, f'{args.name}_{maptype}_cand')

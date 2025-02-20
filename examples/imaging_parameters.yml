@@ -1,0 +1,72 @@
+MODELCLEAN:
+  EMU:
+    IMSIZE: 6144
+    CELL: '2.5arcsec'
+    DATACOLUMN: data
+    DECONVOLVER: mtmfs
+    NTERM: 2
+    SCALES: [0, 10, 30]
+    NITER: 10000
+    WEIGHTING: briggs     # natural, uniform, briggs
+    ROBUST: 0.5
+    UVRANGE: '>200m'
+    PBCOR: False
+    PBLIMIT: -0.2
+    GAIN: 0.2
+    THRESHOLD: 0.0 
+    GRIDDER: widefield
+    FACETS: 2
+    WPROJPLANES: -1
+    SAVEMODEL: modelcolumn
+    TIMERANGE: ''
+    STOKES: I 
+
+  VAST:
+    IMSIZE: 6144
+    CELL: '2.5arcsec'
+    DATACOLUMN: data
+    DECONVOLVER: "mtmfs"
+    NTERM: 2
+    SCALES: [0, 10, 30]
+    NITER: 5000
+    WEIGHTING: briggs     # natural, uniform, briggs
+    ROBUST: 0.5
+    UVRANGE: '>200m'
+    PBCOR: False
+    PBLIMIT: -0.2
+    GAIN: 0.2
+    THRESHOLD: 0.75mJy
+    GRIDDER: widefield
+    FACETS: 2
+    WPROJPLANES: -1
+    SAVEMODEL: modelcolumn
+    TIMERANGE: ''
+    STOKES: I 
+
+# optimaise for CASA 
+OZSTAR:
+  FIXDATA:
+    TIME: '1:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 4gb  # VAST 0GB max  
+  MODELING:
+    TIME: '50:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 16gb  # VAST 11GB max 
+  IMGFAST:
+    TIME: '30:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 4gb  # VAST 1.2GB max
+  SELCAND:
+    TIME: '10:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 32gb  # VAST 16GB max (70 images)
+  CLNDATA:
+    TIME: '1:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 200mb  # VAST 0GB max

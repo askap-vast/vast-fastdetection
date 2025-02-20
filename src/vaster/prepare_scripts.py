@@ -185,19 +185,6 @@ def get_opal(args):
     return username, password
 
 
-def get_modeling_params(config):
-    if config['SURVEY'] == 'emu':
-        params = config['MODELCLEAN']['EMU']
-        logger.info('EMU clean mode ')
-    elif config['SURVEY'] == 'vast':
-        params = config['MODELCLEAN']['VAST']
-        logger.info('VAST clean mode')
-    else:
-        params = config['MODELCLEAN']['OTHER']
-        logger.info('User self-defined clean mode')
-    return params
-
-
 def format_bash(args, config, sbid, vis, cat):
     ############################
     # Generate scripts for one beam data
@@ -212,12 +199,12 @@ def format_bash(args, config, sbid, vis, cat):
             write_download_vis_txt(args, fw, idx, filename, url)
             write_untar_vis_txt(args, fw, idx, filename)
             write_fixdata_txt(args, fw, idx, filename)
-            write_run_casa_txt(args, fw, idx, filename, oname, config, mode='modeling')
-            write_run_casa_txt(args, fw, idx, filename, oname, config, mode='imaging')
+            write_imager_txt(args, fw, idx, filename, oname, config, mode='modeling')
+            write_imager_txt(args, fw, idx, filename, oname, config, mode='imaging')
 
             path_log = os.path.join(args.paths['path_logs'], 'bash_SELCAND_{}.log'.format(oname)) # output log files 
             affix = f' > {path_log} 2>&1'
-            write_selcand_txt(args, fw, idx, oname, cat, affix=affix)
+            write_selcand_txt(args, fw, idx, oname, config, cat, affix=affix)
             write_clndata_txt(args, fw, idx)
             logger.info('Writing {}'.format(savename))
 
@@ -248,24 +235,19 @@ def format_ozstar(args, config, sbid, vis, cat):
                 with open(savename, 'w') as fw:
                     write_basetxt_ozstar(fw, sbid, savename, params)
                     if step == 'FIXDATA':
-                        write_moduleload_ozstar(fw, config)
-                        write_fixdata_txt(args, fw, idx, filename, prefix='srun time ')
-                        write_module_unload_ozstar(fw)
+                        write_fixdata_txt(args, fw, idx, filename, config, prefix='srun time ')
                     elif step == 'MODELING':
-                        write_run_casa_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix='srun time ')
+                        write_imager_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix='srun time ')
                     elif step == 'IMGFAST':
-                        write_run_casa_txt(args, fw, idx, filename, oname, config, mode='imaging', prefix='srun time ')
+                        write_imager_txt(args, fw, idx, filename, oname, config, mode='imaging', prefix='srun time ')
                     elif step == 'SELCAND':
-                        write_moduleload_ozstar(fw, config)
-                        write_selcand_txt(args, fw, idx, oname, cat, prefix='srun time ')
-                        write_module_unload_ozstar(fw)
+                        write_selcand_txt(args, fw, idx, oname, config, cat, prefix='srun time ')
                     elif step == 'CLNDATA':
                         write_clndata_txt(args, fw, idx)
                         
                     write_endtxt_ozstar(fw, sbid, savename, params)
                 
             logger.info('Writing {}'.format(savename))
-
 
 
 def prepare_downloads(args, sbid, cat, img, vis):
@@ -287,18 +269,18 @@ def prepare_downloads(args, sbid, cat, img, vis):
 def format_casa_modeling(args, config):
     # modeling 
     savename = os.path.join(args.paths['path_scripts'], 'casa_model_making.py')
-    params = get_modeling_params(config)
+    params = config['CASA']['MODELCLEAN']
     with open(savename, 'w') as fw:  
         write_casa_params(args, params, fw)
         logger.info('Writing {}'.format(savename))
 
-        if config['RESETMODEL']:
+        if config['CASA']['RESETMODEL']:
             write_casa_reset_vis(fw)
 
         write_casa_tclean(fw)
 
-        if config['CAL']:
-            write_casa_calib(config['SELFCAL'], fw)
+        if config['CASA']['CAL']:
+            write_casa_calib(config['CASA']['SELFCAL'], fw)
 
         write_casa_subtract_model(fw)
         write_casa_exportfits(params, fw)
@@ -307,7 +289,7 @@ def format_casa_modeling(args, config):
 def format_casa_imgfast(args, config):
     # short imaging
     savename = os.path.join(args.paths['path_scripts'], 'casa_short_imaging.py')
-    params = config['SHORTIMAGE']
+    params = config['CASA']['SHORTIMAGE']
     with open(savename, 'w') as fw:  
         write_casa_params(args, params, fw)
         logger.info('Writing {}'.format(savename))
@@ -319,7 +301,6 @@ def format_casa_imgfast(args, config):
         write_casa_exportfits(params, fw, imagename='imagename_j')
 
         
-
 def write_basetxt_bash(fw, sbid, savename):
     logger.debug('write base txt bash for SB%s saving to %s', sbid, savename)
     fw.write("#!/bin/bash" + '\n')
@@ -353,16 +334,23 @@ def write_endtxt_ozstar(fw, sbid, savename, params):
     fw.write('\n')
 
 
-def write_moduleload_ozstar(fw, config):
-    fw.write('source ' + config['CONDA'] + '\n')
-    fw.write('conda activate ' + config['CONDAENV'] + '\n')
+def write_virtual_env_enable(fw, config):
+    # write line by line
+    for line in config['VIRTUAL_ENV_ENABLE']:
+        fw.write(line + '\n')
     fw.write('\n')
 
 
-def write_module_unload_ozstar(fw):
-    fw.write('conda deactivate' + '\n')
+def write_virtual_env_disable(fw, config):
+    fw.write(config['VIRTUAL_ENV_DISABLE'] + '\n')
     fw.write('\n')
-    
+
+
+def write_singularity_load(fw):
+    fw.write('module load singularity' + '\n')
+    fw.write('export SINGULARITY_BINDPATH=$PWD' + '\n')
+    fw.write('\n')
+
 
 def get_url(access_url, username, password):
     session = requests.Session()
@@ -422,11 +410,14 @@ def write_untar_vis_txt(args, fw, idx, filename):
     fw.write('\n')
 
 
-def write_fixdata_txt(args, fw, idx, filename, prefix=''):
+def write_fixdata_txt(args, fw, idx, filename, config, prefix=''):
     filename = filename.replace('.tar', '')
     path_file = os.path.join(args.paths['path_data'], filename)
     logger.debug('write fixdata txt %s', path_file)
 
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_enable(fw, config)
+        
     text = f'rm -r {path_file}.corrected'
     fw.write('echo Executing: ' + text + '\n')
     fw.write(text + '\n')
@@ -442,35 +433,59 @@ def write_fixdata_txt(args, fw, idx, filename, prefix=''):
     fw.write(prefix + text + '\n')
     fw.write('\n')
 
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_disable(fw, config)
 
-def write_run_casa_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix=''):
+
+def write_imager_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix=''):
     filename = filename.replace('.tar', '.corrected')
     path_file = os.path.join(args.paths['path_data'], filename)
-    casa = config['CASA']
-    logger.debug('write run casa txt %s output name %s', path_file, oname)
+    imager = config['IMAGER']
+    logger.debug('write imaging txt %s output name %s', path_file, oname)
 
-    if mode == 'modeling':
-        script_name = 'casa_model_making.py'
-        log_name = f'casa_MODELING_{oname}.log'
-        fw.write(f"echo beam{idx:02d}: Create sky model and subtract..." + '\n')
-        fw.write('cd ' + args.paths['path_models'] + ' \n')
-    elif mode == 'imaging':
-        script_name = 'casa_short_imaging.py'
-        log_name = f'casa_IMGFAST_{oname}.log'
-        fw.write(f"echo beam{idx:02d}: Create model-subtracted short images..." + '\n')
-        fw.write('cd ' + args.paths['path_images'] + ' \n')
+    if imager == 'casa':
+        text = write_casa_cmd(args, fw, idx, path_file, oname, mode, prefix, imager)
+    elif imager == 'wsclean':
+        text = write_wsclean_cmd(args, fw, idx, path_file, oname, config, mode, prefix)
+    elif imager == 'flint':
+        logger.warning('FLINT HAS NOT BEEN IMPLEMENTED YET - WILL SWITCH TO WSCLEAN')
+        text = write_wsclean_cmd(args, fw, idx, path_file, oname, config, mode, prefix)
+    else:
+        logger.warning('UNIDENTIFIED IMAGER "%s" - WILL SWITCH TO WSCLEAN', config['IMAGER'])
+        text = write_wsclean_cmd(args, fw, idx, path_file, oname, config, mode, prefix)
 
-    path_log = os.path.join(args.paths['path_logs'], log_name)
-    path_script = os.path.join(args.paths['path_scripts'], script_name)
-    text = f'{prefix}{casa} --log2term --logfile {path_log} --nogui -c {path_script} {path_file} {oname}'
+    fw.write('echo ' + text + '\n')
     fw.write(text + '\n')
     fw.write('\n')
 
 
-def write_selcand_txt(args, fw, idx, oname, cat, prefix='', affix=''):
+def write_selcand_txt(args, fw, idx, oname, config, cat, prefix='', affix=''):
     path_script = 'select_candidates'
-    path_deepimage = os.path.join(args.paths['path_models'], oname+'.image.tt0.fits') # deep image
-    path_catalogue = os.path.join(args.paths['path_data'], cat[0]['filename']) # selavy catalogue
+
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_enable(fw, config)
+
+    if config['IMAGER'] == 'casa':
+        path_deepimage = os.path.join(args.paths['path_models'], oname+'.image.tt0.fits') # deep image
+    elif config['IMAGER'] == 'wsclean':
+        path_deepimage = os.path.join(args.paths['path_models'], oname+'-MFS-image.fits') # deep image
+    else:
+        path_deepimage = os.path.join(args.paths['path_models'], oname+'*image*fits') # deep image
+
+    if config['SOURCE_FINDER'] == 'selavy':
+        path_catalogue = os.path.join(args.paths['path_data'], cat[0]['filename']) # selavy catalogue
+    elif config['SOURCE_FINDER'] == 'aegean':
+        # running aegean to search for candidates
+        fw.write("echo beam{:02d}: Running aegean to produce deep image catalogues...".format(idx) + '\n')
+        fw.write(f"cd {args.paths['path_models']}" + '\n')
+        fw.write(f"{prefix}aegean {path_deepimage} --cores 1 --save" + '\n')
+        tablename = path_deepimage.replace('fits', 'cat.fits')
+        fw.write(f"{prefix}aegean {path_deepimage} --cores 1 --table {tablename}" + '\n')
+        fw.write('\n')
+        path_catalogue = path_deepimage.replace('fits', 'cat_comp.fits') # selavy catalogue
+    else:
+        path_catalogue = os.path.join(args.paths['path_data'], cat[0]['filename']) # selavy catalogue
+    
     path_images = args.paths['path_images']
     path_cand = args.paths['path_cand']
 
@@ -481,6 +496,9 @@ def write_selcand_txt(args, fw, idx, oname, cat, prefix='', affix=''):
     fw.write("echo beam{:02d}: Select candidates...".format(idx) + '\n')
     fw.write(text + '\n')
     fw.write('\n')
+
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_disable(fw, config)
 
 
 def write_clndata_txt(args, fw, idx):
@@ -495,6 +513,26 @@ def write_clndata_txt(args, fw, idx):
             fw.write(f'find {value} -type f -name "*.last" | xargs -n 1 -t rm' + '\n')
     
     fw.write('\n')
+
+######## ####### ####### #######
+####### CASA starts #######
+######## ####### ####### #######
+def write_casa_cmd(args, fw, idx, path_file, oname, mode, prefix, imager):
+    if mode == 'modeling':
+        script_name = 'casa_model_making.py'
+        log_name = f'casa_MODELING_{oname}.log'
+        fw.write(f"echo beam{idx:02d}: Create sky model and subtract..." + '\n')
+        fw.write('cd ' + args.paths['path_models'] + ' \n')
+    elif mode == 'imaging':
+        script_name = 'casa_short_imaging.py'
+        log_name = f'casa_IMGFAST_{oname}.log'
+        fw.write(f"echo beam{idx:02d}: Create model-subtracted short images..." + '\n')
+        fw.write('cd ' + args.paths['path_images'] + ' \n')
+
+    path_log = os.path.join(args.paths['path_logs'], log_name)
+    path_script = os.path.join(args.paths['path_scripts'], script_name)
+    text = f'{prefix}{imager} --log2term --logfile {path_log} --nogui -c {path_script} {path_file} {oname}'
+    return text 
 
 
 def write_casa_params(args, params, fw):
@@ -621,6 +659,63 @@ for j in range(times.shape[0]):
 '''
     fw.write(txt)
 
+######## ####### ####### #######
+####### CASA ends #######
+######## ####### ####### #######
+####### WSCLEAN starts #######
+######## ####### ####### #######
+
+def write_wsclean_cmd(args, fw, idx, path_file, oname, config, mode, prefix):
+    if config['SINGULARITY'] is True:
+        write_singularity_load(fw)
+        run_wsclean = 'singularity exec ' + config['WSCLEAN_PATH'] + ' wsclean'
+    else:
+        run_wsclean = 'wsclean'
+
+    if mode == 'modeling':
+        fw.write(f"echo beam{idx:02d}: Create sky model and subtract..." + '\n')
+        fw.write('cd ' + args.paths['path_models'] + ' \n')
+        params = config['WSCLEAN']['MODELCLEAN']
+        text = write_wsclean_params(params)
+
+    elif mode == 'imaging':
+        write_intervals_out(args, fw, config, path_file, oname)
+        fw.write(f"echo beam{idx:02d}: Create model-subtracted short images..." + '\n')
+        fw.write('cd ' + args.paths['path_images'] + ' \n')
+        params = config['WSCLEAN']['SHORTIMAGE']
+        text = write_wsclean_params(params) + '-intervals-out $intervals_out '
+    
+    text = f'{prefix}{run_wsclean} {text}-name {oname} {path_file}'
+    return text 
+
+
+def write_wsclean_params(params):
+    txt = ''
+    for key, value in params.items():
+        if value is True:
+            txt += '-' + key.lower().replace('_', '-') + ' '
+        elif value is False:
+            txt += ''
+        else:
+            txt += '-' + key.lower().replace('_', '-') + ' ' + f'{value}' + ' '
+
+    logger.debug('******* wsclean imaging parameters *******')
+    logger.debug(txt)
+    return txt
+
+
+def write_intervals_out(args, fw, config, path_file, oname):
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_enable(fw, config)
+
+    savename = os.path.join(args.paths['path_data'], oname + '_measurements.txt')
+    fw.write(f'intervals=($(check_measurements {path_file} --config {args.config} --savename {savename}))' + '\n')
+    fw.write(r"intervals_out=${intervals[-1]}" + '\n')
+    fw.write('\n')
+
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_disable(fw, config)
+    
 
 
 if __name__ == "__main__":
