@@ -35,11 +35,13 @@ def _main():
         description='''
         Summarise candidates from one SBID, combine them into one csv. 
         With option to upload it via rclone and/or send an email notification to an address. 
+        The program will check if all 36 beams are exists, and it will until it passes checks. 
+        You can get rid of check and force run the scripts by specify --force. 
         ''', 
         epilog='Example Usage: summarise_candidates 60314 -e <test@gmail.com> -rclone google', 
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, 
         )
-    parser.add_argument('sbid', type=int, help='SBID in format of number')
+    parser.add_argument('sbids', type=int, nargs='+', help='SBID in format of number')
     parser.add_argument('--dir', type=str, default='.', help='path where SBxxxx were stored')
     parser.add_argument('-p', '--port', type=int, default=8053, help='local host forward port')
     parser.add_argument('-r', '--crossmatch-radius', type=float, default=20, help='source crossmatch radius, unit of arcsec')
@@ -48,19 +50,39 @@ def _main():
                         help='send email notification to a list of email addresses')
     parser.add_argument('-rclone', default=None, 
                         help='rclone final csv to other cloud disk, e.g. google')
+    parser.add_argument('--force', action='store_true', help='force run summary even if the sbid is not completed')
     parser.add_argument('-v', '--verbose', action='store_true', help='make it verbose')
     args = parser.parse_args()
 
     make_verbose(args)
     logger.debug(args)
 
+    for i, sbid in enumerate(args.sbids):
+        logger.info("Processing observation SB%s (%s/%s)", sbid, i+1, len(args.sbids))
+        args.sbid = sbid
 
+        databasic = DataBasic(args.sbid, args.dir)
+        args.paths = databasic.paths
+        logger.debug(args.paths)
+
+        while True:
+            complete = check_sbid_compelte(args, args.sbid, args.paths, databasic.nbeam)
+            args.complete = complete
+            if complete:
+                logger.info('SB%s complete %s', args.sbid, complete)
+                run(args, databasic)
+                break
+            else:
+                time.sleep(600)
+
+
+    end_time = time.time()
+    measure_running_time(start_time, end_time)
+
+
+def run(args, databasic):
     base_url = f"http://localhost:{args.port}/SB{args.sbid}/candidates/"
     dyspec_url = f"http://localhost:{args.port}/dyspec/"
-
-    databasic = DataBasic(args.sbid, args.dir)
-    args.paths = databasic.paths
-    logger.debug(args.paths)
 
     catfname = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
                             'collections', 
@@ -84,6 +106,7 @@ def _main():
         sys.exit()
 
     final_cands = vstack(cand_list)
+    logger.debug(final_cands)
     logger.info('High priority: %s', sum(final_cands['priority'] == 'high'))
     logger.info('Mid priority: %s', sum(final_cands['priority'] == 'mid'))
     logger.info('Low priority: %s', sum(final_cands['priority'] == 'low'))
@@ -92,14 +115,11 @@ def _main():
     final_cands.write(savename, overwrite=True)
     logger.info(f'Saved final results to %s', savename)
 
-    complete = check_sbid_compelte(args, args.sbid, args.paths, databasic.nbeam)
-    logger.info('SB%s complete %s', args.sbid, complete)
-
     if args.email is not None:
         logger.warning('Will send email use variables set in $SMTP_USER and $SMTP_PWD')
         sender_email = os.getenv('SMTP_USER')
         sender_pwd = os.getenv('SMTP_PWD')
-        body = write_email_body(args, final_cands, complete)
+        body = write_email_body(args, final_cands, args.complete)
 
         for receiver_email in args.email:
             email_alert(body, sender_email, sender_pwd, receiver_email, args)
@@ -108,9 +128,6 @@ def _main():
     if args.rclone is not None:
         rclone_copy(args, savename)
 
-
-    end_time = time.time()
-    measure_running_time(start_time, end_time)
 
 
 def read_catalog(args, fname):
