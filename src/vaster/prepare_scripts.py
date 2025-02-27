@@ -111,6 +111,7 @@ def read_config(fname):
 def copy_config(args, ):
     config_in = args.config
     config_out = os.path.join(args.paths['path'], 'config.yml')
+    args.self_config = config_out 
     logger.info('copy configuration file')
     txt = f'cp {config_in} {config_out}'
     logger.info('Executing "%s"', txt)
@@ -495,7 +496,7 @@ def write_selcand_txt(args, fw, idx, oname, config, cat, prefix='', affix=''):
 
     text = f'{prefix}{path_script} --deepimage {path_deepimage} --catalogue {path_catalogue} '\
         f'--folder {path_images} --beam beam{idx:02d} --outdir {path_cand} --name {oname} '\
-        f'--ignore-warning --config {args.config}{affix}'
+        f'--ignore-warning --config {args.self_config}{affix}'
 
     fw.write("echo beam{:02d}: Select candidates...".format(idx) + '\n')
     fw.write(text + '\n')
@@ -713,7 +714,7 @@ def write_intervals_out(args, fw, config, path_file, oname):
         write_virtual_env_enable(fw, config)
 
     savename = os.path.join(args.paths['path_data'], oname + '_measurements.txt')
-    fw.write(f'intervals=($(check_measurements {path_file} --config {args.config} --savename {savename}))' + '\n')
+    fw.write(f'intervals=($(check_measurements {path_file} --config {args.self_config} --savename {savename}))' + '\n')
     fw.write(r"intervals_out=${intervals[-1]}" + '\n')
     fw.write('\n')
 
