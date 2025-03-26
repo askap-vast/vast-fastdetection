@@ -44,6 +44,7 @@ def _main():
     parser.add_argument('sbids', type=int, nargs='+', help='SBID in format of number')
     parser.add_argument('--dir', type=str, default='.', help='path where SBxxxx were stored')
     parser.add_argument('-p', '--port', type=int, default=8053, help='local host forward port')
+    parser.add_argument('--host', type=str, default='localhost', help='launched base URL host for website. Could be ada.physics.usyd.edu.au for ada')
     parser.add_argument('-r', '--crossmatch-radius', type=float, default=20, help='source crossmatch radius, unit of arcsec')
     parser.add_argument('--query-radius', type=float, default=3, help='query region radius, unit of degree')
     parser.add_argument('-e', '--email', default=None, nargs='+', 
@@ -68,7 +69,9 @@ def _main():
         while True:
             complete = check_sbid_compelte(args, args.sbid, args.paths, databasic.nbeam)
             args.complete = complete
-            if complete:
+            if args.force:
+                logger.info('Force running SB%s', args.sbid)
+            if complete or args.force:
                 logger.info('SB%s complete %s', args.sbid, complete)
                 run(args, databasic)
                 break
@@ -81,8 +84,8 @@ def _main():
 
 
 def run(args, databasic):
-    base_url = f"http://localhost:{args.port}/SB{args.sbid}/candidates/"
-    dyspec_url = f"http://localhost:{args.port}/dyspec/"
+    base_url = f"http://{args.host}:{args.port}/SB{args.sbid}/candidates/"
+    dyspec_url = f"http://{args.host}:{args.port}/dyspec/"
 
     catfname = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
                             'collections', 
@@ -264,7 +267,7 @@ def rclone_copy(args, fname):
     try:
         os.system(cmd)
     except:
-        log.error('Cannot executing %s', cmd)
+        logger.error('Cannot executing %s', cmd)
 
 
 if __name__ == '__main__':

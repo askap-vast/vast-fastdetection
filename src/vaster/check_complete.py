@@ -78,9 +78,9 @@ def make_verbose(args):
 
 
 def check_sbid_compelte(args, sbid, paths, nbeam):
-    peak_cand = glob.glob( os.path.join(paths['path_cand'], "*peak_cand.csv" ))
+    peak_cand = glob.glob( os.path.join(paths['path_cand'], "*peak*cand.csv" ))
     logger.debug(peak_cand)
-    chisq_cand = glob.glob( os.path.join(paths['path_cand'], "*chisquare_cand.csv" ))
+    chisq_cand = glob.glob( os.path.join(paths['path_cand'], "*chisquare*cand.csv" ))
     logger.debug(chisq_cand)
 
     if len(peak_cand) != nbeam:
