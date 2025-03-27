@@ -15,6 +15,7 @@ from matplotlib.ticker import MaxNLocator
 
 import aplpy
 from skimage.feature import peak_local_max
+from scipy.stats import chi2, norm
 
 from astropy.wcs import WCS
 from astropy.io import fits
@@ -451,6 +452,8 @@ def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
     
 def get_sigma_logspace(data, flux):
     # get log statistics
+    logger.debug(data.shape)
+    logger.debug(data)
     logmean = np.nanmean(np.log10(data))
     logstd = np.nanstd(np.log10(data))
     
@@ -460,7 +463,7 @@ def get_sigma_logspace(data, flux):
     return sigma
 
 
-def get_threshold_logspace(data, sigma=3):
+def get_threshold_logspace(data, sigma=5):
     
     # get log statistics
     logmean = np.nanmean(np.log10(data))
@@ -474,6 +477,34 @@ def get_threshold_logspace(data, sigma=3):
     return threshold
 
 
+def get_threshold_peak(value=None, sigma=None, num=70):
+
+    # from sigma to calculate the theoritical value/threshold
+    if value is None:
+        value = norm.isf(-norm.logcdf(sigma)/num)
+        logger.info("Calculating peak threshold for {} images...".format(num))
+        logger.info("{} sigma threshold (peak) is {:.2f}".format(sigma, value))
+        return value
+
+    # from threshold/given value to calculate theoritical sigma
+    elif sigma is None:
+        sigma = norm.isf(-norm.logcdf(value)*num)
+        return sigma
+
+
+def get_threshold_chisquare(value=None, sigma=None, num=70):
+
+    df = num - 1 # degree of freedom
+
+    if value is None:
+        value = chi2.isf(norm.sf(sigma), df) / df
+        logger.info("Calculating chi2 threshold for {} images...".format(num))
+        logger.info("{} sigma threshold (chi2) is {:.2f}".format(sigma, value))
+        return value
+
+    elif sigma is None:
+        sigma = norm.isf(chi2.sf(value*df, df))
+        return sigma
 
 
 
@@ -546,7 +577,7 @@ class Candidates:
     """
     _map_full = ["chisquare_map", "peak_map", "gaussian_map"]
 
-    def __init__(self, map_dict):
+    def __init__(self, map_dict, num=40):
         """map_dict: dict of map file
         """
         self.map_dict = map_dict
@@ -560,6 +591,8 @@ class Candidates:
                                     self.fi.header['CRVAL2'], unit=u.degree)
         # FWHM of primary beam
         self.fwhm = 3e8/self.fi.header['CRVAL3']/12 * 180/np.pi * u.degree
+        # number of images
+        self.num = num
         
     def _map_file_check(self):
         valid_map = []
@@ -737,16 +770,42 @@ class Candidates:
             t['ra'] = self.cand_src[self.final_idx].ra.degree
             t['dec'] = self.cand_src[self.final_idx].dec.degree
             
-            for maptype in self._map_full:
-                colname = maptype
-                sig_colname = colname + "_sigma"
-                if hasattr(self, maptype):
-                    t[colname] = getattr(self, maptype)[self.yp, self.xp][self.final_idx]
-                    t[sig_colname] = get_sigma_logspace(getattr(self, maptype), 
-                                                    np.array(t[colname]))
-                else:
-                    t[colname] = [np.nan] * sum(self.final_idx)
-                    t[sig_colname] = [np.nan] * sum(self.final_idx)
+            # for maptype in self._map_full:
+            #     colname = maptype
+            #     sig_colname = colname + "_sigma"
+            #     if hasattr(self, maptype):
+            #         t[colname] = getattr(self, maptype)[self.yp, self.xp][self.final_idx]
+            #         t[sig_colname] = get_sigma_logspace(getattr(self, maptype), 
+            #                                         np.array(t[colname]))
+            #     else:
+            #         t[colname] = [np.nan] * sum(self.final_idx)
+            #         t[sig_colname] = [np.nan] * sum(self.final_idx)
+
+            # read the chisq value at each pixel
+            t['chi_square'] = self.chisquare_map[self.yp, self.xp][self.final_idx]
+            # calculate the sigma
+            t['chi_square_log_sigma'] = get_sigma_logspace(self.chisquare_map,
+                                                       np.array(t['chi_square']))
+            t['chi_square_sigma'] = get_threshold_chisquare(value=np.array(t['chi_square']),
+                                                            num=self.num)
+
+            # read the peak value at each pixel
+            t['peak_map'] = self.peak_map[self.yp, self.xp][self.final_idx]
+            # calculate the sigma
+            t['peak_map_log_sigma'] = get_sigma_logspace(self.peak_map,
+                                                     np.array(t['peak_map']))
+            t['peak_map_sigma'] = get_threshold_peak(value=np.array(t['peak_map']),
+                                                     num=self.num)
+
+            # if there's Gaussian map
+            if hasattr(self, 'gaussian_map'):
+                t['gaussian_map'] = self.gaussian_map[self.yp, self.xp][self.final_idx]
+                t['gaussian_map_sigma'] = get_sigma_logspace(self.gaussian_map,
+                                                         np.array(t['gaussian_map']))
+            else:
+                t['gaussian_map']  = [np.nan] * sum(self.final_idx)
+                t['gaussian_map_sigma'] = [np.nan] * sum(self.final_idx)
+
                         
             # read the peak value at each pixel 
             t['std_map'] = self.std_map[self.yp, self.xp][self.final_idx]
@@ -1021,7 +1080,7 @@ class Products:
             peak_flux_table.write("{}_peak_flux.csv".format(savename), overwrite=True)
             local_rms_table.write("{}_local_rms.csv".format(savename), overwrite=True)
 
-            logger.info("Save csv {}".format(savename))
+            logger.info("Save csv {}.csv".format(savename))
             
             
             

@@ -29,6 +29,7 @@ class Procedures():
         self.nprocess = nprocess
         self._read_sbid()
         self._create_outfile_names()
+        self.num = len(self.imagelist)
 
     def _read_sbid(self):
         """read SBID"""
@@ -43,7 +44,7 @@ class Procedures():
 
     def _create_outfile_names(self):
         # output file prefix
-        self.name = OUT_PREFIX + "_{}_beam{:02}".format(self.sbid, self.beam)
+        self.name = OUT_PREFIX + "{}_beam{:02}".format(self.sbid, self.beam)
         # output tar file
         self.tar_name = self.outdir + "/{}.tar.gz".format(self.name)
 
@@ -112,7 +113,7 @@ class Procedures():
         self.map_dict = maps
 
     def _get_candidates_single_map(self, maptype):
-        c = Candidates(self.map_dict)
+        c = Candidates(self.map_dict, num=self.num)
 
         # find local maximum
         logger.info("Finding local maximum for {}...".format(maptype))

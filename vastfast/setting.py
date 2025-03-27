@@ -1,7 +1,7 @@
 # default prefix for output files
 import configparser
 
-OUT_PREFIX = "output"
+OUT_PREFIX = ""
 
 # list of maps 
 KTYPELIST = ['chisquare', 'peak', 'std', 'gaussian']
