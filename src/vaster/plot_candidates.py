@@ -102,7 +102,9 @@ def check_src_in_which_beam(args, coord):
     seplist = []
     # run it in all beams to check if source is in there! 
     for i in range(args.nbeam):
-        imagename = glob.glob(os.path.join(args.paths['path_models'], "*beam{:02d}*.fits".format(i)))
+        imagename = []
+        imagename += glob.glob(os.path.join(args.paths['path_models'], "*beam{:02d}*MFS-image.fits".format(i)))
+        imagename += glob.glob(os.path.join(args.paths['path_models'], "*beam{:02d}*image.tt0.fits".format(i)))
         
         if len(imagename) == 0:
             logging.info("ERROR: No fits file for beam{:02d}".format(i))
@@ -142,7 +144,11 @@ def plot_candidates(args, beamlist, seplist):
         logging.info('Ploting the object in {} (Progress {}/{}...)'.format(beam, i+1, len(beamlist)))
         # just assume it follows standard naming convention 
         ## deep image
-        deepimage = glob.glob(os.path.join(args.paths['path_models'], "*"+beam+"*.fits"))[0]
+        imagename = []
+        imagename += glob.glob(os.path.join(args.paths['path_models'], "*"+beam+"*image.tt0.fits"))
+        imagename += glob.glob(os.path.join(args.paths['path_models'], "*"+beam+"*MFS-image.fits"))
+        deepimage = imagename[0]
+        logger.info('deepimage %s', deepimage)
         ## catalgoue csv file contain interested source info 
         final_csv = glob.glob(os.path.join(args.paths['path_cand'], "*"+beam+"*_peak_cand.csv"))[0]
         ## the folder location with processed short images
@@ -154,7 +160,7 @@ def plot_candidates(args, beamlist, seplist):
 
         ## ====================================
         ## get the imagelist with correct order
-        imagelist = glob.glob(os.path.join(folder, f'*{beam}*.fits'))
+        imagelist = glob.glob(os.path.join(folder, f'*{beam}*image.fits'))
         imagelist.sort()
 
         if len(imagelist) == 0:
