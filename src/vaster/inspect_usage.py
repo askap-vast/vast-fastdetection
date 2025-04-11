@@ -25,7 +25,11 @@ def _main():
         )
     parser.add_argument('-f', '--fname', type=str, nargs='+', default=None, 
                         help='usage statistics generate from slurm sacct output')
-    parser.add_argument('--sbids', type=int, nargs='+', help='SBID, numbers')
+    parser.add_argument('-s', '--sbids', type=int, nargs='+', help='SBID, numbers')
+    parser.add_argument('-b', '--beams', type=int, nargs='+', default=None, 
+                        help='input beams for checking, number only')
+    parser.add_argument('--steps', type=str, nargs='+', default=['FIXDATA', 'MODELING', 'IMGFAST', 'SELCAND', 'CLNDATA'], 
+                        help='tasks to process, following the order')
     parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='make it verbose')
@@ -35,13 +39,14 @@ def _main():
     logger.info(args)
 
     colnames = ['MaxRSS', 'MaxVMSize']
+    beamlist = get_beamlist(args, num=36)
 
     if args.fname is None:
         logger.info('Total of %s SBIDs to inspect', len(args.sbids))
         fname_list = []
         for i, sbid in enumerate(args.sbids):
             logger.info("Processing observation SB%s (%s/%s)", sbid, i+1, len(args.sbids))
-            fname_sbid = get_logs(args, sbid)
+            fname_sbid = get_logs(args, sbid, beamlist)
             fname_list += fname_sbid
             logger.info('SB%s: Found %s usage logs', sbid, len(fname_sbid))
         logger.info('Found total of %s usage logs', len(fname_list))
@@ -53,10 +58,9 @@ def _main():
     for fname in fname_list:
         tb = read_tb(fname)
         tb = convert_mem_unit(tb, colnames)
+        logger.info("=======")
         logger.info(fname)
         print(tb)
-
-
 
 
 def make_verbose(args):
@@ -76,9 +80,20 @@ def read_tb(fname):
     return pd.read_csv(fname, delimiter='|')
 
 
-def get_logs(args, sbid):
+def get_beamlist(args, num=36):
+    if args.beams is None:
+        beamlist = [f'beam{idx:02d}' for idx in range(num)]
+    else:
+        beamlist = [f'beam{idx:02d}' for idx in args.beams]
+    return beamlist
+
+
+def get_logs(args, sbid, beamlist):
     databasic= DataBasic(sbid, args.dir)
-    fname_list = glob.glob(os.path.join(databasic.paths['path_logs'], '*.usage'))
+    fname_list = []
+    for beam in beamlist:
+        for step in args.steps:
+            fname_list += glob.glob(os.path.join(databasic.paths['path_logs'], f'*{step}*{beam}*.usage'))
     return fname_list
 
 
