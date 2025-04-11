@@ -210,7 +210,7 @@ def format_bash(args, config, sbid, vis, cat):
             path_log = os.path.join(args.paths['path_logs'], 'bash_SELCAND_{}.log'.format(oname)) # output log files 
             affix = f' > {path_log} 2>&1'
             write_selcand_txt(args, fw, idx, oname, config, cat, affix=affix)
-            write_clndata_txt(args, fw, idx)
+            write_clndata_txt(args, fw, idx, config)
             logger.info('Writing {}'.format(savename))
 
 
@@ -248,7 +248,7 @@ def format_ozstar(args, config, sbid, vis, cat):
                     elif step == 'SELCAND':
                         write_selcand_txt(args, fw, idx, oname, config, cat, prefix='srun time ')
                     elif step == 'CLNDATA':
-                        write_clndata_txt(args, fw, idx)
+                        write_clndata_txt(args, fw, idx, config)
                         
                     write_endtxt_ozstar(fw, sbid, savename, params)
                 
@@ -506,16 +506,33 @@ def write_selcand_txt(args, fw, idx, oname, config, cat, prefix='', affix=''):
         write_virtual_env_disable(fw, config)
 
 
-def write_clndata_txt(args, fw, idx):
+def write_clndata_txt(args, fw, idx, config):
     fw.write("echo beam{:02d}: Clean data folder...".format(idx) + '\n')
 
     for key, value in args.paths.items():
         if key == 'path_data':
             fw.write(f'find {value} -type f -name "*beam{idx:02d}*.tar" | xargs -n 1 -t rm' + '\n')
             fw.write(f'find {value} -type d -name "*beam{idx:02d}*.ms" | xargs -n 1 -t rm -r' + '\n')
-        elif key == 'path_models' or key == 'path_images':
-            fw.write(f'find {value} -type d -name "*beam{idx:02d}*" | xargs -n 1 -t rm -r' + '\n')
-            fw.write(f'find {value} -type f -name "*.last" | xargs -n 1 -t rm' + '\n')
+
+        elif key == 'path_models':
+            if config['IMAGER'] == 'casa':
+                fw.write(f'find {value} -type d -name "*beam{idx:02d}*" | xargs -n 1 -t rm -r' + '\n')
+                fw.write(f'find {value} -type f -name "*.last" | xargs -n 1 -t rm' + '\n')
+            elif config['IMAGER'] == 'wsclean':
+                fw.write(f'find {value} -type f -name "*beam{idx:02d}*" ! -name "*MFS*" | xargs -n 1 -t rm' + '\n')
+            else:
+                continue
+
+        elif key == 'path_images':
+            if config['IMAGER'] == 'casa':
+                fw.write(f'find {value} -type d -name "*beam{idx:02d}*" | xargs -n 1 -t rm -r' + '\n')
+                fw.write(f'find {value} -type f -name "*.last" | xargs -n 1 -t rm' + '\n')
+            elif config['IMAGER'] == 'wsclean':
+                fw.write(f'find {value} -type f -name "*beam{idx:02d}*psf.fits" | xargs -n 1 -t rm' + '\n')
+                fw.write(f'find {value} -type f -name "*beam{idx:02d}*dirty.fits" | xargs -n 1 -t rm' + '\n')
+            else:
+                continue
+            
     
     fw.write('\n')
 

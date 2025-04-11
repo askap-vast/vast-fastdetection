@@ -164,7 +164,7 @@ OZSTAR:
     NTASKS: 1
     MEM: 4gb  # VAST 1.2GB max
   SELCAND:
-    TIME: '1:00:00'
+    TIME: '5:00:00'
     NODES: 1
     NTASKS: 1
     MEM: 32gb  # VAST 16GB max (70 images)
