@@ -51,10 +51,16 @@ def _main():
         paths = databasic.paths
         nbeam = databasic.nbeam
 
-        sbid_complete = check_sbid_compelte(args, sbid, paths, nbeam)
-        if sbid_complete:
-            num_cand = measure_final_candidates(args, sbid, paths)
-            logger.info('SB%s completed: final_cand=%s', sbid, num_cand)
+        sbid_complete, num_peak, num_chisq = check_sbid_compelte(args, sbid, paths, nbeam)
+        num_cand = measure_final_candidates(args, sbid, paths)
+        # num_short_images = check_num_short_images(args, sbid, paths)
+        text = f" peak_beams = {num_peak:<5} chisq_beams = {num_chisq:<5} final_cands = {num_cand}"
+        if sbid_complete and num_peak == nbeam and num_chisq==nbeam:
+            logger.info('   SB%s complete   TRUE: %s', sbid, text)
+        elif sbid_complete and (num_peak > nbeam or num_chisq>nbeam):
+            logger.warning(' * SB%s complete UNSURE: %s', sbid, text)
+        else:
+            logger.warning('** SB%s complete  FALSE: %s', sbid, text)
 
 
     end_time = time.time()
@@ -83,14 +89,19 @@ def check_sbid_compelte(args, sbid, paths, nbeam):
     chisq_cand = glob.glob( os.path.join(paths['path_cand'], "*chisquare*cand.csv" ))
     logger.debug(chisq_cand)
 
-    if len(peak_cand) != nbeam:
-        logger.warning('** SB%s does not complete: peak_cand=%s **', sbid, len(peak_cand))
-        return False
-    elif len(chisq_cand) != nbeam:
-        logger.warning('** SB%s does not complete: chisq_cand=%s **', sbid, len(chisq_cand))
-        return False
+    if len(peak_cand) % nbeam != 0:
+        status = False
+    elif len(chisq_cand) % nbeam != 0:
+        status = False
     else:
-        return True
+        status = True
+
+    return status, len(peak_cand), len(chisq_cand)
+
+
+def check_num_short_images(args, sbid, paths):
+    short_images = glob.glob( os.path.join(paths['path_images'], "*beam00*image.fits") )
+    return len(short_images)
     
 
 def measure_final_candidates(args, sbid, paths):
