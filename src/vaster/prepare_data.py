@@ -64,9 +64,6 @@ def _main():
         if args.no_selavy:
             logger.warning('SB%s: skip download selavy', sbid)
         else:
-            if args.clean:
-                clean_data(args, paths, sbid, affix="*.xml", command="rm")
-
             download_selavy(args, paths)
 
         for beam in beamlist:

@@ -125,7 +125,8 @@ CASA:
 CANDIDATES:
   KTYPE: ['chisquare', 'peak', 'std'] 
   MAP: ['chisquare', 'peak']
-  THRESHOLD_SIMGA:
+  CHUNK: 50           # number of image chunks for SELCAND, 'all' for using all images (no split chunk)
+  THRESHOLD_SIGMA:
     CHISQUARE: 6
     PEAK: 6
     GAUSSIAN: 6
@@ -133,7 +134,12 @@ CANDIDATES:
     CHISQUARE: 5
     PEAK: 5
     GAUSSIAN: 6
-  MIN_DISTANCE: 30
+  MIN_DISTANCE: 30    # pixel number of the minimal distance of two neighbours blobs
+  EXT_LIMIT: 1.5      # select compact sources with int / peak flux ratio < 1.5
+  MD_LIMIT: 0.05      # modulation index limit - select sources with md > MD_LIMIT 
+  SEP_DEEP: 30        # radius search for deep countparts, unit of arcsec 
+  SEP_BEAM: 1.2       # select sources within 1.2 primary beam 
+  BRIGHT_LIMIT: 50    # minimum flux density for classifying bright sources, unit of mJy 
   SAVEVOT: False
   GAUSSIAN_WIDTH: 4
 #########################################################################

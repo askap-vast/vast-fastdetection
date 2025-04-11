@@ -420,9 +420,8 @@ def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
     ax.set_xlabel('Time (UTC)')
     ax.set_ylabel('Peak Flux Density (mJy/beam)')
     ax.set_title(title)
-    
     # ax.set_ylim(bottom=-0.1, top=1.2*np.nanmax(np.array(flux))) 
-    
+
     # set a reasonable time interval
     time_length = ((times[-1] - times[0]).to_value('sec') + 900) / 3600
     
@@ -430,74 +429,7 @@ def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
         ax.xaxis.set_major_locator(mdates.HourLocator(interval=int(time_length/4)))
 
     fig.autofmt_xdate(rotation=15)
-    
     fig.savefig("{}.png".format(name), bbox_inches='tight')
-    
-    
-    
-    
-    
-    
-    
-    
-def get_sigma_logspace(data, flux):
-    # get log statistics
-    logger.debug(data.shape)
-    logger.debug(data)
-    logmean = np.nanmean(np.log10(data))
-    logstd = np.nanstd(np.log10(data))
-    
-    # sigma level
-    sigma = (np.log10(flux) - logmean) / logstd
-    
-    return sigma
-
-
-def get_threshold_logspace(data, sigma=5):
-    
-    # get log statistics
-    logmean = np.nanmean(np.log10(data))
-    logstd = np.nanstd(np.log10(data))
-    # get threshold using given sigma
-    threshold = 10 ** (logmean+sigma*logstd)
-    
-    logger.info("Threshold log space rms = {}, mean = {}".format(logstd, logmean))
-    logger.info('Threshold log space is {} sigma = {}'.format(sigma, threshold))
-
-    return threshold
-
-
-def get_threshold_peak(value=None, sigma=None, num=70):
-
-    # from sigma to calculate the theoritical value/threshold
-    if value is None:
-        value = norm.isf(-norm.logcdf(sigma)/num)
-        logger.info("Calculating peak threshold for {} images...".format(num))
-        logger.info("{} sigma threshold (peak) is {:.2f}".format(sigma, value))
-        return value
-    
-    # from threshold/given value to calculate theoritical sigma 
-    elif sigma is None:
-        sigma = norm.isf(-norm.logcdf(value)*num)
-        return sigma
-    
-
-def get_threshold_chisquare(value=None, sigma=None, num=70):
-
-    df = num - 1 # degree of freedom
-
-    if value is None:
-        value = chi2.isf(norm.sf(sigma), df) / df
-        logger.info("Calculating chi2 threshold for {} images...".format(num))
-        logger.info("{} sigma threshold (chi2) is {:.2f}".format(sigma, value))
-        return value
-    
-    elif sigma is None:
-        sigma = norm.isf(chi2.sf(value*df, df))
-        return sigma
-
-
-
 
 
 ## combine two/three csv to one csv/vot
@@ -560,10 +492,6 @@ def combine_csv(namelist, radius=10,
     
 
 
-
-
-
-
 class Candidates:
     """Generate the vot table for final candidates
     """
@@ -607,10 +535,62 @@ class Candidates:
         else:
             logger.info("No gaussian map is input")
 
+
+    def get_sigma_logspace(self, data, flux):
+        # get log statistics
+        logger.debug(data.shape)
+        logger.debug(data)
+        logmean = np.nanmean(np.log10(data))
+        logstd = np.nanstd(np.log10(data))
         
+        # sigma level
+        sigma = (np.log10(flux) - logmean) / logstd
         
+        return sigma
+
+
+    def get_threshold_logspace(self, data, sigma=5):
+        # get log statistics
+        logmean = np.nanmean(np.log10(data))
+        logstd = np.nanstd(np.log10(data))
+        # get threshold using given sigma
+        threshold = 10 ** (logmean+sigma*logstd)
         
-    def local_max(self, min_distance=30, sigma=5, data=None):
+        logger.info("Threshold log space rms = {}, mean = {}".format(logstd, logmean))
+        logger.info('Threshold log space is {} sigma = {}'.format(sigma, threshold))
+
+        return threshold
+
+
+    def get_threshold_peak(self, value=None, sigma=None, num=70):
+        # from sigma to calculate the theoritical value/threshold
+        if value is None:
+            value = norm.isf(-norm.logcdf(sigma)/num)
+            logger.info("Calculating peak threshold for {} images...".format(num))
+            logger.info("{} sigma threshold (peak) is {:.2f}".format(sigma, value))
+            return value
+        
+        # from threshold/given value to calculate theoritical sigma 
+        elif sigma is None:
+            sigma = norm.isf(-norm.logcdf(value)*num)
+            return sigma
+        
+
+    def get_threshold_chisquare(self, value=None, sigma=None, num=70):
+        df = num - 1 # degree of freedom
+
+        if value is None:
+            value = chi2.isf(norm.sf(sigma), df) / df
+            logger.info("Calculating chi2 threshold for {} images...".format(num))
+            logger.info("{} sigma threshold (chi2) is {:.2f}".format(sigma, value))
+            return value
+        
+        elif sigma is None:
+            sigma = norm.isf(chi2.sf(value*df, df))
+            return sigma
+
+    
+    def local_max(self, min_distance=30, sigma=5, threshold=10, data=None):
         '''Find the local maxium of an image
         
         sigma: identify blobs above a specfic sigma threshold
@@ -619,23 +599,20 @@ class Candidates:
         '''
         if data == None or data == 'chisquare':
             data = self.chisq_map
-            threshold = get_threshold_chisquare(sigma=sigma, num=self.num)
-            # threshold = get_threshold_logspace(data, sigma=sigma)
-            
         elif data == 'peak':
-            data = self.peak_map
-            threshold = get_threshold_peak(sigma=sigma, num=self.num)
-            
+            data = self.peak_map            
         elif data == "gaussian":
             data = self.gaussian_map
-            threshold = get_threshold_logspace(data, sigma=sigma)
         
-        # # get threshold in log space
-        # threshold = get_threshold_logspace(data, sigma=sigma)
-        
+        # get threshold in log space
+        threshold_logspace = self.get_threshold_logspace(data, sigma=sigma)
+        threshold_abs = max(threshold, threshold_logspace)
+        logger.info('Theortical threshold %s, logspace threshold %s, final abs threshold %s', 
+                    threshold, threshold_logspace, threshold_abs)
+
         # find local maximum 
         xy = peak_local_max(data, min_distance=min_distance, 
-                            threshold_abs=threshold)
+                            threshold_abs=threshold_abs)
         
         # get coordiantes, in pixel and world 
         yp, xp = xy[:, 0], xy[:, 1]
@@ -658,13 +635,11 @@ class Candidates:
         
         
         
-    def select_candidates(self, deepcatalogue, tabletype='selavy', deepimage=None, 
+    def select_candidates(self, deepcatalogue, tabletype='selavy', 
                           sep=30, mdlim=0.05, extlim=1.5, beamlim=1.2, 
                           bright=0.05):
         """Select high priority candidates using deep image information
         
-        deepimage: str
-            deep image name/location, should be FITS format
         deepcatalogue: str
             deep catalogue location, should be aegean format (vot)
         sep: float
@@ -677,8 +652,6 @@ class Candidates:
             flux density threshold of bright sources, unit of Jy 
         """
         
-        # read deep image 
-        # self.read_deepfits(imagename=deepimage)
         # read deep catalogue
         self.read_catalogue(catalogue=deepcatalogue, tabletype=tabletype)
         
@@ -710,16 +683,12 @@ class Candidates:
             extlim, sum(ext < extlim)
             ))
 
-        # calculate chisq in log space 
-        chisq_log = get_sigma_logspace(self.chisq_map, 
-                        np.array(self.chisq_map[self.yp, self.xp]))
-        
         # only select candidates that
         # 1. within the primary beam size
         # 2. have no countparts in deep image
         # 3. or have a countpart with md > 0.05 and ext < 1.5
         # 4. with chisq log space > 5sigma (remove rubbish)
-        self.final_idx = beamidx & ((self.d2d.arcsec > sep) | ((self.md > mdlim) & (ext < extlim))) & (chisq_log>6)
+        self.final_idx = beamidx & ((self.d2d.arcsec > sep) | ((self.md > mdlim) & (ext < extlim))) 
         logger.info("Final candidates: {}".format(sum(self.final_idx)))
         
         # check number of close deep conterparts within 30 arcsec 
@@ -792,23 +761,23 @@ class Candidates:
         # read the chisq value at each pixel
         t['chi_square'] = self.chisq_map[self.yp, self.xp][self.final_idx]
         # calculate the sigma
-        t['chi_square_log_sigma'] = get_sigma_logspace(self.chisq_map, 
+        t['chi_square_log_sigma'] = self.get_sigma_logspace(self.chisq_map, 
                                                    np.array(t['chi_square']))
-        t['chi_square_sigma'] = get_threshold_chisquare(value=np.array(t['chi_square']), 
+        t['chi_square_sigma'] = self.get_threshold_chisquare(value=np.array(t['chi_square']), 
                                                         num=self.num)
         
         # read the peak value at each pixel 
         t['peak_map'] = self.peak_map[self.yp, self.xp][self.final_idx]
         # calculate the sigma
-        t['peak_map_log_sigma'] = get_sigma_logspace(self.peak_map, 
+        t['peak_map_log_sigma'] = self.get_sigma_logspace(self.peak_map, 
                                                  np.array(t['peak_map']))
-        t['peak_map_sigma'] = get_threshold_peak(value=np.array(t['peak_map']), 
+        t['peak_map_sigma'] = self.get_threshold_peak(value=np.array(t['peak_map']), 
                                                  num=self.num)
         
         # if there's Gaussian map 
         if hasattr(self, 'gaussian_map'):
             t['gaussian_map'] = self.gaussian_map[self.yp, self.xp][self.final_idx]
-            t['gaussian_map_sigma'] = get_sigma_logspace(self.gaussian_map, 
+            t['gaussian_map_sigma'] = self.get_sigma_logspace(self.gaussian_map, 
                                                      np.array(t['gaussian_map']))
         else:
             t['gaussian_map']  = [np.nan] * sum(self.final_idx)

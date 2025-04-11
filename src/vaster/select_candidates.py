@@ -47,16 +47,35 @@ def _main():
 
     config = read_config(args.config)
     imagelist = get_imagelist(args)
-    f, num = get_cube(imagelist)
-    generate_statistical_fits(args, config, f, imagename=imagelist[0])
 
-    chisquare_map, peak_map, std_map, gaussian_map = read_statistical_fits(args)
-    select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, gaussian_map)
+    if isinstance(config['CANDIDATES']['CHUNK'], int):
+        chunk_size = int(config['CANDIDATES']['CHUNK'])
+        logger.info('Running in chunk mode, chunk size is %s', chunk_size)
+
+        for i in range(0, len(imagelist), chunk_size):
+            chunk = imagelist[i:i + chunk_size]
+            oname = f'{args.name}_chunk{i}_{i+chunk_size}'
+            logger.info('Processing chunk %s to %s for total %s images', i, i+chunk_size, len(imagelist))
+            logger.info('    with oname %s', oname)
+            run(args, config, chunk, oname)
+
+    else:
+        oname = args.name
+        run(args, config, imagelist, oname)
+    
 
     combine_cand_csv(args, config)
     plot_final_candidates(args, imagelist)
 
     logger.info("====== Finished. =====")
+
+
+def run(args, config, imagelist, oname):
+    f, num = get_cube(imagelist)
+    generate_statistical_fits(args, config, f, imagename=imagelist[0], oname=oname)
+
+    chisquare_map, peak_map, std_map, gaussian_map = read_statistical_fits(args, oname=oname)
+    select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, gaussian_map, oname=oname)
 
 
 
@@ -96,15 +115,6 @@ def suppress_warnings():
 
 
 def get_imagelist(args, ):
-    ## ====================================
-    ## get the imagelist with correct order
-    # imagelist = []
-    # for size in ["?", "??", "???", "????"]:
-    #     tmp = glob.glob(os.path.join(args.folder, f'*{args.beam}_{size}.image.fits'))
-    #     # tmp = glob.glob(folder + f'image_{size}.fits') # for FRB field 
-    #     tmp.sort()
-    #     imagelist += tmp
-
     imagelist = glob.glob(os.path.join(args.folder, f'*{args.beam}*image.fits'))
     imagelist.sort()
 
@@ -151,7 +161,7 @@ def get_cube(imagelist):
 
 
 
-def generate_statistical_fits(args, config, f, imagename):
+def generate_statistical_fits(args, config, f, imagename, oname):
     ktypelist = config['CANDIDATES']['KTYPE']
     for ktype in ktypelist:
         logger.info("===== Matched Filter =====")
@@ -160,24 +170,22 @@ def generate_statistical_fits(args, config, f, imagename):
         f.fmap(ktype, width=config['CANDIDATES']['GAUSSIAN_WIDTH'])
         logger.info("Kernel match Done")
         
-        fitsname = os.path.join(args.outdir, f'{args.name}_{ktype}.fits')
+        fitsname = os.path.join(args.outdir, f'{oname}_{ktype}.fits')
         f.tofits(fitsname=fitsname, imagename=imagename)
         logger.info("Save the results to %s", fitsname)
 
 
-def read_statistical_fits(args):
+def read_statistical_fits(args, oname):
     logger.info("======== Select candidates ==========")
-
     # read fits
-    chisquare_map = os.path.join(args.outdir, args.name+'_chisquare.fits')
-    peak_map = os.path.join(args.outdir, args.name+'_peak.fits')
-    std_map = os.path.join(args.outdir, args.name+'_std.fits')
-    gaussian_map = os.path.join(args.outdir, args.name+'_gaussian.fits')
-
+    chisquare_map = os.path.join(args.outdir, oname+'_chisquare.fits')
+    peak_map = os.path.join(args.outdir, oname+'_peak.fits')
+    std_map = os.path.join(args.outdir, oname+'_std.fits')
+    gaussian_map = os.path.join(args.outdir, oname+'_gaussian.fits')
     return chisquare_map, peak_map, std_map, gaussian_map
 
 
-def select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, gaussian_map):
+def select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, gaussian_map, oname):
     maplist = config['CANDIDATES']['MAP']
     ## =============== select candidates =================
     for maptype in maplist:
@@ -188,40 +196,64 @@ def select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, ga
             c = Candidates(chisquare_map, peak_map, std_map, gaussian_map=gaussian_map, 
                         num=num)
             
-        sigma = config['CANDIDATES']['THRESHOLD_SIMGA'][maptype.upper()]
+        sigma = config['CANDIDATES']['THRESHOLD_SIGMA'][maptype.upper()]
+        log_sigma = config['CANDIDATES']['LOG_THRESHOLD_SIGMA'][maptype.upper()]
         min_distance = config['CANDIDATES']['MIN_DISTANCE']
         tabletype = config['SOURCE_FINDER']
 
+        sep_deep = config['CANDIDATES']['SEP_DEEP']
+        mdlim = config['CANDIDATES']['MD_LIMIT']
+        extlim = config['CANDIDATES']['EXT_LIMIT']
+        beamlim = config['CANDIDATES']['SEP_BEAM']
+        bright = config['CANDIDATES']['BRIGHT_LIMIT']
+
+        # get theortical threshold
+        if maptype == 'chisquare':
+            threshold = c.get_threshold_chisquare(sigma=sigma, num=num)
+        elif maptype == 'peak':
+            threshold = c.get_threshold_peak(sigma=sigma, num=num)
+        else:
+            threshold = sigma
+
         # find local maximum
         logger.info("Find local maximum....")
-        c.local_max(min_distance=min_distance, sigma=sigma, data=maptype)
+        c.local_max(min_distance=min_distance, sigma=log_sigma, threshold=threshold, data=maptype)
         logger.info("Find local maximum done. ")
         
         ## plot a map with all of candidates above the threshold 
-        imagename = os.path.join(args.outdir, f'{args.name}_{maptype}_map1')
+        imagename = os.path.join(args.outdir, f'{oname}_{maptype}_map1')
         c.plot_fits(fitsname=vars()[maptype+'_map'], 
                     imagename=imagename)
             
         logger.info("Deep image catalogue {}".format(args.catalogue))
-        c.select_candidates(deepcatalogue=args.catalogue, tabletype=tabletype)
+        c.select_candidates(deepcatalogue=args.catalogue, tabletype=tabletype, 
+                            sep=sep_deep, mdlim=mdlim, extlim=extlim, beamlim=beamlim, 
+                            bright=bright)
         
         # save the table
-        tablename = os.path.join(args.outdir, f'{args.name}_{maptype}_cand')
+        tablename = os.path.join(args.outdir, f'{oname}_{maptype}_cand')
         c.save_csvtable(tablename=tablename, savevot=config['CANDIDATES']['SAVEVOT'])
         
         ## plot a final map with promising candidates 
-        imagename = os.path.join(args.outdir, f'{args.name}_{maptype}_map2')
+        imagename = os.path.join(args.outdir, f'{oname}_{maptype}_map2')
         c.plot_fits(fitsname=vars()[maptype+'_map'], 
                     imagename=imagename)
-
+        
 
 def combine_cand_csv(args, config):
     maplist = config['CANDIDATES']['MAP']
     # =====================
     # combine those three cand list to one
     logger.info("=========Combine catalogue==========")
-    namelist = [os.path.join(args.outdir, f'{args.name}_{maptype}_cand.csv') for maptype in maplist ]
+    # namelist = [os.path.join(args.outdir, f'{args.name}_{maptype}_cand.csv') for maptype in maplist ]
+    namelist = []
+    for maptype in maplist:
+        pattern = os.path.join(args.outdir, f'{args.name}*{maptype}_cand.csv')
+        namelist += glob.glob(pattern)
+
     tablename = os.path.join(args.outdir, f'{args.name}_final')
+    logger.info('Combine tables:')
+    logger.info(namelist)
     plot.combine_csv(namelist, tablename=tablename, savevot=config['CANDIDATES']['SAVEVOT'])
 
 
