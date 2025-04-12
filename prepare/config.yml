@@ -90,13 +90,11 @@ CASA:
     SAVEMODEL: 'modelcolumn'
     TIMERANGE: ''
     STOKES: I 
-  
   CAL: True                   # run self cal or not 
   SELFCAL:
     UVRANGE: '>200m'
     SOLINT: 1min              # int or 1min
     CALMODE: p                # p for phase, a for amplitude 
-
   SHORTIMAGE:
     IMSIZE: 2880
     CELL: ['2.5arcsec']
@@ -125,21 +123,24 @@ CASA:
 CANDIDATES:
   KTYPE: ['chisquare', 'peak', 'std'] 
   MAP: ['chisquare', 'peak']
-  CHUNK: 50           # number of image chunks for SELCAND, 'all' for using all images (no split chunk)
+  CHUNK: 'all'          # number of image chunks for SELCAND, 'all' for using all images (no split chunk)
+                        # recommend "40" for 10s fast survey and "all" for 10min slow survey 
   THRESHOLD_SIGMA:
-    CHISQUARE: 6
-    PEAK: 6
+    CHISQUARE: 6        # recommend "8" for 10s fast survey and "6" for 10min slow survey 
+    PEAK: 6             # recommend "5" for 10s fast survey and "6" for 10min slow survey 
     GAUSSIAN: 6
   LOG_THRESHOLD_SIGMA:
-    CHISQUARE: 5
-    PEAK: 5
+    CHISQUARE: 6        # recommend "8" for 10s fast survey and "6" for 10min slow survey 
+    PEAK: 6             # recommend "5" for 10s fast survey and "6" for 10min slow survey 
     GAUSSIAN: 6
-  MIN_DISTANCE: 30    # pixel number of the minimal distance of two neighbours blobs
-  EXT_LIMIT: 1.5      # select compact sources with int / peak flux ratio < 1.5
-  MD_LIMIT: 0.05      # modulation index limit - select sources with md > MD_LIMIT 
-  SEP_DEEP: 30        # radius search for deep countparts, unit of arcsec 
-  SEP_BEAM: 1.2       # select sources within 1.2 primary beam 
-  BRIGHT_LIMIT: 50    # minimum flux density for classifying bright sources, unit of mJy 
+
+  MIN_DISTANCE: 30      # pixel number of the minimal distance of two neighbours blobs
+  EXT_LIMIT: 1.5        # select compact sources with int / peak flux ratio < 1.5
+  MD_LIMIT: 0.05        # modulation index limit - select sources with md > MD_LIMIT 
+  SEP_DEEP: 30          # radius search for deep countparts, unit of arcsec 
+  SEP_BEAM: 1.2         # select sources within 1.2 primary beam 
+  BRIGHT_LIMIT: 0.1     # minimum flux density for classifying bright sources, unit of Jy 
+  BRIGHT_SEP: 5         # select candidates without bright sources nearby < BRIGHT_SEP, unit of arcmin
   SAVEVOT: False
   GAUSSIAN_WIDTH: 4
 #########################################################################
@@ -167,7 +168,7 @@ OZSTAR:
     TIME: '5:00:00'
     NODES: 1
     NTASKS: 1
-    MEM: 32gb  # VAST 16GB max (70 images)
+    MEM: 24gb  # VAST/EMU/10s survey 16GB max
   CLNDATA:
     TIME: '1:00:00'
     NODES: 1

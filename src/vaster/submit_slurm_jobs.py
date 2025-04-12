@@ -127,6 +127,8 @@ def clean_data(args, sbid, affix, command):
         fnamelist += glob.glob(os.path.join(args.paths['path_models'], affix))
     if 'IMGFAST' in args.steps:
         fnamelist += glob.glob(os.path.join(args.paths['path_images'], affix))
+    if 'SELCAND' in args.steps:
+        fnamelist += glob.glob(os.path.join(args.paths['path_cand'], affix))
     logger.debug('SB%s: found %s %s files', sbid, len(fnamelist), affix)
     for fname in fnamelist:
         txt = command + ' ' + fname

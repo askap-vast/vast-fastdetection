@@ -240,13 +240,13 @@ def format_ozstar(args, config, sbid, vis, cat):
                 with open(savename, 'w') as fw:
                     write_basetxt_ozstar(fw, sbid, savename, params)
                     if step == 'FIXDATA':
-                        write_fixdata_txt(args, fw, idx, filename, config, prefix='srun time ')
+                        write_fixdata_txt(args, fw, idx, filename, config, prefix='srun ')
                     elif step == 'MODELING':
-                        write_imager_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix='srun time ')
+                        write_imager_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix='srun ')
                     elif step == 'IMGFAST':
-                        write_imager_txt(args, fw, idx, filename, oname, config, mode='imaging', prefix='srun time ')
+                        write_imager_txt(args, fw, idx, filename, oname, config, mode='imaging', prefix='srun ')
                     elif step == 'SELCAND':
-                        write_selcand_txt(args, fw, idx, oname, config, cat, prefix='srun time ')
+                        write_selcand_txt(args, fw, idx, oname, config, cat, prefix='srun ')
                     elif step == 'CLNDATA':
                         write_clndata_txt(args, fw, idx, config)
                         
@@ -335,6 +335,7 @@ def write_endtxt_ozstar(fw, sbid, savename, params):
     logger.debug('write end txt ozstar for SB%s saving to %s', sbid, savename)
     logger.debug(params)
     fw.write('wait' + '\n')
+    fw.write('sleep 10' + '\n')
     fw.write('sacct -j $SLURM_JOB_ID --parsable2 --format=' + params['format'] + ' > ' + params['usage'] + '\n')
     fw.write('\n')
 
@@ -532,6 +533,11 @@ def write_clndata_txt(args, fw, idx, config):
                 fw.write(f'find {value} -type f -name "*beam{idx:02d}*dirty.fits" | xargs -n 1 -t rm' + '\n')
             else:
                 continue
+
+        elif key == 'path_cand':
+            fw.write(f'find {value} -type f -name "*beam{idx:02d}*peak.fits" | xargs -n 1 -t rm' + '\n')
+            fw.write(f'find {value} -type f -name "*beam{idx:02d}*chisquare.fits" | xargs -n 1 -t rm' + '\n')
+            fw.write(f'find {value} -type f -name "*beam{idx:02d}*std.fits" | xargs -n 1 -t rm' + '\n')
             
     
     fw.write('\n')

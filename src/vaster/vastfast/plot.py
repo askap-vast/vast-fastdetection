@@ -32,433 +32,360 @@ class ArgumentError(Exception):
     pass
 
 
-
 def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
-    """Generate a gif contains a series of images cutout in given position. 
-    
-    src: 
-        astropy Skycoord object. 
-    imagelist: 
-        A list of short FITS images, in correct order. 
-    radius:
-        unit of arcmin, the cutout size
-    vsigma:
-        float, the color range, in the unit of sigma
     """
-    
-    # get the source position 
+    Generate an animated GIF showing cutouts of a source from a list of FITS images.
+
+    Parameters
+    ----------
+    src_name : str
+        Source name, interpreted by SkyCoord (e.g. 'Jhhmmss+ddmmss').
+    imagelist : list of str
+        Ordered list of FITS filenames.
+    radius : float
+        Cutout radius in arcminutes.
+    vsigma : float
+        Controls color scale as ±vsigma * rms (displayed using $\pm$ in plot labels).
+    name : str
+        Output filename (without extension).
+    """
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    logger.info("Get source position ({}, {})...".format(src.ra.degree, src.dec.degree))
-    
-    # generate a plot, including a bunch of single images
+    logger.info(f"Source position: RA={src.ra.deg}, DEC={src.dec.deg}")
+
     fig = plt.figure()
     ims = []
-    
-    # generate each frame
-    for i, image in enumerate(imagelist):
-        # logger.info("Processing image number %s/%s" % (i, len(imagelist)))
-        
-        # open the fits
-        hdu = fits.open(image)
-        # get the fits data (drop-out extra dimensions)
-        data = hdu[0].data.squeeze()
-        # get wcs frame
-        wcs = WCS(header=hdu[0].header, naxis=2)
-        # generate cutout
-        cutout = Cutout2D(data, 
-                          position=src, 
-                          size=radius*u.arcmin, 
-                          wcs=wcs)
-        
-        # get the image rms 
-        rms = np.nanstd(cutout.data) * 1e3
-        # (for vmax and vmin)
-        vmax = vsigma * rms
-        vmin = -vsigma * rms
-        
-        # get the src in pixel (cutout image)
-        xw, yw = cutout.input_position_cutout
-        xw, yw = round(xw), round(yw)
-        # get the image flux at src 
-        flux = cutout.data[yw, xw] * 1e3
-        
-        # set the image frame
-        if i == 0:
-            fig.gca(projection=cutout.wcs)
-            fig.gca().coords[0].set_major_formatter('hh:mm:ss')
-            fig.gca().coords[1].set_major_formatter('dd:mm:ss')
-            
-        im = plt.imshow(cutout.data*1e3, 
-                        cmap='seismic', 
-                        origin='lower', 
-                        vmin=vmin, 
-                        vmax=vmax)
-        
-        # set the marker
-        # if cutout.data[yw, xw] > 0: # half of the range
-        #     marker_color = 'black'
-        # else:
-        #     marker_color = 'lightgray'
-        marker_color = 'gray'
 
-        sc = plt.scatter(src.ra.deg, 
-                         src.dec.deg, 
-                         marker='+', 
-                         c=marker_color,
-                         label=r'{:.2f} $\pm$ {:.2f} mJy'.format(flux, rms),
-                         transform=fig.gca().get_transform('fk5')
-                         )
-        te = plt.text(x=0.60, y=0.95,
-                      s=r'{:.2f} $\pm$ {:.2f} mJy ({})'.format(flux, rms, i),
-                      backgroundcolor='w',
-                      transform=fig.gca().transAxes)
+    for i, image_path in enumerate(imagelist):
+        with fits.open(image_path) as hdul:
+            data = hdul[0].data.squeeze().copy()
+            wcs = WCS(hdul[0].header, naxis=2)
+
+        cutout = Cutout2D(data, position=src, size=radius * u.arcmin, wcs=wcs)
+
+        rms = np.nanstd(cutout.data) * 1e3
+        vmin, vmax = -vsigma * rms, vsigma * rms
+        flux = cutout.data[int(round(cutout.input_position_cutout[1])),
+                           int(round(cutout.input_position_cutout[0]))] * 1e3
+
+        if i == 0:
+            ax = fig.gca(projection=cutout.wcs)
+            ax.coords[0].set_major_formatter('hh:mm:ss')
+            ax.coords[1].set_major_formatter('dd:mm:ss')
+        else:
+            ax = fig.gca()
+
+        im = ax.imshow(cutout.data * 1e3, cmap='seismic', origin='lower',
+                       vmin=vmin, vmax=vmax)
+
+        sc = ax.scatter(src.ra.deg, src.dec.deg, marker='+', c='gray',
+                        label=rf'${flux:.2f} \pm {rms:.2f}$ mJy',
+                        transform=ax.get_transform('fk5'))
+
+        te = ax.text(0.60, 0.95,
+                     rf'${flux:.2f} \pm {rms:.2f}$ mJy ({i})',
+                     backgroundcolor='w',
+                     transform=ax.transAxes)
 
         ims.append([im, sc, te])
 
-    fig.gca().set_title(src_name)
-    fig.gca().set_xlabel('RA (J2000)')
-    fig.gca().set_ylabel('DEC (J2000)')
-    cbar = fig.colorbar(im)
+    ax.set_title(src_name)
+    ax.set_xlabel('RA (J2000)')
+    ax.set_ylabel('DEC (J2000)')
+
+    cbar = fig.colorbar(im, ax=ax)
     cbar.set_label('Flux density (mJy/beam)')
 
-    ani = animation.ArtistAnimation(fig, ims, interval=200, 
-                                    blit=True, repeat_delay=1e6)
-    ani.save('{}.gif'.format(name), dpi=80, writer='imagemagick')
-    
-    logger.info("Save image {}.gif".format(name))
-    
+    ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1e6)
+    ani.save(f'{name}.gif', dpi=80, writer='imagemagick')
+
+    plt.close(fig)
+    logger.info(f"Saved animation to {name}.gif")
     
     
 def save_fits_cube(src_name, imagelist, radius=5, name='cube'):
-    """Generate a fits cube containing images cutout in given position. 
-    src: 
-        astropy Skycoord object. 
-    imagelist: 
-        A list of short FITS images, in correct order. 
-    radius:
-        unit of arcmin, the cutout size
     """
-    
-    # get the source position 
+    Create a FITS cube from cutouts centered at a given source position.
+
+    Parameters
+    ----------
+    src_name : str
+        Source position in SkyCoord-compatible format.
+    imagelist : list of str
+        List of FITS image paths.
+    radius : float
+        Size of each cutout (in arcminutes).
+    name : str
+        Output cube filename prefix ('.fits' added automatically).
+    """
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    logger.info("Get source position ({}, {})...".format(src.ra.degree, src.dec.degree))
+    logger.info(f"Creating FITS cube for source: RA={src.ra.deg}, DEC={src.dec.deg}")
 
-    final_data = []
-    
-    # generate each frame
-    for i, image in enumerate(imagelist):
-        # logger.info("Processing image number %s/%s" % (i, len(imagelist)))
-        
-        # open the fits
-        hdu = fits.open(image)[0]
-        # get the fits data (drop-out extra dimensions)
-        data = hdu.data.squeeze()
-        # get wcs frame
-        wcs = WCS(header=hdu.header, naxis=2)
-        # generate cutout
-        cutout = Cutout2D(data, 
-                          position=src, 
-                          size=radius*u.arcmin, 
-                          wcs=wcs)
-        # Put the cutout image in the FITS HDU
-        final_data.append(cutout.data)
+    cutouts = []
 
-        if i == 0:
-            final_header = cutout.wcs.to_header()
-            final_hdu = hdu
-    
-    # Update the FITS header with the cutout WCS
-    final_hdu.header.update(final_header)
+    for i, image_path in enumerate(imagelist):
+        with fits.open(image_path) as hdul:
+            data = hdul[0].data.squeeze().copy()
+            wcs = WCS(hdul[0].header, naxis=2)
+            cutout = Cutout2D(data, position=src, size=radius * u.arcmin, wcs=wcs)
 
-    # save the data cube to FITS
-    final_hdu.data = np.array(final_data)
+            cutouts.append(cutout.data)
 
-    # Write the cutout to a new FITS file
-    cutout_filename = name + '.fits'
-    final_hdu.writeto(cutout_filename, overwrite=True)
-    logger.info("Save fits cube %s", cutout_filename)
+            if i == 0:
+                header = cutout.wcs.to_header()
+                base_hdu = hdul[0]
+
+    base_hdu.header.update(header)
+    base_hdu.data = np.array(cutouts)
+    output_path = f'{name}.fits'
+    base_hdu.writeto(output_path, overwrite=True)
+    logger.info(f"Saved FITS cube to {output_path}")
 
     
+def save_fits_cutout(src_name, image_path, radius=5, name='cutout'):
+    """
+    Save a FITS cutout around a source from a single image.
 
-
-def save_fits_cutout(src_name, image, radius=5, name='cutout'):
-
-    # get the source position 
+    Parameters
+    ----------
+    src_name : str
+        Source position string in SkyCoord-compatible format.
+    image_path : str
+        Input FITS filename.
+    radius : float
+        Cutout radius in arcminutes.
+    name : str
+        Output filename prefix ('.fits' will be appended).
+    """
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    # open the fits
-    hdu = fits.open(image)[0]
-    # get the fits data (drop-out extra dimensions)
-    data = hdu.data.squeeze()
-    # get wcs frame
-    wcs = WCS(header=hdu.header, naxis=2)
-    
-    # generate cutout
-    cutout = Cutout2D(data, 
-                      position=src, 
-                      size=radius*u.arcmin, 
-                      wcs=wcs
-                     )
+    with fits.open(image_path) as hdul:
+        data = hdul[0].data.squeeze().copy()
+        wcs = WCS(hdul[0].header, naxis=2)
+        cutout = Cutout2D(data, position=src, size=radius * u.arcmin, wcs=wcs)
 
-    # Put the cutout image in the FITS HDU
-    hdu.data = cutout.data
+        hdul[0].data = cutout.data
+        hdul[0].header.update(cutout.wcs.to_header())
 
-    # Update the FITS header with the cutout WCS
-    hdu.header.update(cutout.wcs.to_header())
-
-    # Write the cutout to a new FITS file
-    cutout_filename = name + '.fits'
-    hdu.writeto(cutout_filename, overwrite=True)
-    logger.info("Save fits cutout %s", cutout_filename)
+        output_path = f'{name}.fits'
+        hdul.writeto(output_path, overwrite=True)
+        logger.info(f"Saved FITS cutout to {output_path}")
 
         
-        
-    
-    
 def fix_aplpy_fits(aplpy_obj, dropaxis=2):
-    """This removes the degenerated dimensions in APLpy 2.X...
-    The input must be the object returned by aplpy.FITSFigure().
-    `dropaxis` is the index where to start dropping the axis (by default it assumes the 3rd,4th place).
+    """
+    Fix dimensionality issues in APLpy 2.X by removing extra axes.
+
+    Parameters
+    ----------
+    aplpy_obj : aplpy.FITSFigure
+        The APLpy object to modify in-place.
+    dropaxis : int
+        Starting axis index to drop (default 2).
     """
     temp_wcs = aplpy_obj._wcs.dropaxis(dropaxis)
     temp_wcs = temp_wcs.dropaxis(dropaxis)
     aplpy_obj._wcs = temp_wcs
 
-
     # Then you can just do the following every time you load a FITS figure:
     # fig = aplpy.FITSFigure('fitsfilename')
     # fix_aplpy_fits(fig)
-
-
-    
-    
-def plot_fits(fitsname, src=None, imagename='plot_fits'):
-    """Plot the fits and marker with given src
-    """
-
-    # read the image
-    f = aplpy.FITSFigure(fitsname, figsize=(8, 8))
-    
-    # fix the wcs dimension issue
-    fix_aplpy_fits(f)
-    
-    # choose a color map (and scale if you want) to plot
-    f.show_colorscale(cmap='plasma')
-    
-    
-    if src != None:
-        # show selected local maximum
-        f.show_markers(xw=src.ra.deg, yw=src.dec.deg, coords_frame='world', 
-                       marker='o', ec='cyan')
-    
-    # show their statistics
-    # for i in range(sum(final_idx)):
-    #     f.add_label(x=cand_src[final_idx][i].ra.degree, 
-    #                 y=cand_src[final_idx][i].dec.degree, 
-    #                 text='{:.1%}, {:.1f} mJy'.format(md[final_idx][i], 
-    #                                                  np.array(catalogue[idx]['peak_flux'])[final_idx][i]*1e3), 
-    #                 horizontalalignment='left', verticalalignment='bottom', color='white')
-    
-    # show the beam 
-    fwhm = 3e8/f._header['CRVAL3']/12 * 180/np.pi
-    f.show_circles(xw=f._header['CRVAL1'], yw=f._header['CRVAL2'], 
-                   radius=fwhm/2, coords_frame='world', color='white')
-    
-    # show the selected circle
-    f.show_circles(xw=f._header['CRVAL1'], yw=f._header['CRVAL2'], 
-                   radius=1.2*fwhm/2, coords_frame='world', color='white', ls='--')
-    
-    
-    # save image
-    f.savefig(filename=imagename+'.png', dpi=100)
-    
-    
     
     
 def plot_cutout(src_name, fitsname, radius=5, name='cutout'):
-    """Plot cutout png from deep image
-    src_name: str
-        in format of "Jxxxx-xxxx"
-    fitsname: str
-        the location of the deep fits image
-    radius: float
-        cutout size, in unit of arcmin
-    vsigma: float
-        plot color range in unit of sigma
     """
-    
-    # get the source position 
+    Create and save a PNG plot of a cutout centered at the specified source position.
+
+    Parameters
+    ----------
+    src_name : str
+        Source name (SkyCoord-readable format).
+    fitsname : str
+        Path to the deep image FITS file.
+    radius : float
+        Cutout radius in arcminutes.
+    name : str
+        Output filename prefix for the PNG image.
+    """ 
     logger.info("Plotting deep cutout source {}...".format(src_name))
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
     logger.info("Get source position...")
     logger.info(src)
     
-    # get deep image information 
     f = aplpy.FITSFigure(fitsname, figsize=(5, 5))
-    
-    # fix the wcs dimension issue
     fix_aplpy_fits(f)
-    
-    # change unit from Jy to mJy
-    f._data = f._data * 1e3
-    
-    f.recenter(src.ra, src.dec, radius=radius/60)
+
+    f._data *= 1e3  # Convert flux units from Jy to mJy
+    f.recenter(src.ra, src.dec, radius=radius / 60)
     f.show_grayscale()
-    
+
     f.add_colorbar()
     f.colorbar.set_axis_label_text("Flux Density (mJy/beam)")
     f.colorbar.set_axis_label_pad(1)
-    
-    f.show_circles(src.ra, src.dec, radius=30/60/60, ec='orange')
-    f.show_markers(src.ra, src.dec, c='red', marker='+', alpha=0.2)
 
+    f.show_circles(src.ra, src.dec, radius=30 / 3600, ec='orange')
+    f.show_markers(src.ra, src.dec, marker='+', c='red', alpha=0.2)
     f.set_title(src_name)
+
+    f.savefig(f"{name}.png")
+    plt.close('all')
+    logger.info(f"Saved cutout image to {name}.png")
     
-    f.savefig("{}.png".format(name))
-    logger.info("Save image {}.png".format(name))
     
-    
-    
-    
-def extract_lightcurve(src_name, imagelist, deep_imagename, residual_imagename=None, 
-                    ksize=99):
-    """plot lightcurve for each source candidate 
-        ksize: kernel size for local rms calculation (square radius)
+def extract_lightcurve(src_name, imagelist, deep_imagename, residual_imagename=None, ksize=99):
     """
-    logger.info("Plotting lightcurve source {}...".format(src_name))
-    # get the source position
+    Extract the lightcurve of a source from a series of short FITS images.
+
+    Parameters
+    ----------
+    src_name : str
+        Source name or coordinates (SkyCoord-compatible).
+    imagelist : list of str
+        List of FITS images in temporal order.
+    deep_imagename : str
+        Path to the deep image FITS file.
+    residual_imagename : str, optional
+        Path to the residual FITS image (for flux correction).
+    ksize : int
+        Half-size of the square region used for local RMS estimation.
+
+    Returns
+    -------
+    tuple
+        Arrays of peak_flux, local_rms, and timestamps.
+    """
+    logger.info(f"Extracting lightcurve for source {src_name}...")
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    
-    # get deep image pixel position xw, yw
-    deep_image = fits.open(deep_imagename)
-    deep_wcs = WCS(header=deep_image[0].header, naxis=2)
-    
-    deep_xw, deep_yw = skycoord_to_pixel(coords=src, wcs=deep_wcs) 
-    deep_xw, deep_yw = int(np.round(deep_xw)), int(np.round(deep_yw))
-    
-    # get deep flux density 
-    deep_flux = deep_image[0].data.squeeze()[deep_yw, deep_xw]
-    
+
+    with fits.open(deep_imagename) as hdul:
+        deep_data = hdul[0].data.squeeze().copy()
+        deep_wcs = WCS(header=hdul[0].header, naxis=2)
+        xw, yw = map(int, np.round(skycoord_to_pixel(src, deep_wcs)))
+        deep_flux = deep_data[yw, xw]
+
     peak_flux = []
     local_rms = []
     timestamp = []
-    
-    # for each short image 
-    for i, image in enumerate(imagelist):
-        
-        # open the fits
-        hdu = fits.open(image)
-        # get the fits data (drop-out extra dimensions)
-        data = hdu[0].data.squeeze()
-        # get wcs frame
-        wcs = WCS(header=hdu[0].header, naxis=2)
-        
-        xw, yw = skycoord_to_pixel(coords=src, wcs=wcs)
-        xw, yw = int(np.round(xw)), int(np.round(yw))
-        
-        peak_flux.append(data[yw, xw])
-        
-        # get observing time
-        timestamp.append(hdu[0].header['DATE-OBS'])
-        
-        # calculate local rms 
-        try:
-            rms = np.nanstd(data[yw-ksize: yw+ksize, xw-ksize: xw+ksize])
-            local_rms.append(rms)
-        except:
-            local_rms.append(np.nan)
-            
-    # covert them to np.array
+
+    for image_path in imagelist:
+        with fits.open(image_path) as hdul:
+            data = hdul[0].data.squeeze().copy()
+            wcs = WCS(hdul[0].header, naxis=2)
+            xw, yw = map(int, np.round(skycoord_to_pixel(src, wcs)))
+
+            peak_flux.append(data[yw, xw])
+            timestamp.append(hdul[0].header.get('DATE-OBS', 'NaT'))
+
+            try:
+                window = data[max(0, yw - ksize): yw + ksize, max(0, xw - ksize): xw + ksize]
+                local_rms.append(np.nanstd(window))
+            except Exception:
+                local_rms.append(np.nan)
+
     peak_flux = np.array(peak_flux)
     local_rms = np.array(local_rms)
-    logger.info("Get peak flux shape {}, local rms shape {}".format(
-        peak_flux.shape, local_rms.shape))
-    
-    
-    # modify the peak flux (+deep image - residual image)
-    
-    # get residual image (if there is)
-    try:
-        residual_image = fits.open(residual_imagename)
-        wcs = WCS(residual_image[0].header, naxis=2)
-        
-        xw, yw = skycoord_to_pixel(coords=src, wcs=wcs)
-        xw, yw = int(np.round(xw)), int(np.round(yw))
-        
-        residual_flux = residual_image[0].data.squeeze()[yw, xw]
-        logger.info("Use residual image information {}".format(residual_imagename))
-        
-    except:
-        residual_flux = np.nanmean(peak_flux)
-        logger.warning("No available residual image, using mean(peak_flux) instead. ")
-        
-    logger.info("Residual flux {} Jy/beam".format(residual_flux))
-        
-    # final peak flux density
-    peak_flux = peak_flux + deep_flux - residual_flux 
-    
-    return peak_flux, local_rms, timestamp
-    
-    
-    
-    
 
-# plot
-def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
+    # Estimate residual flux correction
+    if residual_imagename:
+        try:
+            with fits.open(residual_imagename) as hdul:
+                residual_data = hdul[0].data.squeeze().copy()
+                wcs = WCS(hdul[0].header, naxis=2)
+                xw, yw = map(int, np.round(skycoord_to_pixel(src, wcs)))
+                residual_flux = residual_data[yw, xw]
+            logger.info(f"Using residual image: {residual_imagename}")
+        except Exception:
+            residual_flux = np.nanmean(peak_flux)
+            logger.warning("Residual image not found or error encountered. Using mean peak flux as fallback.")
+    else:
+        residual_flux = np.nanmean(peak_flux)
+        logger.warning("No residual image provided. Using mean peak flux as fallback.")
+
+    logger.info(f"Residual flux: {residual_flux:.3e} Jy/beam")
+
+    corrected_flux = peak_flux + deep_flux - residual_flux
+    return corrected_flux, local_rms, timestamp
     
+    
+def plot_lightcurve(flux, times, rms, title='', name='lightcurve'):
+    """
+    Plot a lightcurve with error bars and save it to a PNG file.
+
+    Parameters
+    ----------
+    flux : array-like
+        Peak flux values (in Jy).
+    times : array-like
+        Timestamps (ISO format or Time-compatible).
+    rms : array-like
+        Local RMS values corresponding to the flux measurements (in Jy).
+    title : str
+        Plot title.
+    name : str
+        Output filename prefix for the PNG image.
+    """
     fig, ax = plt.subplots()
 
     times = Time(times)
     times.format = 'datetime64'
-    
-    flux, rms = flux*1e3, rms*1e3
-    
-    ax.errorbar(x=times.value, y=flux, yerr=rms, color='black', marker='.', alpha=0.6)
-    
-    date_form = mdates.DateFormatter("%Y-%b-%d/%H:%M")
-    ax.xaxis.set_major_formatter(date_form)
-    
+
+    flux_mJy = np.array(flux) * 1e3
+    rms_mJy = np.array(rms) * 1e3
+
+    ax.errorbar(x=times.value, y=flux_mJy, yerr=rms_mJy,
+                color='black', marker='.', alpha=0.6)
+
     ax.set_xlabel('Time (UTC)')
     ax.set_ylabel('Peak Flux Density (mJy/beam)')
     ax.set_title(title)
-    # ax.set_ylim(bottom=-0.1, top=1.2*np.nanmax(np.array(flux))) 
 
-    # set a reasonable time interval
-    time_length = ((times[-1] - times[0]).to_value('sec') + 900) / 3600
-    
-    if int(time_length/4) != 0:
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=int(time_length/4)))
+    date_form = mdates.DateFormatter("%Y-%b-%d/%H:%M")
+    ax.xaxis.set_major_formatter(date_form)
+
+    # Choose tick spacing based on time span
+    if len(times) > 1:
+        span_sec = (times[-1] - times[0]).to_value('sec') + 900
+        span_hr = span_sec / 3600
+        interval = int(span_hr / 4)
+        if interval > 0:
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=interval))
 
     fig.autofmt_xdate(rotation=15)
-    fig.savefig("{}.png".format(name), bbox_inches='tight')
+    fig.savefig(f"{name}.png", bbox_inches='tight')
+    plt.close(fig)
+    logger.info(f"Saved lightcurve to {name}.png")
 
 
-## combine two/three csv to one csv/vot
-def combine_csv(namelist, radius=10, 
-                tablename='final_cand', savevot=True):
+def combine_csv(namelist, radius=10, tablename='final_cand', savevot=True):
     """
-    tables: list
-        a list of location of the chisquare/Gaussian/peak csv catalogue
-    radius: float
-        the crossmatch radius between two catalogues, unit of arcsec
+    Combine multiple source candidate catalogs into one table with crossmatching.
+
+    Parameters
+    ----------
+    namelist : list of str
+        List of paths to input CSV/VOT tables.
+    radius : float
+        Maximum angular separation (in arcsec) for crossmatch merging.
+    tablename : str
+        Output table filename prefix (CSV and optionally VOT).
+    savevot : bool
+        Whether to also save the combined result as a VOTable.
+
+    Returns
+    -------
+    astropy.table.Table or None
+        Combined table of unique candidates, or None if input tables are empty.
     """
-    
     tables = []
     
     for name in namelist:
-        
         try:
             table = Table.read(name)
-            logger.info('Successfully read {}'.format(name))
-        except:
-            logger.warning('Cannot read {}'.format(name))
-            continue    
-        
-        if len(table) == 0:
-            logger.warning('Empty Table {}'.format(name))
-            continue
-        else:
+            if len(table) == 0:
+                logger.warning(f"Empty table: {name}")
+                continue
             tables.append(table)
-            
+            logger.info(f"Read: {name}")
+        except Exception:
+            logger.warning(f"Could not read: {name}")
             
     if len(tables) == 0:
         logger.warning('Empty final table. ')
@@ -469,129 +396,115 @@ def combine_csv(namelist, radius=10,
     
     src = SkyCoord(stacked_table['ra'], stacked_table['dec'], unit=u.degree)
     
-    # combine unique sources
-    idx1, idx2, sep2d, _ = search_around_sky(src, src, 
-                                             seplimit=radius*u.arcsec)
+    # Crossmatch to identify duplicates
+    idx1, idx2, _, _ = search_around_sky(src, src, seplimit=radius * u.arcsec)
     idx = np.full((len(stacked_table), ), True)
     idx[np.unique(idx2[idx1 < idx2])] = False
     
-    final_csv = stacked_table[idx]
+    final_table = stacked_table[idx]
 
     # save csv table
-    final_csv.write("{}.csv".format(tablename), overwrite=True)
+    final_table.write("{}.csv".format(tablename), overwrite=True)
     logger.info("Save final csv {}.csv".format(tablename))
-    logger.info("Final table length {}".format(len(final_csv)))
+    logger.info("Final table length {}".format(len(final_table)))
     
     # save vot table
     if savevot:
-        final_csv.write("{}.vot".format(tablename), 
-                        table_id="candidates", 
-                        format="votable", 
-                        overwrite=True)
+        final_table.write("{}.vot".format(tablename), table_id="candidates", 
+                        format="votable", overwrite=True)
         logger.info("Save final vot {}.vot".format(tablename))
-    
 
+    return final_table
+    
 
 class Candidates:
-    """Generate the vot table for final candidates
     """
-    
+    Class to handle source candidate selection, evaluation, and table generation
+    using chi-square, peak flux, Gaussian, and standard deviation maps.
+    """
     def __init__(self, chisq_map, peak_map, std_map, gaussian_map='', num=70):
-        """chisq_map: str
-            chisquare map location, should be FITS file
         """
-        
+        Initialize a Candidates instance with required input maps.
+
+        Parameters
+        ----------
+        chisq_map : str or fits.HDUList
+            Path to chi-square FITS image or already opened FITS HDU.
+        peak_map : str
+            Path to peak flux FITS image.
+        std_map : str
+            Path to standard deviation map (RMS).
+        gaussian_map : str, optional
+            Path to Gaussian map (if available).
+        num : int
+            Number of short images used in variability analysis.
+        """
         if isinstance(chisq_map, str):
-            try: 
-                self.fi = fits.open(chisq_map)[0]
+            try:
+                with fits.open(chisq_map) as hdul:
+                    self.chisq_map = hdul[0].data.squeeze().copy()
+                    header = hdul[0].header
             except FileNotFoundError:
-                logger.exception("Unable to open image %s" % chisq_map)
+                logger.exception(f"Unable to open image {chisq_map}")
+                raise
         elif isinstance(chisq_map, fits.HDUList):
-            self.fi= chisq_map
+            self.chisq_map = chisq_map[0].data.squeeze()
+            header = chisq_map[0].header
         else:
             raise ArgumentError("Do not understand input image")
-            
-        # read chisquare map 
-        self.chisq_map = self.fi.data.squeeze()
-        # read basic information from chisquare map
-        self.wcs = WCS(self.fi.header, naxis=2)
-        # beam center
-        self.beam_center = SkyCoord(self.fi.header['CRVAL1'], 
-                                    self.fi.header['CRVAL2'], unit=u.degree)
-        # FWHM of primary beam
-        self.fwhm = 3e8/self.fi.header['CRVAL3']/12 * 180/np.pi * u.degree
-        # number of images
+
+        self.wcs = WCS(header, naxis=2)
+        self.beam_center = SkyCoord(header['CRVAL1'], header['CRVAL2'], unit=u.degree)
+        self.fwhm = 3e8 / header['CRVAL3'] / 12 * 180 / np.pi * u.degree
         self.num = num
         
-        
-        # peak map
-        self.peak_map = fits.open(peak_map)[0].data.squeeze()
-        # std map
-        self.std_map = fits.open(std_map)[0].data.squeeze()
-        # gaussian map
-        if gaussian_map != '':
-            logger.info("Open Gaussian map %s" % gaussian_map)
-            self.gaussian_map = fits.open(gaussian_map)[0].data.squeeze()
+        self.peak_map = fits.getdata(peak_map).squeeze()
+        self.std_map = fits.getdata(std_map).squeeze()
+
+        if gaussian_map:
+            logger.info(f"Opening Gaussian map: {gaussian_map}")
+            self.gaussian_map = fits.getdata(gaussian_map).squeeze()
         else:
-            logger.info("No gaussian map is input")
+            logger.info("No Gaussian map provided.")
 
 
     def get_sigma_logspace(self, data, flux):
-        # get log statistics
         logger.debug(data.shape)
-        logger.debug(data)
         logmean = np.nanmean(np.log10(data))
         logstd = np.nanstd(np.log10(data))
-        
-        # sigma level
-        sigma = (np.log10(flux) - logmean) / logstd
-        
-        return sigma
+        return (np.log10(flux) - logmean) / logstd
 
 
     def get_threshold_logspace(self, data, sigma=5):
-        # get log statistics
         logmean = np.nanmean(np.log10(data))
         logstd = np.nanstd(np.log10(data))
-        # get threshold using given sigma
-        threshold = 10 ** (logmean+sigma*logstd)
-        
+        threshold = 10 ** (logmean + sigma * logstd)
         logger.info("Threshold log space rms = {}, mean = {}".format(logstd, logmean))
         logger.info('Threshold log space is {} sigma = {}'.format(sigma, threshold))
-
         return threshold
 
 
     def get_threshold_peak(self, value=None, sigma=None, num=70):
-        # from sigma to calculate the theoritical value/threshold
         if value is None:
-            value = norm.isf(-norm.logcdf(sigma)/num)
-            logger.info("Calculating peak threshold for {} images...".format(num))
-            logger.info("{} sigma threshold (peak) is {:.2f}".format(sigma, value))
+            value = norm.isf(-norm.logcdf(sigma) / num)
+            logger.info(f"{sigma} sigma peak threshold for {num} images = {value:.2f}")
             return value
-        
-        # from threshold/given value to calculate theoritical sigma 
         elif sigma is None:
-            sigma = norm.isf(-norm.logcdf(value)*num)
-            return sigma
-        
+            return norm.isf(-norm.logcdf(value) * num)
+
 
     def get_threshold_chisquare(self, value=None, sigma=None, num=70):
-        df = num - 1 # degree of freedom
-
+        df = num - 1
         if value is None:
             value = chi2.isf(norm.sf(sigma), df) / df
-            logger.info("Calculating chi2 threshold for {} images...".format(num))
-            logger.info("{} sigma threshold (chi2) is {:.2f}".format(sigma, value))
+            logger.info(f"{sigma} sigma chi-square threshold (df={df}) = {value:.2f}")
             return value
-        
         elif sigma is None:
-            sigma = norm.isf(chi2.sf(value*df, df))
-            return sigma
+            return norm.isf(chi2.sf(value * df, df))
 
     
     def local_max(self, min_distance=30, sigma=5, threshold=10, data=None):
-        '''Find the local maxium of an image
+        '''Identify local maxima in a given map above a sigma threshold.
         
         sigma: identify blobs above a specfic sigma threshold
         min_distance: pixel number of the minimal distance of two neighbours blobs
@@ -611,58 +524,71 @@ class Candidates:
                     threshold, threshold_logspace, threshold_abs)
 
         # find local maximum 
-        xy = peak_local_max(data, min_distance=min_distance, 
-                            threshold_abs=threshold_abs)
-        
-        # get coordiantes, in pixel and world 
-        yp, xp = xy[:, 0], xy[:, 1]
-        
-        self.xp = xp
-        self.yp = yp
-        
-        self.cand_src = pixel_to_skycoord(xp, yp, wcs=self.wcs)
-        logger.info("Selected {} candidates...".format(self.cand_src.shape[0]))
+        coords = peak_local_max(data, min_distance=min_distance,
+                                threshold_abs=threshold_abs)
+
+        self.yp, self.xp = coords[:, 0], coords[:, 1]
+        self.cand_src = pixel_to_skycoord(self.xp, self.yp, wcs=self.wcs)
+        logger.info(f"Identified {len(self.cand_src)} candidate peaks.")
 
 
     # Depends if we preformed primary beam correction on short images or not 
     # if no primary beam correction previously, we should apply for below factor 
-    def primary_correction(self, x0:float):
-        '''x0 is the distance to the beam centre, unit of degree
-        '''
-        sigma = self.fwhm.to_value(u.degree) / (2*np.sqrt(2*np.log(2)))
+    def primary_correction(self, x0):
+        """
+        Compute the primary beam correction factor.
+
+        Parameters
+        ----------
+        x0 : float
+            Angular distance from beam center in degrees.
+
+        Returns
+        -------
+        float
+            Correction factor to normalize to beam center.
+        """
+        sigma = self.fwhm.to_value(u.degree) / (2 * np.sqrt(2 * np.log(2)))
         return norm.pdf(x0, scale=sigma) / norm.pdf(0, scale=sigma)
         
         
-        
-        
-    def select_candidates(self, deepcatalogue, tabletype='selavy', 
-                          sep=30, mdlim=0.05, extlim=1.5, beamlim=1.2, 
-                          bright=0.05):
-        """Select high priority candidates using deep image information
-        
-        deepcatalogue: str
-            deep catalogue location, should be aegean format (vot)
-        sep: float
-            radius search for deep countparts, unit of arcsec 
-        mdlim: float
-            lower limit of modulation index to select candidates
-        extlim: float
-            upper limit to select compact sources
-        bright: float
-            flux density threshold of bright sources, unit of Jy 
+    def select_candidates(self, deepcatalogue, tabletype='selavy', sep=30,
+                          mdlim=0.05, extlim=1.5, beamlim=1.2, bright=0.05, bright_sep=1):
         """
-        
+        Select final source candidates by comparing with deep image catalog.
+
+        Parameters
+        ----------
+        deepcatalogue : str
+            Path to the deep catalog (Aegean or Selavy format).
+        tabletype : str
+            'aegean' or 'selavy'. Affects how catalog is interpreted.
+        sep : float
+            Max separation from deep counterpart to count as match (arcsec).
+        mdlim : float
+            Minimum modulation index threshold.
+        extlim : float
+            Maximum allowed extent ratio (integrated/peak flux).
+        beamlim : float
+            Candidates must lie within this × FWHM from beam center.
+        bright : float
+            Threshold flux for a deep source to be considered bright (Jy).
+        bright_sep : float
+            Threshold separation to a bright source (arcmin).
+        """
         # read deep catalogue
         self.read_catalogue(catalogue=deepcatalogue, tabletype=tabletype)
         
         # rule out candidates outside primary beam size
         self.beamlim = beamlim
         beamidx = self.cand_src.separation(self.beam_center) < beamlim*self.fwhm/2
-        logger.info("Candidates inside {} primary beam: {}".format(beamlim, 
-                                                                   sum(beamidx)))
+        logger.info("Candidates inside {} primary beam: {}".format(beamlim, sum(beamidx)))
         
-        # find the deep catalpgue counterparts for each candidates
+        # find the deep catalogue counterparts for each candidates
         self.deepidx, self.d2d, d3d = self.cand_src.match_to_catalog_sky(self.deep_src)
+        # no counterparts in deep image
+        nodeepidx = self.d2d.arcsec > sep
+        logger.info("Candidates without deep counterparts <= %s arcsec: %s", sep, sum(nodeepidx))
         
         # calculate the modulation index 
         if tabletype == 'aegean':
@@ -673,24 +599,14 @@ class Candidates:
             fc = self.primary_correction(x0=self.cand_src.separation(self.beam_center).degree)
             self.md = self.std_map[self.yp, self.xp] / self.deep_peak_flux[self.deepidx] / fc # primary beam correction factor
         
-        logger.info("Candidates with modulation index > {:.1%}: {}".format(
-            mdlim, sum(self.md > mdlim)
-            ))
+        mdidx = self.md > mdlim
+        logger.info("Candidates with modulation index > {:.1%}: {}".format(mdlim, sum(mdidx)))
         
         # calculate the extend feature
         ext = (self.deep_int_flux / self.deep_peak_flux)[self.deepidx]
-        logger.info("Candidates with compactness < {:.2f}: {}".format(
-            extlim, sum(ext < extlim)
-            ))
+        extidx = ext < extlim
+        logger.info("Candidates with compactness < {:.2f}: {}".format(extlim, sum(extidx)))
 
-        # only select candidates that
-        # 1. within the primary beam size
-        # 2. have no countparts in deep image
-        # 3. or have a countpart with md > 0.05 and ext < 1.5
-        # 4. with chisq log space > 5sigma (remove rubbish)
-        self.final_idx = beamidx & ((self.d2d.arcsec > sep) | ((self.md > mdlim) & (ext < extlim))) 
-        logger.info("Final candidates: {}".format(sum(self.final_idx)))
-        
         # check number of close deep conterparts within 30 arcsec 
         idx1, _, _, _ = search_around_sky(coords1=self.cand_src, 
                                  coords2=self.deep_src, 
@@ -708,8 +624,18 @@ class Candidates:
             _, d2d, _ = self.cand_src.match_to_catalog_sky(deep_bright)
             self.bright_sep_arcmin = d2d.arcmin
         
+        nobrightidx = self.bright_sep_arcmin > bright_sep
+        logger.info(f"Candidates without bright sources (> {bright} Jy) nearby (<= {bright_sep} arcmin): {sum(nobrightidx)}")
+
+        # only select candidates that
+        # 1. within the primary beam size
+        # 2. have no countparts in deep image
+        # 3. or have a countpart with md > 0.05 and ext < 1.5
+        # 4. no bright sources nearby (< 1arcmin)
+        self.final_idx = beamidx & (nodeepidx | (mdidx & extidx)) & nobrightidx
+        logger.info("Final candidates: {}".format(sum(self.final_idx)))
         
-    
+        
     def save_csvtable(self, tablename="cand_catalogue", savevot=False):
         """Save selected candidates to a csv table
         
@@ -718,13 +644,10 @@ class Candidates:
         savevot: bool
             if True, will also save a vot format table 
         """
-        
-        # if no final candidates - don't need to save csv/vot
-        
+        if not hasattr(self, 'final_idx') or self.final_idx.sum() == 0:
+            logger.warning("No final candidates - saving empty table. ")
         
         t = Table()
-        
-        # source id 
         t['source_id'] = np.arange(sum(self.final_idx))
         
         # name in J005800.91-235449.00 format
@@ -817,8 +740,6 @@ class Candidates:
         t['deep_peak_flux'] = self.deep_peak_flux[self.deepidx][self.final_idx]
         t['deep_int_flux'] = self.deep_int_flux[self.deepidx][self.final_idx]
         
-        
-        
         # save csv table
         t.write("{}.csv".format(tablename), overwrite=True)
         logger.info("Save csv {}.csv".format(tablename))
@@ -832,100 +753,59 @@ class Candidates:
             logger.info("Save vot {}.vot".format(tablename))
         
         
-        
-        
-        
-    # def read_fits(self, imagename):
-        
-    #     if isinstance(imagename, str):
-    #         try: 
-    #             self.fi = fits.open(imagename)[0]
-    #         except FileNotFoundError:
-    #             logger.exception("Unable to open image %s" % imagename)
-    #     elif isinstance(imagename, fits.HDUList):
-    #         self.fi = imagename
-    #     else:
-    #         raise ArgumentError("Do not understand input image")
-             
-    #     # beam center
-    #     self.beam_center = SkyCoord(self.fi.header['CRVAL1'], 
-    #                                 self.fi.header['CRVAL2'], unit=u.degree)
-             
-    #     # FWHM of primary beam
-    #     self.fwhm = 3e8/self.fi.header['CRVAL3']/12 * 180/np.pi * u.degree
-        
-        
-        
-        
     def read_catalogue(self, catalogue, tabletype="selavy"):
-        """Read the deep image catalogue
-        
-        
-        tabletype: "aegean" or "selavy"
         """
-        
-        logger.info("Read deep catalogue {}, format with {}...".format(catalogue, tabletype))
+        Read and parse deep image catalog for source crossmatching.
+
+        Parameters
+        ----------
+        catalogue : str
+            Path to the catalog file (VOTable or FITS).
+        tabletype : str
+            Type of catalog ('aegean' or 'selavy').
+        """
+        logger.info(f"Reading deep catalogue: {catalogue} [format: {tabletype}]")
 
         if tabletype == 'aegean':
-            self.catalogue = fits.open(catalogue)[1].data
-            ####################
-            # for Aegean convention
-            ####################
-            # deep catalogue sources coordinates
-            self.deep_src = SkyCoord(self.catalogue['ra'], 
-                                     self.catalogue['dec'], 
-                                     unit=u.degree)
-            
-            # peak flux
-            self.deep_peak_flux = np.array(self.catalogue['peak_flux']) # unit of Jy
-            
-            # integrated flux
-            self.deep_int_flux = np.array(self.catalogue['int_flux']) # unit of Jy
-            
-            # get name
-            # for selavy just read the column 'col_component_name'
-            # for aegean you want to use following code to read from scratch 
-            self.deep_name = ['J' + \
-                 src.ra.to_string(unit=u.hourangle, sep="", precision=0, pad=True) + \
-                 src.dec.to_string(sep="", precision=0, alwayssign=True, pad=True)
-                 for src in self.deep_src
-                ]
+            with fits.open(catalogue) as hdul:
+                self.catalogue = hdul[1].data.copy()
+
+            self.deep_src = SkyCoord(self.catalogue['ra'], self.catalogue['dec'], unit=u.degree)
+            self.deep_peak_flux = np.array(self.catalogue['peak_flux'])
+            self.deep_int_flux = np.array(self.catalogue['int_flux'])
+
+            self.deep_name = [
+                'J' + src.ra.to_string(unit=u.hourangle, sep='', precision=0, pad=True) +
+                src.dec.to_string(sep='', precision=0, alwayssign=True, pad=True)
+                for src in self.deep_src
+            ]
         
         else:
             if tabletype != 'selavy':
-                logger.warning('Unidentified table type %s, continue using selavy formats...', tabletype)
-            
+                logger.warning(f"Unrecognized table type '{tabletype}', defaulting to 'selavy'.")
+
             self.catalogue = Table.read(catalogue)
-            ####################
-            # for selavy convention
-            ####################
-            self.deep_src = SkyCoord(self.catalogue['col_ra_deg_cont'], 
-                                    self.catalogue['col_dec_deg_cont'], 
-                                    unit=u.degree)
-            
-            self.deep_peak_flux = np.array(self.catalogue['col_flux_peak']) / 1e3 # unit of Jy
-            self.deep_int_flux = np.array(self.catalogue['col_flux_int']) / 1e3 # unit of Jy
+            self.deep_src = SkyCoord(self.catalogue['col_ra_deg_cont'],
+                                     self.catalogue['col_dec_deg_cont'], unit=u.degree)
+            self.deep_peak_flux = np.array(self.catalogue['col_flux_peak']) / 1e3  # Jy
+            self.deep_int_flux = np.array(self.catalogue['col_flux_int']) / 1e3     # Jy
             self.deep_name = self.catalogue['col_component_name']
         
         
-
-        
-
-        
-        
     def plot_fits(self, fitsname, imagename='plot_fits'):
-        """Plot the fits and marker with given src
         """
-        
-        # read the image
+        Plot selected candidates on a FITS map using APLpy.
+
+        Parameters
+        ----------
+        fitsname : str
+            Input FITS filename.
+        imagename : str
+            Output PNG filename prefix.
+        """
         f = aplpy.FITSFigure(fitsname, figsize=(8, 8))
-        
-        # fix the wcs dimension issue
         fix_aplpy_fits(f)
-        
-        # choose a color map (and scale if you want) to plot
         f.show_colorscale(cmap='plasma')
-        
         
         if hasattr(self, 'final_idx'):
             # show selected local maximum
@@ -953,7 +833,6 @@ class Candidates:
                                marker='o', 
                                ec='cyan')
         
-        
         # show the beam 
         fwhm = 3e8/f._header['CRVAL3']/12 * 180/np.pi
         f.show_circles(xw=f._header['CRVAL1'], yw=f._header['CRVAL2'], 
@@ -968,120 +847,91 @@ class Candidates:
                            color='white', 
                            ls='--')
         
-        
         # save image
         f.savefig(filename=imagename+'.png', dpi=100)
-
-
-
-
+        plt.close('all')
+        logger.info(f"Saved candidate overlay to {imagename}.png")
 
 
 class Products:
-    """Generate the vot table for final candidates
     """
-    
+    Generate plots and cutouts for a list of selected candidate sources.
+    """
     def __init__(self, final_csv, limit=-1, cand_name=None):
         """
-        final_csv: str
-            location of the csv catalogue for (final) candidates
-        limit: int
-            only plot first limit number of candidates. -1 means plot all candidates
+        Parameters
+        ----------
+        final_csv : str
+            Path to the CSV file with final candidate table.
+        limit : int
+            Number of top candidates to include (based on SNR/variability). -1 means all.
+        cand_name : list of str, optional
+            If provided, overrides default name list from table.
         """
         cat = Table.read(final_csv)
-        if limit==-1: 
+        if limit == -1:
             self.final_csv = cat
         else:
             cat.sort(keys=['peak_map', 'chi_square'], reverse=True)
             self.final_csv = cat[:limit]
 
+        self.cand_name = cand_name if cand_name else self.final_csv['name']
+        self.cand_src = SkyCoord(self.final_csv['ra'], self.final_csv['dec'], unit=u.degree)
+        
 
-        self.cand_name = self.final_csv['name']
-        self.cand_src = SkyCoord(self.final_csv['ra'], self.final_csv['dec'], 
-                                  unit=u.degree)
-
-        if cand_name is not None:
-            self.cand_name = cand_name
-        
-        
-        
     def generate_cutout(self, fitsname, radius=5, savename='output'):
-        
-        # run the cutout plot one by one 
         for src_name in self.cand_name:
-            plot_cutout(src_name, fitsname, 
-                        radius=5, 
-                        name='{}_{}'.format(savename, src_name))
+            plot_cutout(src_name, fitsname, radius=radius,
+                        name=f'{savename}_{src_name}')
 
 
     def generate_fits_cutout(self, fitsname, radius=5, savename='output'):
-        
-        # run the cutout plot one by one 
         for src_name in self.cand_name:
-            save_fits_cutout(src_name, fitsname, 
-                        radius=5, 
-                        name='{}_{}'.format(savename, src_name))
+            save_fits_cutout(src_name, fitsname, radius=radius,
+                             name=f'{savename}_{src_name}')
 
 
     def generate_fits_cube(self, imagelist, radius=5, savename='output'):
-        
-        # run the slices plot one by one
         for src_name in self.cand_name:
-            save_fits_cube(src_name, imagelist, 
-                            radius=5, 
-                            name='{}_{}'.format(savename, src_name))
+            save_fits_cube(src_name, imagelist, radius=radius,
+                           name=f'{savename}_{src_name}')
 
-            
-            
+
     def generate_slices(self, imagelist, radius=5, vsigma=5, savename='output'):
-        
-        # run the slices plot one by one
         for src_name in self.cand_name:
-            plot_slices(src_name, imagelist, 
-                        radius=5, vsigma=5, 
-                        name='{}_{}'.format(savename, src_name))
+            plot_slices(src_name, imagelist, radius=radius, vsigma=vsigma,
+                        name=f'{savename}_{src_name}')
+            
 
-
-    def generate_lightcurve(self, imagelist, deepname, savename='output', 
-                            savecsv=True):
-        
+    def generate_lightcurve(self, imagelist, deepname, savename='output', savecsv=True):
         peak_flux_table = Table()
         local_rms_table = Table()
-        
-        # run the lightucrve plot one by one
+
         for i, src_name in enumerate(self.cand_name):
-            peak_flux, local_rms, timestamp = extract_lightcurve(src_name=src_name, 
-                                                      imagelist=imagelist, 
-                                                      deep_imagename=deepname)
-            
+            peak_flux, local_rms, timestamp = extract_lightcurve(
+                src_name=src_name,
+                imagelist=imagelist,
+                deep_imagename=deepname
+            )
+
             if i == 0:
                 peak_flux_table['Time'] = timestamp
                 local_rms_table['Time'] = timestamp
-                
-            
+
             peak_flux_table[src_name] = peak_flux
             local_rms_table[src_name] = local_rms
-            
-            # plot
-            plot_lightcurve(flux=peak_flux, 
-                            times=timestamp, 
-                            rms=local_rms, 
-                            title=src_name, 
-                            name='{}_{}'.format(savename, src_name))
-            
-        # save catalgoue 
+
+            plot_lightcurve(
+                flux=peak_flux,
+                times=timestamp,
+                rms=local_rms,
+                title=src_name,
+                name=f'{savename}_{src_name}'
+            )
+
         if savecsv:
-            # save csv table
-            peak_flux_table.write("{}_peak_flux.csv".format(savename), overwrite=True)
-            local_rms_table.write("{}_local_rms.csv".format(savename), overwrite=True)
-
-            logger.info("Save csv {}.csv".format(savename))
+            peak_flux_table.write(f"{savename}_peak_flux.csv", overwrite=True)
+            local_rms_table.write(f"{savename}_local_rms.csv", overwrite=True)
+            logger.info(f"Saved lightcurve CSVs to {savename}_peak_flux.csv")
+            logger.info(f"Saved lightcurve CSVs to {savename}_local_rms.csv")
             
-            
-            
-            
-            
-            
-            
-            
-
