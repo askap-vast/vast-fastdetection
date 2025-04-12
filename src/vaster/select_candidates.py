@@ -160,7 +160,6 @@ def get_cube(imagelist):
     return f, num
 
 
-
 def generate_statistical_fits(args, config, f, imagename, oname):
     ktypelist = config['CANDIDATES']['KTYPE']
     for ktype in ktypelist:
@@ -206,6 +205,7 @@ def select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, ga
         extlim = config['CANDIDATES']['EXT_LIMIT']
         beamlim = config['CANDIDATES']['SEP_BEAM']
         bright = config['CANDIDATES']['BRIGHT_LIMIT']
+        bright_sep = config['CANDIDATES']['BRIGHT_SEP']
 
         # get theortical threshold
         if maptype == 'chisquare':
@@ -228,7 +228,7 @@ def select_local_maximum(args, config, num, chisquare_map, peak_map, std_map, ga
         logger.info("Deep image catalogue {}".format(args.catalogue))
         c.select_candidates(deepcatalogue=args.catalogue, tabletype=tabletype, 
                             sep=sep_deep, mdlim=mdlim, extlim=extlim, beamlim=beamlim, 
-                            bright=bright)
+                            bright=bright, bright_sep=bright_sep)
         
         # save the table
         tablename = os.path.join(args.outdir, f'{oname}_{maptype}_cand')
