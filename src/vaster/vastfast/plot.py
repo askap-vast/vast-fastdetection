@@ -50,7 +50,7 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
         Output filename (without extension).
     """
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    logger.info(f"Source position: RA={src.ra.deg}, DEC={src.dec.deg}")
+    logger.info(f"Source position: RA={src.ra.hms}, DEC={src.dec.dms}")
 
     fig = plt.figure()
     ims = []
@@ -98,7 +98,7 @@ def plot_slices(src_name, imagelist, radius=5, vsigma=5, name='animation'):
     ani = animation.ArtistAnimation(fig, ims, interval=200, blit=True, repeat_delay=1e6)
     ani.save(f'{name}.gif', dpi=80, writer='imagemagick')
 
-    plt.close(fig)
+    plt.close('all')
     logger.info(f"Saved animation to {name}.gif")
     
     
@@ -118,26 +118,31 @@ def save_fits_cube(src_name, imagelist, radius=5, name='cube'):
         Output cube filename prefix ('.fits' added automatically).
     """
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
-    logger.info(f"Creating FITS cube for source: RA={src.ra.deg}, DEC={src.dec.deg}")
+    logger.info(f"Creating FITS cube for source: RA={src.ra.hms}, DEC={src.dec.dms}")
 
-    cutouts = []
+    # Determine shape from the first image
+    with fits.open(imagelist[0], memmap=True) as hdul:
+        data = hdul[0].data.squeeze()
+        wcs = WCS(hdul[0].header, naxis=2)
+        cutout = Cutout2D(data, position=src, size=radius * u.arcmin, wcs=wcs)
+        ny, nx = cutout.data.shape
+        header = cutout.wcs.to_header()
+
+    # Allocate output cube array
+    n_frames = len(imagelist)
+    cube_data = np.empty((n_frames, ny, nx), dtype=np.float32)
 
     for i, image_path in enumerate(imagelist):
-        with fits.open(image_path) as hdul:
-            data = hdul[0].data.squeeze().copy()
+        with fits.open(image_path, memmap=True) as hdul:
+            data = hdul[0].data.squeeze()
             wcs = WCS(hdul[0].header, naxis=2)
             cutout = Cutout2D(data, position=src, size=radius * u.arcmin, wcs=wcs)
+            cube_data[i] = cutout.data
 
-            cutouts.append(cutout.data)
-
-            if i == 0:
-                header = cutout.wcs.to_header()
-                base_hdu = hdul[0]
-
-    base_hdu.header.update(header)
-    base_hdu.data = np.array(cutouts)
-    output_path = f'{name}.fits'
-    base_hdu.writeto(output_path, overwrite=True)
+    # Write FITS cube
+    hdu = fits.PrimaryHDU(data=cube_data, header=header)
+    output_path = f"{name}.fits"
+    hdu.writeto(output_path, overwrite=True)
     logger.info(f"Saved FITS cube to {output_path}")
 
     
@@ -157,6 +162,7 @@ def save_fits_cutout(src_name, image_path, radius=5, name='cutout'):
         Output filename prefix ('.fits' will be appended).
     """
     src = SkyCoord(src_name, unit=(u.hourangle, u.degree))
+    logger.info(f"Creating FITS cutout for source: RA={src.ra.hms}, DEC={src.dec.dms}")
     with fits.open(image_path) as hdul:
         data = hdul[0].data.squeeze().copy()
         wcs = WCS(hdul[0].header, naxis=2)
