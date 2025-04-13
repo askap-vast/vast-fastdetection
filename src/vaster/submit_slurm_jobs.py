@@ -123,6 +123,8 @@ def write_scancel_scripts(args, idx, job_id_list):
 def clean_data(args, sbid, affix, command):
     logger.debug('SB%s: clean %s', sbid, affix)
     fnamelist = []
+    if 'FIXDATA' in args.steps:
+        fnamelist += glob.glob(os.path.join(args.paths['path_data'], affix+".corrected"))
     if 'MODELING' in args.steps:
         fnamelist += glob.glob(os.path.join(args.paths['path_models'], affix))
     if 'IMGFAST' in args.steps:
