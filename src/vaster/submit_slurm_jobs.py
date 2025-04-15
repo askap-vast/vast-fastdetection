@@ -35,7 +35,7 @@ def _main():
     parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
     parser.add_argument('--steps', type=str, nargs='+', default=['FIXDATA', 'MODELING', 'IMGFAST', 'SELCAND', 'CLNDATA'], 
                         help='tasks to process, following the order')
-    parser.add_argument('--sleep', type=int, default=1, help='Job submission sleep time between two sbids, unit of seconds')
+    parser.add_argument('--sleep', type=float, default=0, help='Job submission sleep time between two sbids, unit of hours')
     parser.add_argument('--clean', action='store_true', help='Delete any relevant files before re-submit')
     parser.add_argument('--dry-run', action='store_true', help='perform a dry run')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -71,9 +71,10 @@ def _main():
                 job_id_list = submit_joblist(fnamelist)
                 write_scancel_scripts(args, idx, job_id_list)
         
-        if i + 1 < len(args.sbids):
-            logger.info('Sleep %s seconds before submitting the next sbid...', args.sleep)
-            time.sleep(args.sleep)
+        if i + 1 < len(args.sbids) and args.sleep > 0:
+            sleep_seconds = int(args.sleep * 3600)
+            logger.info('Sleep %s hours (= %s seconds) before submitting the next sbid...', args.sleep, sleep_seconds)
+            time.sleep(sleep_seconds)
 
     end_time = time.time()
     measure_running_time(start_time, end_time)
