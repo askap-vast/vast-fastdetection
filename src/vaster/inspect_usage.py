@@ -58,6 +58,7 @@ def _main():
     for fname in fname_list:
         tb = read_tb(fname)
         tb = convert_mem_unit(tb, colnames)
+        tb = clean_tb(tb)
         logger.info("=======")
         logger.info(fname)
         print(tb)
@@ -95,6 +96,14 @@ def get_logs(args, sbid, beamlist):
         for step in args.steps:
             fname_list += glob.glob(os.path.join(databasic.paths['path_logs'], f'*{step}*{beam}*.usage'))
     return fname_list
+
+
+def clean_tb(tb, skip_jobs=['batch', 'extern']):
+    # get rid of .batch and .extern jobs 
+    pattern = '|'.join(skip_jobs)
+    # Filter the DataFrame
+    df_filtered = tb[~tb["JobID"].str.contains(pattern, na=False)]
+    return df_filtered
 
 
 def convert_mem_unit(tb, colnames):
