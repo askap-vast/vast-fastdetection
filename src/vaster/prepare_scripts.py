@@ -32,7 +32,7 @@ import argparse
 import logging
 logger = logging.getLogger(__name__)
 
-__author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>"
+__author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>, Raghav Girgaonkar <raghav.girgaonkar@gmail.com>"
 
 
 def _main():
@@ -80,7 +80,11 @@ def _main():
             logger.warning('You can download the visibility manually. ')
             continue
         
-        format_casa_modeling(args, config)
+        if config['MACHINE'] == 'ozstar':
+            format_casa_modeling(args, config)
+        elif config['MACHINE'] == 'mortimer':
+            format_casa_modeling(args, config)
+            format_casa_selfcal(args, config)
         format_casa_imgfast(args, config)
         prepare_downloads(args, sbid, cat, img, vis)
 
@@ -88,6 +92,8 @@ def _main():
             format_bash(args, config, sbid, vis, cat)
         elif config['MACHINE'] == 'ozstar':
             format_ozstar(args, config, sbid, vis, cat)
+        elif config['MACHINE'] == 'mortimer':
+            format_mortimer(args, config, sbid, vis, cat)
 
         logger.info('SB%s preparation finish.', sbid)
 
@@ -254,6 +260,56 @@ def format_ozstar(args, config, sbid, vis, cat):
                 
             logger.info('Writing {}'.format(savename))
 
+def format_mortimer(args, config, sbid, vis, cat):
+    ############################
+    # Generate scripts for one beam data
+    ############################
+    for idx in range(36):
+        oname = f'SB{sbid}_beam{idx:02d}'
+
+        for step in args.steps:
+            logger.debug('%s: Run VASTER step %s...', oname, step)
+
+            if step == 'GETDATA' or step == 'UNTAR':
+                savename = os.path.join(args.paths['path_scripts'], f'bash_{step}_beam{idx:02d}.sh')
+                with open(savename, 'w') as fw:
+                    write_basetxt_bash(fw, sbid, savename)
+                    url = get_url(vis[idx]['access_url'], args.username, args.password)
+                    filename = vis[idx]['filename']
+                    if step == 'GETDATA':
+                        write_download_vis_txt(args, fw, idx, filename, url)
+                    elif step == 'UNTAR':
+                        write_untar_vis_txt(args, fw, idx, filename)
+
+            else:
+                params, savename = prepare_steps_mortimer(args, idx, config, sbid, oname, step)
+                with open(savename, 'w') as fw:
+                    write_basetxt_mortimer(fw, sbid, savename, params)
+                    if step == 'FIXDATA':
+                        write_moduleload_mortimer(fw, config)
+                        write_fixdata_txt_mortimer(args, fw, idx, filename, config, prefix='')
+                    elif step == 'MODELING':
+                        write_moduleload_mortimer(fw, config)
+                        write_imager_txt_mortimer(args, fw, idx, filename, oname, config, mode='modeling', prefix='', selfcal=False)
+                        if config['PHASESELFCAL']:
+                            write_casa_selfcal_cmd(args, fw, idx, filename, oname)
+                            write_imager_txt_mortimer(args, fw, idx, filename, oname, config, mode='modeling', prefix='', selfcal=True)
+                    elif step == 'IMGFAST':
+                        write_moduleload_mortimer(fw, config)
+                        if config['PHASESELFCAL']:
+                            write_imager_txt_mortimer(args, fw, idx, filename, oname, config, mode='imaging', prefix='', selfcal=True)
+                        else:
+                            write_imager_txt_mortimer(args, fw, idx, filename, oname, config, mode='imaging', prefix='', selfcal=False)
+                    elif step == 'SELCAND':
+                        write_moduleload_mortimer(fw, config)
+                        write_selcand_txt_mortimer(args, fw, idx, oname, config, cat, prefix='')
+                    elif step == 'CLNDATA':
+                        write_clndata_txt(args, fw, idx, config)
+                        
+                    # write_endtxt_ozstar(fw, sbid, savename, params)
+                
+            logger.info('Writing {}'.format(savename))
+
 
 def prepare_downloads(args, sbid, cat, img, vis):
     downloads = ['selavy', 'mosaic_images', 'visibility']
@@ -289,6 +345,15 @@ def format_casa_modeling(args, config):
 
         write_casa_subtract_model(fw)
         write_casa_exportfits(params, fw)
+
+def format_casa_selfcal(args, config):
+    # Create a selfcal script between consecutive wsclean modelings 
+    savename = os.path.join(args.paths['path_scripts'], 'casa_phase_selfcal.py')
+    with open(savename, 'w') as fw:  
+        write_casa_params_selfcal(fw)
+        logger.info('Writing {}'.format(savename))
+
+        write_casa_calib(config['CASA']['SELFCAL'], fw)
 
 
 def format_casa_imgfast(args, config):
@@ -331,12 +396,38 @@ def write_basetxt_ozstar(fw, sbid, savename, params):
     fw.write('#SBATCH --export=all' + '\n')
     fw.write('\n')
 
+def write_basetxt_mortimer(fw, sbid, savename, params):
+    logger.debug('write base txt ozstar for SB%s saving to %s', sbid, savename)
+    logger.debug(params)
+    fw.write("#!/bin/bash" + '\n')
+    fw.write('#\n')
+    #fw.write('#SBATCH --time=' + str(params['TIME'])  + '\n')
+    fw.write('#SBATCH --job-name=' + str(params['job_name']) + '\n')
+    fw.write('#SBATCH --nodes=' + str(params['NODES']) + '\n')
+    fw.write('#SBATCH --ntasks-per-node=' + str(params['NTASKS']) + '\n')
+    if 'PARTITION' in params:
+        fw.write('#SBATCH --partition=' + str(params['PARTITION']) + '\n')
+    
+    #fw.write('#SBATCH --mem-per-cpu=' + str(params['MEM']) + '\n')
+    fw.write('#SBATCH --output='+ str(params['output']) + '\n')
+    fw.write('#SBATCH --error='+ str(params['error']) + '\n')
+    fw.write('#SBATCH --export=all' + '\n')
+    fw.write('#SBATCH --mail-type=all' + '\n')
+    fw.write('#SBATCH --mail-user='+ str(params['email']) + '\n')
+    fw.write('\n')
+
 def write_endtxt_ozstar(fw, sbid, savename, params):
     logger.debug('write end txt ozstar for SB%s saving to %s', sbid, savename)
     logger.debug(params)
     fw.write('wait' + '\n')
     fw.write('sleep 10' + '\n')
     fw.write('sacct -j $SLURM_JOB_ID --parsable2 --format=' + params['format'] + ' > ' + params['usage'] + '\n')
+    fw.write('\n')
+
+def write_moduleload_mortimer(fw, config):
+    fw.write('source ' + config['CONDA'] + '\n')
+    fw.write('conda activate ' + config['CONDAENV'] + '\n')
+    fw.write('source ' + config['CASAPATH'] + '\n')
     fw.write('\n')
 
 
@@ -355,6 +446,10 @@ def write_virtual_env_disable(fw, config):
 def write_singularity_load(fw):
     fw.write('module load singularity' + '\n')
     fw.write('export SINGULARITY_BINDPATH=$PWD' + '\n')
+    fw.write('\n')
+
+def write_singularity_load_mortimer(fw,config):
+    fw.write('export SINGULARITY_BINDPATH=' + config['SINGULARITY_BINDPATH'] + '\n')
     fw.write('\n')
 
 
@@ -395,6 +490,17 @@ def prepare_steps_ozstar(args, idx, config, sbid, oname, step='FIXDATA'):
     params['format'] = "JobID,JobName,Partition,NodeList,AllocCPUS,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,CPUTime,TotalCPU,Start,End"
     return params, savename
 
+def prepare_steps_mortimer(args, idx, config, sbid, oname, step='FIXDATA'):
+    '''Mortimer specific prepare steps'''
+    savename = os.path.join(args.paths['path_scripts'], f'slurm_{step}_beam{idx:02d}.sh')
+    params = config['MORTIMER'][step]
+    params['email'] = config['EMAIL']
+    params['job_name'] = step[:3] + f'-{idx:02d}' + f'-{sbid}'
+    params['output'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.output')
+    params['error'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.error')
+    params['usage'] = os.path.join(args.paths['path_logs'], f'slurm_{step}_{oname}.usage')
+    params['format'] = "JobID,JobName,Partition,NodeList,AllocCPUS,State,ExitCode,Elapsed,MaxRSS,MaxVMSize,CPUTime,TotalCPU,Start,End"
+    return params, savename
 
 def write_download_vis_txt(args, fw, idx, filename, url):
     path_file = os.path.join(args.paths['path_data'], filename)
@@ -442,6 +548,29 @@ def write_fixdata_txt(args, fw, idx, filename, config, prefix=''):
     if config['VIRTUAL_ENV'] is True:
         write_virtual_env_disable(fw, config)
 
+def write_fixdata_txt_mortimer(args, fw, idx, filename, config, prefix=''):
+    filename = filename.replace('.tar', '')
+    path_file = os.path.join(args.paths['path_data'], filename)
+    logger.debug('write fixdata txt %s', path_file)
+        
+    text = f'rm -r {path_file}.corrected'
+    fw.write('echo Executing: ' + text + '\n')
+    fw.write(text + '\n')
+    fw.write('\n')
+
+    text = f'askapsoft_rescale {path_file} {path_file}.corrected'
+    fw.write(f"echo beam{idx:02d}: Fix the measurement sets flux scaling" + '\n')
+    fw.write(prefix + text + '\n')
+    fw.write('\n')
+
+    text = f'fix_dir {path_file}.corrected'
+    fw.write(f"echo beam{idx:02d}: Fix the measurement sets pointing" + '\n')
+    fw.write(prefix + text + '\n')
+    fw.write('\n')
+
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_disable(fw, config)
+
 
 def write_imager_txt(args, fw, idx, filename, oname, config, mode='modeling', prefix=''):
     filename = filename.replace('.tar', '.corrected')
@@ -464,12 +593,73 @@ def write_imager_txt(args, fw, idx, filename, oname, config, mode='modeling', pr
     fw.write(text + '\n')
     fw.write('\n')
 
+def write_imager_txt_mortimer(args, fw, idx, filename, oname, config, mode='modeling', prefix='', selfcal=False):
+    filename = filename.replace('.tar', '.corrected')
+    path_file = os.path.join(args.paths['path_data'], filename)
+    imager = config['IMAGER']
+    logger.debug('write imaging txt %s output name %s', path_file, oname)
+
+    if imager == 'casa':
+        text = write_casa_cmd(args, fw, idx, path_file, oname, mode, prefix, imager)
+    elif imager == 'wsclean':
+        text = write_wsclean_cmd_mortimer(args, fw, idx, path_file, oname, config, mode, prefix, selfcal)
+    elif imager == 'flint':
+        logger.warning('FLINT HAS NOT BEEN IMPLEMENTED YET - WILL SWITCH TO WSCLEAN')
+        text = write_wsclean_cmd_mortimer(args, fw, idx, path_file, oname, config, mode, prefix, selfcal)
+    else:
+        logger.warning('UNIDENTIFIED IMAGER "%s" - WILL SWITCH TO WSCLEAN', config['IMAGER'])
+        text = write_wsclean_cmd_mortimer(args, fw, idx, path_file, oname, config, mode, prefix, selfcal)
+
+    fw.write('echo ' + text + '\n')
+    fw.write(text + '\n')
+    fw.write('\n')
+
 
 def write_selcand_txt(args, fw, idx, oname, config, cat, prefix='', affix=''):
     path_script = 'select_candidates'
 
     if config['VIRTUAL_ENV'] is True:
         write_virtual_env_enable(fw, config)
+
+    if config['IMAGER'] == 'casa':
+        path_deepimage = os.path.join(args.paths['path_models'], oname+'.image.tt0.fits') # deep image
+    elif config['IMAGER'] == 'wsclean':
+        path_deepimage = os.path.join(args.paths['path_models'], oname+'-MFS-image.fits') # deep image
+    else:
+        path_deepimage = os.path.join(args.paths['path_models'], oname+'*image*fits') # deep image
+
+    if config['SOURCE_FINDER'] == 'selavy':
+        path_catalogue = os.path.join(args.paths['path_data'], cat[0]['filename']) # selavy catalogue
+    elif config['SOURCE_FINDER'] == 'aegean':
+        # running aegean to search for candidates
+        fw.write("echo beam{:02d}: Running aegean to produce deep image catalogues...".format(idx) + '\n')
+        fw.write(f"cd {args.paths['path_models']}" + '\n')
+        fw.write(f"{prefix}aegean {path_deepimage} --cores 1 --save" + '\n')
+        tablename = path_deepimage.replace('fits', 'cat.fits')
+        fw.write(f"{prefix}aegean {path_deepimage} --cores 1 --table {tablename}" + '\n')
+        fw.write('\n')
+        path_catalogue = path_deepimage.replace('fits', 'cat_comp.fits') # selavy catalogue
+    else:
+        path_catalogue = os.path.join(args.paths['path_data'], cat[0]['filename']) # selavy catalogue
+    
+    path_images = args.paths['path_images']
+    path_cand = args.paths['path_cand']
+
+    text = f'{prefix}{path_script} --deepimage {path_deepimage} --catalogue {path_catalogue} '\
+        f'--folder {path_images} --beam beam{idx:02d} --outdir {path_cand} --name {oname} '\
+        f'--ignore-warning --config {args.self_config}{affix}'
+
+    fw.write("echo beam{:02d}: Select candidates...".format(idx) + '\n')
+    fw.write(text + '\n')
+    fw.write('\n')
+
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_disable(fw, config)
+
+def write_selcand_txt_mortimer(args, fw, idx, oname, config, cat, prefix='', affix=''):
+    path_script = 'select_candidates'
+
+    # write_moduleload_mortimer(fw, config)
 
     if config['IMAGER'] == 'casa':
         path_deepimage = os.path.join(args.paths['path_models'], oname+'.image.tt0.fits') # deep image
@@ -562,6 +752,22 @@ def write_casa_cmd(args, fw, idx, path_file, oname, mode, prefix, imager):
     text = f'{prefix}{imager} --log2term --logfile {path_log} --nogui -c {path_script} {path_file} {oname}'
     return text 
 
+def write_casa_selfcal_cmd(args, fw, idx, filename, oname):
+    script_name = 'casa_phase_selfcal.py'
+    log_name = f'casa_PHASESELFCAL_{oname}.log'
+    fw.write(f"echo beam{idx:02d}: Perform phase only self calibration..." + '\n')
+    fw.write('cd ' + args.paths['path_models'] + ' \n')
+
+    filename = filename.replace('.tar', '.corrected')
+    path_file = os.path.join(args.paths['path_data'], filename)
+    path_log = os.path.join(args.paths['path_logs'], log_name)
+    path_script = os.path.join(args.paths['path_scripts'], script_name)
+    text = f'casa --log2term --logfile {path_log} --nogui -c {path_script} {path_file} {oname}'
+
+    fw.write('echo ' + text + '\n')
+    fw.write(text + '\n')
+    fw.write('\n')
+    # return text
 
 def write_casa_params(args, params, fw):
     fw.write('import os' + '\n')
@@ -582,6 +788,16 @@ def write_casa_params(args, params, fw):
         txt += f'{key.lower()}, '
 
     fw.write(txt + ')\n')
+    fw.write('\n')
+
+def write_casa_params_selfcal(fw):
+    fw.write('import os' + '\n')
+    fw.write('import sys' + '\n')
+    fw.write('import numpy as np' + '\n')
+    fw.write('\n')
+    fw.write('vis = sys.argv[-2]        # visibility path'  + '\n')
+    fw.write('imagename = sys.argv[-1]  # recommend in format of SBxxx_beamxxx' + '\n')
+    fw.write('print("** NOTICE  ** path passed as arg:", vis, imagename)' + '\n')
     fw.write('\n')
 
 
@@ -716,6 +932,42 @@ def write_wsclean_cmd(args, fw, idx, path_file, oname, config, mode, prefix):
     text = f'{prefix}{run_wsclean} {text}-name {oname} {path_file}'
     return text 
 
+def write_wsclean_cmd_mortimer(args, fw, idx, path_file, oname, config, mode, prefix, selfcal):
+    if config['SINGULARITY'] is True:
+        if selfcal == False:
+            write_singularity_load_mortimer(fw,config)
+        run_wsclean = 'singularity exec ' + config['WSCLEAN_PATH'] + ' wsclean'
+    else:
+        run_wsclean = 'wsclean'
+
+    if mode == 'modeling':
+        fw.write(f"echo beam{idx:02d}: Create sky model and subtract..." + '\n')
+        fw.write('cd ' + args.paths['path_models'] + ' \n')
+        params = config['WSCLEAN']['MODELCLEAN']
+        if selfcal == True:
+            # print('selfcal true')
+            params_temp = params.copy()
+            params_temp['DATA_COLUMN'] = 'CORRECTED_DATA'
+            text = write_wsclean_params(params_temp)
+        else:
+            # print('selfcal false')
+            text = write_wsclean_params(params)
+
+    elif mode == 'imaging':
+        write_intervals_out_mortimer(args, fw, config, path_file, oname)
+        fw.write(f"echo beam{idx:02d}: Create model-subtracted short images..." + '\n')
+        fw.write('cd ' + args.paths['path_images'] + ' \n')
+        params = config['WSCLEAN']['SHORTIMAGE']
+        if selfcal == True:
+            params_temp = params.copy()
+            params_temp['DATA_COLUMN'] = 'CORRECTED_DATA'
+            text = write_wsclean_params(params_temp) + '-intervals-out $intervals_out '
+        else:
+            text = write_wsclean_params(params) + '-intervals-out $intervals_out '
+    
+    text = f'{prefix}{run_wsclean} {text}-name {oname} {path_file}'
+    return text 
+
 
 def write_wsclean_params(params):
     txt = ''
@@ -735,6 +987,18 @@ def write_wsclean_params(params):
 def write_intervals_out(args, fw, config, path_file, oname):
     if config['VIRTUAL_ENV'] is True:
         write_virtual_env_enable(fw, config)
+
+    savename = os.path.join(args.paths['path_data'], oname + '_measurements.txt')
+    fw.write(f'intervals=($(check_measurements {path_file} --config {args.self_config} --savename {savename}))' + '\n')
+    fw.write(r"intervals_out=${intervals[-1]}" + '\n')
+    fw.write('\n')
+
+    if config['VIRTUAL_ENV'] is True:
+        write_virtual_env_disable(fw, config)
+
+def write_intervals_out_mortimer(args, fw, config, path_file, oname):
+    
+    # write_moduleload_mortimer(fw, config)
 
     savename = os.path.join(args.paths['path_data'], oname + '_measurements.txt')
     fw.write(f'intervals=($(check_measurements {path_file} --config {args.self_config} --savename {savename}))' + '\n')
