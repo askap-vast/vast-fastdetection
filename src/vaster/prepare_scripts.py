@@ -935,7 +935,10 @@ def write_wsclean_cmd(args, fw, idx, path_file, oname, config, mode, prefix):
 
 def write_wsclean_cmd_mortimer(args, fw, idx, path_file, oname, config, mode, prefix, selfcal):
     if config['SINGULARITY'] is True:
-        if selfcal == False:
+        if mode == 'modeling':
+            if selfcal == False:
+                write_singularity_load_mortimer(fw,config)
+        elif mode == 'imaging':
             write_singularity_load_mortimer(fw,config)
         run_wsclean = 'singularity exec ' + config['WSCLEAN_PATH'] + ' wsclean'
     else:
