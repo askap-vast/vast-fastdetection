@@ -404,7 +404,8 @@ def write_basetxt_mortimer(fw, sbid, savename, params):
     #fw.write('#SBATCH --time=' + str(params['TIME'])  + '\n')
     fw.write('#SBATCH --job-name=' + str(params['job_name']) + '\n')
     fw.write('#SBATCH --nodes=' + str(params['NODES']) + '\n')
-    fw.write('#SBATCH --ntasks-per-node=' + str(params['NTASKS']) + '\n')
+    # fw.write('#SBATCH --ntasks-per-node=' + str(params['NTASKS']) + '\n')
+    fw.write('#SBATCH --ntasks=' + str(params['NTASKS']) + '\n')
     if 'PARTITION' in params:
         fw.write('#SBATCH --partition=' + str(params['PARTITION']) + '\n')
     
