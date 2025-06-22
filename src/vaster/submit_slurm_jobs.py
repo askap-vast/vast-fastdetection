@@ -146,7 +146,7 @@ def submit_joblist(fnamelist,nodes=None):
         if i == 0:
             job_id = submit_onejob(fname,nodes=nodes)
         else:
-            job_id = submit_onejob(fname, nodes=nodes,dependency=True, dep_job_id=pre_job_id)
+            job_id = submit_onejob(fname, nodes=nodes, dependency=True, dep_job_id=pre_job_id)
 
         if job_id is None:
             break 
@@ -160,9 +160,9 @@ def submit_joblist(fnamelist,nodes=None):
 
 
 def submit_onejob(fname, nodes=None,dependency=False, dep_job_id=None):
-    if nodes:
+    if nodes and (('MODELING' in fname) or ('FIXDATA' in fname)):
         if dependency:
-            cmd = ['sbatch', '--nodelist=', f'{nodes}', '-d', f'afterok:{dep_job_id}', fname]
+            cmd = ['sbatch', f'--nodelist={nodes}', '-d', f'afterok:{dep_job_id}', fname]
         else:
             cmd = ['sbatch', '--nodelist=', f'{nodes}', fname]
     else:
@@ -171,11 +171,11 @@ def submit_onejob(fname, nodes=None,dependency=False, dep_job_id=None):
         else:
             cmd = ['sbatch', fname]
 
-    logger.info('Exectuing "%s"', cmd)
+    logger.info('Executing "%s"', cmd)
     job = subprocess.run(cmd, capture_output=True, text=True)
     if job.returncode == 0:
         job_id = job.stdout.strip().split()[-1]
-        logger.info('Job %s submiitted successfully with ID %s', fname, job_id)
+        logger.info('Job %s submitted successfully with ID %s', fname, job_id)
         return job_id
     
     else:
