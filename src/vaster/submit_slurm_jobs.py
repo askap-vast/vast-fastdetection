@@ -164,7 +164,7 @@ def submit_onejob(fname, nodes=None,dependency=False, dep_job_id=None):
         if dependency:
             cmd = ['sbatch', f'--nodelist={nodes}', '-d', f'afterok:{dep_job_id}', fname]
         else:
-            cmd = ['sbatch', '--nodelist=', f'{nodes}', fname]
+            cmd = ['sbatch', f'--nodelist={nodes}', fname]
     else:
         if dependency:
             cmd = ['sbatch', '-d', f'afterok:{dep_job_id}', fname]
