@@ -162,9 +162,9 @@ def submit_joblist(fnamelist,nodes=None):
 def submit_onejob(fname, nodes=None,dependency=False, dep_job_id=None):
     if nodes and (('MODELING' in fname) or ('FIXDATA' in fname)):
         if dependency:
-            cmd = ['sbatch', f'--nodelist={nodes}', '-d', f'afterok:{dep_job_id}', fname]
+            cmd = ['sbatch', '--nodelist=' + nodes, '-d', f'afterok:{dep_job_id}', fname]
         else:
-            cmd = ['sbatch', f'--nodelist={nodes}', fname]
+            cmd = ['sbatch', '--nodelist=' + nodes, fname]
     else:
         if dependency:
             cmd = ['sbatch', '-d', f'afterok:{dep_job_id}', fname]
