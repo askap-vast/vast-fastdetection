@@ -1,9 +1,13 @@
-MACHINE: ozstar             # Processing HPC, can be bash, shao, or ozstar 
+MACHINE: mortimer             # Processing HPC, can be bash, shao, ozstar or mortimer 
 TIMESTEP: 600               # Short image timestep, unit of seconds, if gives 'int' it is the integration time
 IMAGER: wsclean             # Imaging method: casa, wslcean or flint 
+CASA: casa                  # CASA shortcut, only useful when IMAGER is casa
 SOURCE_FINDER: aegean       # Source finder: aegean (run aegean per-beam source finder) or selavy (mosaiced selavy catalogue)
-
-
+EMAIL: raghav@uwm.edu       # Email for job notification
+CONDA: /raid-15/LS/kaplan/raghav/VAST/software/.activate_conda  # conda source file in HPC
+CONDAENV: vaster    # conda virtual environment name
+CASAPATH: /raid-15/LS/kaplan/raghav/VAST/software/.activate_casa # casa source file in HPC
+PHASESELFCAL: True # run phase self-calibration or not
 #########################################################################
 ########################### environment setup ###########################
 VIRTUAL_ENV: True
@@ -14,7 +18,8 @@ VIRTUAL_ENV_ENABLE: [
 VIRTUAL_ENV_DISABLE: 'conda deactivate'
 
 SINGULARITY: True
-WSCLEAN_PATH: /fred/oz330/software/wsclean.sif # container path for wsclean; only useful when IMAGER is wsclean
+SINGULARITY_BINDPATH: '/raid-15/LS/kaplan/raghav/VAST_TEST/SB50230'
+WSCLEAN_PATH: /raid-15/LS/kaplan/raghav/software/wsclean.sif # container path for wsclean; only useful when IMAGER is wsclean
 #########################################################################
 
 
@@ -32,14 +37,14 @@ WSCLEAN:
     GRIDDER: wgridder 
     WEIGHT: 'briggs 0.5'
     PARALLEL_DECONVOLUTION: 512
-    NITER: 80000
+    NITER: 100000
     GAIN: 0.15
     MGAIN: 0.9
-    CHANNELS_OUT: 2
-    FIT_SPECTRAL_POL: 1
+    CHANNELS_OUT: 4
+    FIT_SPECTRAL_POL: 2
     JOIN_CHANNELS: True
-    AUTO_THRESHOLD: 1
-    AUTO_MASK: 4
+    AUTO_THRESHOLD: 0.3
+    AUTO_MASK: 3
     LOCAL_RMS: False
     MINUVW_M: 200
     MULTISCALE: True
@@ -169,6 +174,40 @@ OZSTAR:
     NODES: 1
     NTASKS: 1
     MEM: 24gb  # VAST/EMU/10s survey 16GB max
+  CLNDATA:
+    TIME: '1:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 200mb  # VAST 0GB max
+
+MORTIMER:
+  FIXDATA:
+    TIME: '1:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 4gb  # VAST 0GB max  
+  MODELING:
+    TIME: '50:00:00'
+    NODES: 1
+    NTASKS: 1
+    PARTITION: highmem  #Run modeling step on highmem partition
+    MEM: 16gb  # VAST 11GB max
+  MODELING_PARALLEL:
+    TIME: '50:00:00'
+    NODES: 1
+    NTASKS: 17
+    PARTITION: highmem
+    MEM: 16gb  # VAST 11GB max 
+  IMGFAST:
+    TIME: '30:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 4gb  # VAST 1.2GB max
+  SELCAND:
+    TIME: '10:00:00'
+    NODES: 1
+    NTASKS: 1
+    MEM: 32gb  # VAST 16GB max (70 images)
   CLNDATA:
     TIME: '1:00:00'
     NODES: 1

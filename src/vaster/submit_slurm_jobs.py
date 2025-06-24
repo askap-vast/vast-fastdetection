@@ -16,7 +16,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-__author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>"
+__author__ = "Yuanming Wang <yuanmingwang@swin.edu.au>, Raghav Girgaonkar <raghav@uwm.edu>"
 
 
 def _main():
@@ -35,6 +35,7 @@ def _main():
     parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
     parser.add_argument('--steps', type=str, nargs='+', default=['FIXDATA', 'MODELING', 'IMGFAST', 'SELCAND', 'CLNDATA'], 
                         help='tasks to process, following the order')
+    parser.add_argument('--nodes', type=str, default='', help='Specify the nodes to use, e.g. "node01,node02"')
     parser.add_argument('--sleep', type=float, default=0, help='Job submission sleep time between two sbids, unit of hours')
     parser.add_argument('--clean', action='store_true', help='Delete any relevant files before re-submit')
     parser.add_argument('--dry-run', action='store_true', help='perform a dry run')
@@ -68,7 +69,7 @@ def _main():
                 logger.warning(f'Dry run: SB{sbid} beam{idx:02d}: will submit below scripts in order')
                 logger.warning(fnamelist)
             else:
-                job_id_list = submit_joblist(fnamelist)
+                job_id_list = submit_joblist(fnamelist,nodes=args.nodes)
                 write_scancel_scripts(args, idx, job_id_list)
         
         if i + 1 < len(args.sbids) and args.sleep > 0:
@@ -139,13 +140,13 @@ def clean_data(args, sbid, affix, command):
         
 
 
-def submit_joblist(fnamelist):
+def submit_joblist(fnamelist,nodes=None):
     job_id_list = []
     for i, fname in enumerate(fnamelist):
         if i == 0:
-            job_id = submit_onejob(fname)
+            job_id = submit_onejob(fname,nodes=nodes)
         else:
-            job_id = submit_onejob(fname, dependency=True, dep_job_id=pre_job_id)
+            job_id = submit_onejob(fname, nodes=nodes, dependency=True, dep_job_id=pre_job_id)
 
         if job_id is None:
             break 
@@ -158,17 +159,23 @@ def submit_joblist(fnamelist):
 
 
 
-def submit_onejob(fname, dependency=False, dep_job_id=None):
-    if dependency:
-        cmd = ['sbatch', '-d', f'afterok:{dep_job_id}', fname]
+def submit_onejob(fname, nodes=None,dependency=False, dep_job_id=None):
+    if nodes and (('MODELING' in fname) or ('FIXDATA' in fname)):
+        if dependency:
+            cmd = ['sbatch', '--nodelist=' + nodes, '-d', f'afterok:{dep_job_id}', fname]
+        else:
+            cmd = ['sbatch', '--nodelist=' + nodes, fname]
     else:
-        cmd = ['sbatch', fname]
+        if dependency:
+            cmd = ['sbatch', '-d', f'afterok:{dep_job_id}', fname]
+        else:
+            cmd = ['sbatch', fname]
 
-    logger.info('Exectuing "%s"', cmd)
+    logger.info('Executing "%s"', cmd)
     job = subprocess.run(cmd, capture_output=True, text=True)
     if job.returncode == 0:
         job_id = job.stdout.strip().split()[-1]
-        logger.info('Job %s submiitted successfully with ID %s', fname, job_id)
+        logger.info('Job %s submitted successfully with ID %s', fname, job_id)
         return job_id
     
     else:
