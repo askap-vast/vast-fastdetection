@@ -75,7 +75,14 @@ def _main():
         copy_config(args, )
 
         vis, cat, img = query_casda(sbid)
-        if len(vis) != 36:
+        #Check all entries in vis that have the string leakage in the filename
+        vis_filtered = [v for v in vis if 'leakage' in v['filename']]
+        print([v['filename'] for v in vis_filtered])
+        if len(vis_filtered) > 0:
+            vis_final = vis_filtered
+        else:
+            vis_final = vis
+        if len(vis_final) != 36:
             logger.warning('Number of visibilities is not 36. Skip SB%s', sbid)
             logger.warning('You can download the visibility manually. ')
             continue
