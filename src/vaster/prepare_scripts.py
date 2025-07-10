@@ -75,7 +75,16 @@ def _main():
         copy_config(args, )
 
         vis, cat, img = query_casda(sbid)
-        if len(vis) != 36:
+        #Check all entries in vis that have the string leakage in the filename
+        leakage_mask = ['leakage' in fname for fname in vis['filename']]
+        vis_filtered = vis[leakage_mask]
+        print('Filenames with leakage:', vis_filtered['filename'])
+        if len(vis_filtered) > 0:
+            vis_final = vis_filtered
+        else:
+            vis_final = vis
+
+        if len(vis_final) != 36:
             logger.warning('Number of visibilities is not 36. Skip SB%s', sbid)
             logger.warning('You can download the visibility manually. ')
             continue
@@ -86,14 +95,14 @@ def _main():
             format_casa_modeling(args, config)
             format_casa_selfcal(args, config)
         format_casa_imgfast(args, config)
-        prepare_downloads(args, sbid, cat, img, vis)
+        prepare_downloads(args, sbid, cat, img, vis_final)
 
         if config['MACHINE'] == 'bash':
-            format_bash(args, config, sbid, vis, cat)
+            format_bash(args, config, sbid, vis_final, cat)
         elif config['MACHINE'] == 'ozstar':
-            format_ozstar(args, config, sbid, vis, cat)
+            format_ozstar(args, config, sbid, vis_final, cat)
         elif config['MACHINE'] == 'mortimer':
-            format_mortimer(args, config, sbid, vis, cat)
+            format_mortimer(args, config, sbid, vis_final, cat)
 
         logger.info('SB%s preparation finish.', sbid)
 
