@@ -126,12 +126,12 @@ CANDIDATES:
   CHUNK: 'all'          # number of image chunks for SELCAND, 'all' for using all images (no split chunk)
                         # recommend "40" for 10s fast survey and "all" for 10min slow survey 
   THRESHOLD_SIGMA:
-    CHISQUARE: 6        # recommend "8" for 10s fast survey and "6" for 10min slow survey 
-    PEAK: 6             # recommend "5" for 10s fast survey and "6" for 10min slow survey 
+    CHISQUARE: 6        # recommend "8" for 10s fast survey and "5" for 10min slow survey 
+    PEAK: 6             # recommend "6" for 10s fast survey and "5" for 10min slow survey 
     GAUSSIAN: 6
   LOG_THRESHOLD_SIGMA:
-    CHISQUARE: 6        # recommend "8" for 10s fast survey and "6" for 10min slow survey 
-    PEAK: 6             # recommend "5" for 10s fast survey and "6" for 10min slow survey 
+    CHISQUARE: 6        # recommend "8" for 10s fast survey and "5" for 10min slow survey 
+    PEAK: 6             # recommend "6" for 10s fast survey and "5" for 10min slow survey 
     GAUSSIAN: 6
 
   MIN_DISTANCE: 30      # pixel number of the minimal distance of two neighbours blobs

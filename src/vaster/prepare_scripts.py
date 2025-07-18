@@ -154,6 +154,7 @@ def query_casda(sbid):
         'ASKAP-'+str(sbid), 'visibility', 'catalogue.continuum.component', 'cont.restored.t0'))
 
     r = job.get_results()
+    logger.debug(r)
 
     vis = r[r['dataproduct_type'] == 'visibility']
     cat = r[r['dataproduct_subtype'] == 'catalogue.continuum.component']
@@ -364,25 +365,30 @@ def get_url(access_url, username, password):
 
     s = session.get(access_url)
     data_dict = xmltodict.parse(s.content)
+    logger.debug(data_dict)
 
     return data_dict['VOTABLE']['RESOURCE'][0]['TABLE']['DATA']['TABLEDATA']['TR'][0]['TD'][1]
 
 
 def write_downloadtxt(args, fw, cat):
     for i, access_url in enumerate(cat['access_url']):
-        url = get_url(access_url, args.username, args.password)
         filename = cat[i]['filename']
-        path_file = os.path.join(args.paths['path_data'], filename)
-        logger.debug('write download txt %s', path_file)
+        try:
+            url = get_url(access_url, args.username, args.password)
+            path_file = os.path.join(args.paths['path_data'], filename)
+            logger.debug('write download txt %s', path_file)
 
-        text = f'wget -O {path_file} {url} -t 0 -c'
+            text = f'wget -O {path_file} {url} -t 0 -c'
 
-        fw.write("echo " + '\n')
-        fw.write(f"echo progress {i+1}/{len(cat)}" + '\n')
-        fw.write("echo " + text + '\n')
-        fw.write(text + '\n')
-        fw.write("sleep 1s" + '\n')
-        fw.write('\n')
+            fw.write("echo " + '\n')
+            fw.write(f"echo progress {i+1}/{len(cat)}" + '\n')
+            fw.write("echo " + text + '\n')
+            fw.write(text + '\n')
+            fw.write("sleep 1s" + '\n')
+            fw.write('\n')
+        except:
+            logger.warning("Cannot create download links for %s %s", filename, access_url)
+            return 
 
 
 def prepare_steps_ozstar(args, idx, config, sbid, oname, step='FIXDATA'):
