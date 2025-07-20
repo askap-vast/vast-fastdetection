@@ -90,20 +90,23 @@ def gather_sbids(args):
     Gather SBIDs in base directory
     '''
     sbids = [d for d in os.listdir(args.basedir) if os.path.isdir(os.path.join(args.basedir, d)) and d.isdigit()]
-    logger.info(f"Found SBIDs: {sbids}")
+    sbids.sort()
+    logger.info(f"Found {len(sbids)} SBIDs: {sbids}")
     return sbids
 
 
 def clean_sbids(args, sbids):
     if os.path.exists(args.saved_sbids_txt):
         with open(args.saved_sbids_txt, "r") as f:
-            uploaded_sbids = set(f.read().splitlines())
+            uploaded_sbids = list(set(f.read().splitlines()))
+            uploaded_sbids.sort()
     else:
-        uploaded_sbids = set()
+        uploaded_sbids = list(set())
     cleaned_sbids = [sbid for sbid in sbids if sbid not in args.skip_sbids and sbid not in uploaded_sbids]
+    cleaned_sbids.sort()
 
-    logger.info(f"Skiping defined SBIDs: {args.skip_sbids}")
-    logger.info(f"Skiping uploaded SBIDs: {uploaded_sbids}")
+    logger.info(f"Skiping {len(args.skip_sbids)} defined SBIDs: {args.skip_sbids}")
+    logger.info(f"Skiping {len(uploaded_sbids)} uploaded SBIDs: {uploaded_sbids}")
     logger.info(f"Cleaned SBIDs: {cleaned_sbids}")
     return cleaned_sbids
 
@@ -168,7 +171,7 @@ def upload_files(args, sbid):
         "python", "/home/yuwang/scripts/vaster_webapp/ywangvaster_webapp/upload_cand.py", 
         "--base_url", "http://vaster.duckdns.org:80", 
         "--token", args.token, 
-        "--project_id", "realtime", 
+        "--project_id", f'SB{sbid}', 
         "--observation_id", f'SB{sbid}', 
         "--data_directory", candidates_dir
     ]
