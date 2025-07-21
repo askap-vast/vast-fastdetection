@@ -22,6 +22,7 @@ def _main():
         'Example Usage: python ~/scripts/vast_fastdetection/tools/run_dyspec_sbid.py 62648' )
     parser.add_argument('sbid', type=str, help='SBID, in format of pure number, e.g. 62648')
     parser.add_argument('--path', type=str, default='.', help='path to store SBID outputs')
+    parser.add_argument('--all', action='store_true', help='run all candidates in this SBID')
     parser.add_argument('--dry-run', action='store_true', help='dry run')
     args = parser.parse_args()
 
@@ -35,7 +36,11 @@ def _main():
         keyname = check_keyname(tb)
         logger.info('SB%s crossmatch source keyname: %s', args.sbid, keyname)
 
-        real = select_real(tb, key=keyname)
+        if args.all:
+            real = run_all_cands(tb, key=keyname, input_key='name')
+        else:
+            real = select_real(tb, key=keyname)
+            
         cand = remove_duplication(real, key=keyname)
         run_dyspec_command(cand, args)
 
@@ -63,6 +68,25 @@ def read_table(filename):
     tb = pd.read_csv(filename)
     logger.info('Table length %s', len(tb))
     logger.debug(tb)
+
+    return tb
+
+
+# Function to convert full name to truncated version
+def truncate_name(full_name):
+    if not isinstance(full_name, str) or not full_name.startswith('J'):
+        return None
+    ra = full_name[1:5]   # e.g., '1719'
+    dec = full_name[10:14]  # e.g., '-4615'
+    return f'J{ra}{dec}'
+
+
+def run_all_cands(tb, key='PSR_name', input_key='name'):
+    '''
+    If run dyspec processing for all candidates, adding name to keyname column
+    e.g., J171941.99-461528.00 to J1719-4615 in 'PSR_name' column
+    '''
+    tb.loc[tb[key].isna(), key] = tb.loc[tb[key].isna(), input_key].apply(truncate_name)
 
     return tb
 
