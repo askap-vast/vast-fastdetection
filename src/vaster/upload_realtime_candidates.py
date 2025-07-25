@@ -178,7 +178,7 @@ def upload_files(args, sbid):
         return
     
     cmd = [
-        "python", "/home/yuwang/scripts/vaster_webapp/ywangvaster_webapp/upload_cand.py", 
+        "python", "/fred/oz330/software/vaster_webapp/ywangvaster_webapp/upload_cand.py", 
         "--base_url", "http://vaster.duckdns.org:80", 
         "--token", args.token, 
         "--project_id", f'SB{sbid}', 
