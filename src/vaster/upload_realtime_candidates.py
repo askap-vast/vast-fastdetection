@@ -3,11 +3,11 @@
 Copyright (C) Swinburne 2024
 """
 import os
-import sys
 import time
 import argparse
 import glob
 import subprocess
+import requests
 
 import logging
 logger = logging.getLogger(__name__)
@@ -30,12 +30,14 @@ def _main():
     parser.add_argument('--rename-pattern', type=str, default='output_', )
     parser.add_argument('--mvfiles', action='store_true', help='move files')
     parser.add_argument('--upload', action='store_true', help='Upload cadidates files to web app')
+    parser.add_argument('--notify-slack', action='store_true', help='Send a slack message when finish uploading')
     parser.add_argument('--clean', action='store_true', help='clean folder')
     parser.add_argument('--mvfolder', action='store_true', help='move folder')
     parser.add_argument('--skip-sbids', type=str, nargs='+', default=[], help='Skip these sbids, example 54028')
     parser.add_argument('--saved-sbids-txt', type=str, default='uploaded_sbids.txt', help='Save uploaded SBIDs')
     parser.add_argument("--sleep", type=int, default=600, help="Sleep time in seconds between checks")
     parser.add_argument("--token", type=str, default='', help='token to upload candidate files')
+    parser.add_argument("--webhook", type=str, default='', help='WEBHOOK URL to send message in slack')
     parser.add_argument('--dry-run', action='store_true', help='Perform a dry run')
     parser.add_argument('-v', '--verbose', action='store_true',help='make it verbose')
 
@@ -57,6 +59,10 @@ def _main():
         clean_sbids_list = clean_sbids(args, sbids)
         
         for sbid in clean_sbids_list:
+            args.sbid_dir = os.path.join(args.basedir, sbid)
+            args.candidates_dir = os.path.join(args.sbid_dir, "candidates")
+            args.sbid_dir_new = os.path.join(args.basedir, f"SB{sbid}")
+
             if not has_all_tarballs(args, sbid):
                 continue
 
@@ -71,6 +77,9 @@ def _main():
 
             if args.upload:
                 upload_files(args, sbid)
+
+            if args.notify_slack:
+                notify_slack(args, sbid)
 
             if args.clean:
                 remove_output_folders(args, sbid)
@@ -112,7 +121,7 @@ def clean_sbids(args, sbids):
 
 
 def has_all_tarballs(args, sbid, expected_count=36):
-    sbid_dir = os.path.join(args.basedir, sbid)
+    sbid_dir = args.sbid_dir
     tar_files = [f for f in os.listdir(sbid_dir) if f.endswith(".tar.gz")]
     if len(tar_files) != expected_count:
         logger.warning("********************************")
@@ -125,7 +134,7 @@ def has_all_tarballs(args, sbid, expected_count=36):
 
 
 def untar_files(args, sbid):
-    sbid_dir = os.path.join(args.basedir, sbid)
+    sbid_dir = args.sbid_dir
     for file in os.listdir(sbid_dir):
         if file.endswith(".tar.gz"):
             file_path = os.path.join(sbid_dir, file)
@@ -136,7 +145,7 @@ def untar_files(args, sbid):
 
 
 def rename_files(args, sbid):
-    sbid_dir = os.path.join(args.basedir, sbid)
+    sbid_dir = args.sbid_dir
     for root, _, files in os.walk(sbid_dir):
         for file in files:
             if args.rename_pattern in file:
@@ -148,9 +157,10 @@ def rename_files(args, sbid):
 
 
 def move_files(args, sbid):
-    sbid_dir = os.path.join(args.basedir, sbid)
-    candidates_dir = os.path.join(sbid_dir, "candidates")
+    sbid_dir = args.sbid_dir
+    candidates_dir = args.candidates_dir
     os.makedirs(candidates_dir, exist_ok=True)
+
     for subdir in os.listdir(sbid_dir):
         subdir_path = os.path.join(sbid_dir, subdir)
         if os.path.isdir(subdir_path) and subdir != "candidates":
@@ -163,7 +173,7 @@ def move_files(args, sbid):
 
 
 def upload_files(args, sbid):
-    candidates_dir = os.path.join(args.basedir, sbid, "candidates")
+    candidates_dir = args.candidates_dir
     if not os.path.exists(candidates_dir):
         return
     
@@ -184,7 +194,7 @@ def upload_files(args, sbid):
 
 
 def remove_output_folders(args, sbid):
-    sbid_dir = os.path.join(args.basedir, sbid)
+    sbid_dir = args.sbid_dir
     for item in os.listdir(sbid_dir):
         item_path = os.path.join(sbid_dir, item)
         if os.path.isdir(item_path) and item.startswith("output"):
@@ -195,13 +205,29 @@ def remove_output_folders(args, sbid):
 
 
 def move_folder(args, sbid):
-    sbid_dir = os.path.join(args.basedir, sbid)
-    sbid_dir_new = os.path.join(args.basedir, f"SB{sbid}")
+    sbid_dir = args.sbid_dir
+    sbid_dir_new = args.sbid_dir_new
     cmd = ["mv",  sbid_dir, sbid_dir_new]
     logger.info(f"Executing: {' '.join(cmd)}")
     if not args.dry_run:
         subprocess.run(cmd, check=True)
 
+
+def notify_slack(args, sbid):
+    candidates_dir = args.candidates_dir
+    nbeam = len(glob.glob(os.path.join(candidates_dir, "*peak.fits")))
+    ncand = len(glob.glob(os.path.join(candidates_dir, "*lightcurve*png")))
+    message = f'----------------\n*** SB{sbid} FINISHED:    beams={nbeam}    cands={ncand} ***\n----------------'
+
+    payload = {"text": message}
+    if not args.dry_run:
+        response = requests.post(args.webhook, json=payload)
+        if response.status_code != 200:
+            logger.warning("Error posting to Slack:", response.status_code, response.text)
+        else:
+            logger.info("Message sent to Slack: %s", message)
+    else:
+        logger.info("Dry run: skip posting message %s", message)
 
 
 def make_verbose(args):
