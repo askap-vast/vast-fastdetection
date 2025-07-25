@@ -42,6 +42,7 @@ if __name__ == '__main__':
                 'submit_slurm_jobs=vaster.submit_slurm_jobs:_main', 
                 'summarise_candidates=vaster.summarise_candidates:_main', 
                 'check_measurements=vaster.check_measurements:_main', 
+                'upload_realtime_candidates=vaster.upload_realtime_candidates:_main', 
             ],
         },
         classifiers = [
