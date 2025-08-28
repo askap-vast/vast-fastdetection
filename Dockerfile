@@ -13,7 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     POETRY_CACHE_DIR='/var/cache/pypoetry' \
     PATH="/root/.local/bin:$PATH"
 
-# --- Python 3.10 (deadsnakes) ---
+# --- Python 3.10 from deadsnakes ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
       software-properties-common ca-certificates gnupg \
  && add-apt-repository -y ppa:deadsnakes/ppa \
@@ -21,44 +21,44 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3.10 python3.10-dev python3.10-venv python3.10-distutils \
  && rm -rf /var/lib/apt/lists/*
 
-# Base dev tools (similar to your original)
+# --- System build deps ---
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      bash build-essential curl gettext git wget \
+      bash build-essential curl gettext git wget gfortran pkg-config \
  && rm -rf /var/lib/apt/lists/*
 
-# Pip/tooling for py3.10 (use known-good versions)
+# --- Pip tooling for Python 3.10 ---
 RUN python3.10 -m ensurepip --upgrade \
  && python3.10 -m pip install --upgrade \
       "pip==23.2.1" \
       "wheel<0.41" \
-      "setuptools<75" \
+      "setuptools==58.5.3" \
       "packaging>=24.1"
 
-# Install Poetry for py3.10 (no curl-installer)
+# --- Poetry under Python 3.10 ---
 RUN python3.10 -m pip install "poetry==${POETRY_VERSION}" \
  && poetry --version
 
 WORKDIR /code/
 
-# Copy dependency files first (cache-friendly)
+# --- Copy dependency files first ---
 COPY pyproject.toml poetry.lock /code/
 
-# IMPORTANT: avoid pip build isolation so legacy packages (pyregion) use our pinned setuptools
+# --- Install project deps inside a venv ---
 ENV PIP_NO_BUILD_ISOLATION=1
-
-# Use a Poetry-managed venv (Python 3.10), pre-pin build tools *inside* that venv, then install deps
 RUN poetry config virtualenvs.create true \
  && poetry env use /usr/bin/python3.10 \
  && poetry run python -V \
- # old setuptools API needed by pyregion 2.1.1 (and some astropy-helpers builds)
  && poetry run python -m pip install -U "pip==23.2.1" "wheel<0.41" "setuptools==58.5.3" \
- # (optional) if pyregion needs cython on your stack, uncomment the next line
- # && poetry run python -m pip install "cython<3" \
- && poetry install --no-interaction --no-ansi
+ && poetry install --no-interaction --no-ansi \
+ # expose venv globally so "python" works
+ && VENV_DIR="$(poetry env info --path)" \
+ && ln -s "$VENV_DIR" /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Bring in the rest of the source
+# --- Copy the rest of the source ---
 COPY . /code/
 
-# Default command
-CMD ["poetry", "run", "python", "/code/process_beam.py", "00"]
+# --- Default command ---
+CMD ["python", "/code/process_beam.py", "00"]
 
