@@ -9,6 +9,12 @@ import glob
 import subprocess
 import requests
 
+import random
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+from astropy.io import fits
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -38,6 +44,11 @@ def _main():
     parser.add_argument("--sleep", type=int, default=600, help="Sleep time in seconds between checks")
     parser.add_argument("--token", type=str, default='', help='token to upload candidate files')
     parser.add_argument("--webhook", type=str, default='', help='WEBHOOK URL to send message in slack')
+    parser.add_argument('--force', action='store_true', help='force to process SBIDs even it doesnt have 36 beams')
+    parser.add_argument('--assign', action='store_true', help='automatic assign people to classify candidates')
+    parser.add_argument('--metadata', action='store_true', help='read fits metadata')
+    parser.add_argument('--update-sheet', action='store_true', help='automatic update info to google spreadsheet')
+    parser.add_argument('--skip-projects', type=str, nargs='+', default=[], help='Skip project id example AS116; only works with --metadata')
     parser.add_argument('--dry-run', action='store_true', help='Perform a dry run')
     parser.add_argument('-v', '--verbose', action='store_true',help='make it verbose')
 
@@ -57,13 +68,25 @@ def _main():
         logger.info("================ %s ==================", time.strftime("%Y-%m-%d %H:%M:%S"))
         sbids = gather_sbids(args)
         clean_sbids_list = clean_sbids(args, sbids)
+
+        sheet_id = '1xd1h4k9GtlAEH4TkUEDBQ6uYGvGNaDhEeB4Xf8WAiIw'
+        creds_path='/fred/oz330/realtime/vaster-471803-f266a065caa2.json'
+
+        if args.assign:
+            uids, last_sbids, unames = get_available_slack_user_ids(sheet_id, creds_path, sub_sheet_idx=0)
+            logger.info("Available Users: %s", unames)
+            logger.info("Available User IDs: %s", uids)
+            logger.info("Last SBIDs: %s", last_sbids)
+        else:
+            uids = None
+
         
         for sbid in clean_sbids_list:
             args.sbid_dir = os.path.join(args.basedir, sbid)
             args.candidates_dir = os.path.join(args.sbid_dir, "candidates")
             args.sbid_dir_new = os.path.join(args.basedir, f"SB{sbid}")
 
-            if not has_all_tarballs(args, sbid):
+            if not has_all_tarballs(args, sbid) and not args.force:
                 continue
 
             if args.untar:
@@ -75,17 +98,42 @@ def _main():
             if args.mvfiles:
                 move_files(args, sbid)
 
+            if args.metadata:
+                fits_path = glob.glob(os.path.join(args.candidates_dir, f"SB{sbid}_beam*_std.fits"))[0]
+                logger.info('Read metadata from fits %s', fits_path)
+                metadata = read_fits_metadata(fits_path)
+                if metadata['project_id'] in args.skip_projects:
+                    logger.info("Skip sbid %s in project %s", sbid, metadata['project_id'])
+                    continue
+
             if args.upload:
                 upload_files(args, sbid)
 
+            if uids is not None:
+                uid = select_next_user(uids, last_sbids)
+                uname = get_uname_from_uid(uid, uids, unames)
+                logger.info('Assign %s to user %s with ID %s', sbid, uname, uid)
+            else:
+                uid = None
+                uname = None
+
             if args.notify_slack:
-                notify_slack(args, sbid)
+                notify_slack(args, sbid, userid=uid)
+
+            if uid is not None and args.update_sheet:
+                update_user_assignment(sheet_id, creds_path, uid, sbid, sub_sheet_idx=0)
+
+            if args.update_sheet:
+                write_fits_metadata_to_google_sheet(args, sbid, metadata, sheet_id, creds_path, uname, sub_sheet_idx=1)
 
             if args.clean:
                 remove_output_folders(args, sbid)
 
             if args.mvfolder:
                 move_folder(args, sbid)
+
+            logger.info(f"Sleeping for {args.sleep} seconds...")
+            time.sleep(args.sleep)
                     
         logger.info(f"Sleeping for {args.sleep} seconds...")
         time.sleep(args.sleep)
@@ -213,11 +261,21 @@ def move_folder(args, sbid):
         subprocess.run(cmd, check=True)
 
 
-def notify_slack(args, sbid):
+def notify_slack(args, sbid, userid=None):
     candidates_dir = args.candidates_dir
     nbeam = len(glob.glob(os.path.join(candidates_dir, "*peak.fits")))
     ncand = len(glob.glob(os.path.join(candidates_dir, "*lightcurve*png")))
-    message = f'----------------\n*** SB{sbid} FINISHED:    beams={nbeam}    cands={ncand} ***\n----------------'
+
+    if userid is not None:
+        mention = f"<@{userid}>"  # ← put actual Slack user ID here
+    else:
+        mention = ""
+
+    message = (
+        f"----------------\n"
+        f"*** SB{sbid} FINISHED:    beams={nbeam}    cands={ncand} ***    {mention} \n"
+        f"----------------"
+    )
 
     payload = {"text": message}
     if not args.dry_run:
@@ -228,6 +286,184 @@ def notify_slack(args, sbid):
             logger.info("Message sent to Slack: %s", message)
     else:
         logger.info("Dry run: skip posting message %s", message)
+
+
+def get_available_slack_user_ids(sheet_id, creds_path, sub_sheet_idx=0):
+    """
+    Fetch available Slack User IDs and their Last SBID from a Google Sheet.
+
+    Parameters
+    ----------
+    sheet_id : str
+        The Google Sheet ID.
+    creds_path : str
+        Path to the service account JSON credentials.
+
+    Returns
+    -------
+    uids : List[str]
+        Slack User IDs with Availability == 'Y'.
+    last_sbids : List[str]
+        Last SBID values (can be empty or numeric) for each user.
+    """
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
+    client = gspread.authorize(creds)
+
+    sheet = client.open_by_key(sheet_id).get_worksheet(sub_sheet_idx)
+    data = sheet.get_all_records()
+
+    uids = []
+    last_sbids = []
+    unames = []
+
+    for row in data:
+        if str(row.get("Availability", "")).strip().upper() == "Y":
+            uids.append(str(row.get("Slack User ID")).strip())
+            last_sbids.append(str(row.get("Last SBID", "")).strip())
+            unames.append(str(row.get("Name")).strip())
+
+    return uids, last_sbids, unames
+
+
+def get_uname_from_uid(uid, uids, unames):
+    try:
+        index = uids.index(uid)
+        return unames[index]
+    except ValueError:
+        return uid  # fallback if uid not found
+
+
+def select_next_user(uids, last_sbids):
+    """
+    Select a user for assignment:
+    - If any user has empty Last SBID, randomly choose one.
+    - Otherwise, pick user with smallest Last SBID (numerically).
+
+    Parameters
+    ----------
+    uids : List[str]
+    last_sbids : List[str]
+
+    Returns
+    -------
+    str
+        Selected Slack User ID.
+    """
+    candidates_empty = [uid for uid, sbid in zip(uids, last_sbids) if not sbid]
+    logger.info("Users with empty last sbids %s", candidates_empty)
+    if candidates_empty:
+        return random.choice(candidates_empty)
+
+    # Convert SBIDs to integers and find the user with the smallest one
+    valid_sbid_users = [(uid, int(sbid)) for uid, sbid in zip(uids, last_sbids) if sbid.isdigit()]
+    if not valid_sbid_users:
+        return random.choice(uids)  # fallback in case of bad data
+
+    return min(valid_sbid_users, key=lambda x: x[1])[0]
+
+
+def update_user_assignment(sheet_id, creds_path, user_id, sbid, sub_sheet_idx=0):
+    """
+    Update the sheet for a given user: increment Assigned, append SBID to SBIDs, and set Last SBID.
+
+    Parameters
+    ----------
+    sheet_id : str
+        The Google Sheet ID.
+    creds_path : str
+        Path to service account credentials.
+    user_id : str
+        Slack User ID to update.
+    sbid : str or int
+        SBID to assign.
+    """
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
+    client = gspread.authorize(creds)
+
+    sheet = client.open_by_key(sheet_id).get_worksheet(sub_sheet_idx)
+    data = sheet.get_all_records()
+
+    header = sheet.row_values(1)  # column names
+    col_idx = lambda name: header.index(name) + 1  # 1-based indexing for gspread
+
+    for idx, row in enumerate(data):
+        if str(row.get("Slack User ID", "")).strip() == user_id:
+            row_num = idx + 2  # +2 for header row and 0-based index
+
+            # Update Assigned
+            current_assigned = int(row.get("Assigned", 0))
+            sheet.update_cell(row_num, col_idx("Assigned"), current_assigned + 1)
+
+            # Update SBIDs
+            existing_sbids = str(row.get("SBIDs", "")).strip()
+            new_sbids = f"{existing_sbids} {sbid}".strip()
+            sheet.update_cell(row_num, col_idx("SBIDs"), new_sbids)
+
+            # Update Last SBID
+            sheet.update_cell(row_num, col_idx("Last SBID"), str(sbid))
+
+            break
+
+    logger.info('Updating spreadsheet %s finished. ', sub_sheet_idx)
+
+
+def read_fits_metadata(fits_path):
+    # --- Read FITS Header ---
+    with fits.open(fits_path) as hdul:
+        hdr = hdul[0].header
+    
+    metadata = {
+        'field_ra': hdr.get('FIELDRA'), 
+        'field_dec': hdr.get('FIELDDEC'), 
+        'field_name': hdr.get('FIELD'), 
+        'project_id': hdr.get("PROJECT"), 
+        'obs_time': hdr.get("DATE-OBS"), 
+        'cent_freq': hdr.get("CRVAL3") / 1e6,     # convert from Hz to MHz
+        'bmaj': hdr.get("BMAJ") * 3600,           # convert from degree to arcsec 
+        'bmin': hdr.get('BMIN') * 3600,           # convert from degree to arcsec 
+        'bpa': hdr.get("BPA"),
+    }
+
+    logger.info('------ Metadata -------')
+    logger.info(metadata)
+
+    return metadata
+
+
+def write_fits_metadata_to_google_sheet(args, sbid, meta_dict, sheet_id, creds_path, uname, sub_sheet_idx=1):
+    scope = ['https://spreadsheets.google.com/feeds',
+             'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
+    client = gspread.authorize(creds)
+
+    sheet = client.open_by_key(sheet_id).get_worksheet(sub_sheet_idx)
+
+    candidates_dir = args.candidates_dir
+    ncand = len(glob.glob(os.path.join(candidates_dir, "*lightcurve*png")))
+
+    # Format values to write
+    row = [
+        sbid, 
+        meta_dict.get("project_id", ""), 
+        "'" + meta_dict.get("field_name", ""),
+        "'" + meta_dict.get("field_ra", ""),
+        "'" + meta_dict.get("field_dec", ""),
+        meta_dict.get("obs_time", ""),
+        meta_dict.get("cent_freq", ""),              # MHz
+        meta_dict.get("bmaj", ""),                   # arcsec
+        meta_dict.get("bmin", ""),
+        meta_dict.get("bpa", ""),
+        ncand, 
+        uname, 
+    ]
+
+    # Append row
+    sheet.append_row(row, value_input_option='USER_ENTERED')
+    logger.info('Updating spreadsheet %s finished. ', sub_sheet_idx)
 
 
 def make_verbose(args):
@@ -262,7 +498,19 @@ def measure_running_time(start_time, end_time, nround=2):
         logger.info('Running time %s days', round(total_time/60/60/24, nround))
 
 
+if __name__ == "__main__":
+    max_restarts = 10
+    restart_count = 0
 
+    while restart_count < max_restarts:
+        try:
+            _main()
+            break  # if main() exits cleanly, break the loop
+        except Exception as e:
+            restart_count += 1
+            logger.error(f"Program crashed with error: {e}")
+            logger.info(f"Restarting in 10 seconds... (attempt {restart_count}/{max_restarts})")
+            time.sleep(10)
 
-if __name__ == '__main__':
-    _main()
+    if restart_count >= max_restarts:
+        logger.error("Maximum number of restarts reached. Exiting.")
