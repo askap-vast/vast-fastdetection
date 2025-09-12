@@ -41,6 +41,7 @@ def _main():
     parser.add_argument('--mvfolder', action='store_true', help='move folder')
     parser.add_argument('--skip-sbids', type=str, nargs='+', default=[], help='Skip these sbids, example 54028')
     parser.add_argument('--saved-sbids-txt', type=str, default='uploaded_sbids.txt', help='Save uploaded SBIDs')
+    parser.add_argument('--skipped-sbids-txt', type=str, default='skipped_sbids.txt', help='Skipped SBIDs')
     parser.add_argument("--sleep", type=int, default=600, help="Sleep time in seconds between checks")
     parser.add_argument("--token", type=str, default='', help='token to upload candidate files')
     parser.add_argument("--webhook", type=str, default='', help='WEBHOOK URL to send message in slack')
@@ -56,7 +57,6 @@ def _main():
 
     make_verbose(args)
     logger.info(args)
-
 
     # ===============
     # main program 
@@ -87,6 +87,8 @@ def _main():
                 uids = None
 
             if not has_all_tarballs(args, sbid) and not args.force:
+                logger.info(f"{sbid}: Sleeping for 60 seconds...")
+                time.sleep(60)
                 continue
 
             if args.untar:
@@ -103,7 +105,14 @@ def _main():
                 logger.info('%s: Read metadata from fits %s', sbid, fits_path)
                 metadata = read_fits_metadata(fits_path)
                 if metadata['project_id'] in args.skip_projects:
-                    logger.warning("%s: Skip sbid %s in project %s", sbid, sbid, metadata['project_id'])
+                    logger.warning("********************************")
+                    logger.warning("********************************")
+                    logger.warning("******************************** %s: Skip sbid %s in project %s", sbid, sbid, metadata['project_id'])
+                    logger.warning("********************************")
+                    logger.warning("********************************")
+                    with open(args.skipped_sbids_txt, "a") as f:
+                        logger.info(f"Write {sbid} into {args.skipped_sbids_txt}")
+                        f.write(f"{sbid}\n")
                     continue
 
             if args.upload:
@@ -159,11 +168,20 @@ def clean_sbids(args, sbids):
             uploaded_sbids.sort()
     else:
         uploaded_sbids = list(set())
-    cleaned_sbids = [sbid for sbid in sbids if sbid not in args.skip_sbids and sbid not in uploaded_sbids]
+
+    if os.path.exists(args.skipped_sbids_txt):
+        with open(args.skipped_sbids_txt, "r") as f:
+            skipped_sbids = list(set(f.read().splitlines()))
+            skipped_sbids.sort()
+    else:
+        skipped_sbids = list(set())
+
+    cleaned_sbids = [sbid for sbid in sbids if sbid not in args.skip_sbids and sbid not in uploaded_sbids and sbid not in skipped_sbids]
     cleaned_sbids.sort()
 
-    logger.info(f"Skiping {len(args.skip_sbids)} defined SBIDs: {args.skip_sbids}")
-    logger.info(f"Skiping {len(uploaded_sbids)} uploaded SBIDs: {uploaded_sbids}")
+    logger.info(f"Skiping {len(args.skip_sbids)} args defined SBIDs: {args.skip_sbids}")
+    logger.info(f"Skiping {len(skipped_sbids)} txt defined SBIDs: {skipped_sbids}")
+    logger.info(f"Skiping {len(uploaded_sbids)} txt uploaded SBIDs: {uploaded_sbids}")
     logger.info(f"Cleaned SBIDs: {cleaned_sbids}")
     return cleaned_sbids
 
