@@ -72,19 +72,19 @@ def _main():
         sheet_id = '1xd1h4k9GtlAEH4TkUEDBQ6uYGvGNaDhEeB4Xf8WAiIw'
         creds_path='/fred/oz330/realtime/vaster-471803-f266a065caa2.json'
 
-        if args.assign:
-            uids, last_sbids, unames = get_available_slack_user_ids(sheet_id, creds_path, sub_sheet_idx=0)
-            logger.info("Available Users: %s", unames)
-            logger.info("Available User IDs: %s", uids)
-            logger.info("Last SBIDs: %s", last_sbids)
-        else:
-            uids = None
-
         
         for sbid in clean_sbids_list:
             args.sbid_dir = os.path.join(args.basedir, sbid)
             args.candidates_dir = os.path.join(args.sbid_dir, "candidates")
             args.sbid_dir_new = os.path.join(args.basedir, f"SB{sbid}")
+
+            if args.assign:
+                uids, last_sbids, unames = get_available_slack_user_ids(sheet_id, creds_path, sub_sheet_idx=0)
+                logger.info("%s: Available Users: %s", sbid, unames)
+                logger.info("%s: Available User IDs: %s", sbid, uids)
+                logger.info("%s: Last SBIDs: %s", sbid, last_sbids)
+            else:
+                uids = None
 
             if not has_all_tarballs(args, sbid) and not args.force:
                 continue
@@ -100,10 +100,10 @@ def _main():
 
             if args.metadata:
                 fits_path = glob.glob(os.path.join(args.candidates_dir, f"SB{sbid}_beam*_std.fits"))[0]
-                logger.info('Read metadata from fits %s', fits_path)
+                logger.info('%s: Read metadata from fits %s', sbid, fits_path)
                 metadata = read_fits_metadata(fits_path)
                 if metadata['project_id'] in args.skip_projects:
-                    logger.info("Skip sbid %s in project %s", sbid, metadata['project_id'])
+                    logger.warning("%s: Skip sbid %s in project %s", sbid, sbid, metadata['project_id'])
                     continue
 
             if args.upload:
@@ -112,7 +112,7 @@ def _main():
             if uids is not None:
                 uid = select_next_user(uids, last_sbids)
                 uname = get_uname_from_uid(uid, uids, unames)
-                logger.info('Assign %s to user %s with ID %s', sbid, uname, uid)
+                logger.info('%s: Assign %s to user %s with ID %s', sbid, sbid, uname, uid)
             else:
                 uid = None
                 uname = None
@@ -132,10 +132,10 @@ def _main():
             if args.mvfolder:
                 move_folder(args, sbid)
 
-            logger.info(f"Sleeping for {args.sleep} seconds...")
+            logger.info(f"{sbid}: Sleeping for {args.sleep} seconds...")
             time.sleep(args.sleep)
                     
-        logger.info(f"Sleeping for {args.sleep} seconds...")
+        logger.info(f"{sbid}: Sleeping for {args.sleep} seconds...")
         time.sleep(args.sleep)
 
     end_time = time.time()
