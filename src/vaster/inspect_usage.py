@@ -33,12 +33,17 @@ def _main():
     parser.add_argument('--dir', type=str, default='.', help='where those SBIDs folders are stored')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='make it verbose')
+    parser.add_argument('--full', action='store_true',
+                        help='show full usage details')
     args = parser.parse_args()
 
     make_verbose(args)
     logger.info(args)
 
-    colnames = ['MaxRSS', 'MaxVMSize']
+    memcols = ['MaxRSS', 'MaxVMSize']
+    statecol = 'State'
+    stateok = ['COMPLETED', 'RUNNING']
+
     beamlist = get_beamlist(args, num=36)
 
     if args.fname is None:
@@ -54,18 +59,22 @@ def _main():
     else:
         fname_list = args.fname
 
-    # pd.options.display.max_columns = None
+
     for fname in fname_list:
         try:
             tb = read_tb(fname)
-            tb = convert_mem_unit(tb, colnames)
-            tb = clean_tb(tb)
-            logger.info("=======")
-            logger.info(fname)
-            print(tb)
         except:
             logger.info("=======")
             logger.error('** Cannot read %s **', fname)
+            continue 
+
+        tb = convert_mem_unit(tb, memcols)
+        tb = clean_tb(tb)
+        state = check_state_ok(tb, statecol, stateok)
+        if args.full or not state:
+            logger.info("=======")
+            logger.info(fname)
+            print(tb)        
 
 
 def make_verbose(args):
@@ -108,6 +117,17 @@ def clean_tb(tb, skip_jobs=['batch', 'extern']):
     # Filter the DataFrame
     df_filtered = tb[~tb["JobID"].str.contains(pattern, na=False)]
     return df_filtered
+
+
+def check_state_ok(tb, colname, stateok):
+    for state in tb[colname]:
+        if state in stateok:
+            logger.debug('state ok: %s', state)
+        else:
+            logger.debug('state not ok: %s', state)
+            return False
+
+    return True
 
 
 def convert_mem_unit(tb, colnames):
