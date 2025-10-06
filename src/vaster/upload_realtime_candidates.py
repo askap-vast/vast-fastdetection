@@ -8,6 +8,7 @@ import argparse
 import glob
 import subprocess
 import requests
+import pandas as pd
 
 import random
 import gspread
@@ -37,7 +38,8 @@ def _main():
     parser.add_argument('--mvfiles', action='store_true', help='move files')
     parser.add_argument('--upload', action='store_true', help='Upload cadidates files to web app')
     parser.add_argument('--notify-slack', action='store_true', help='Send a slack message when finish uploading')
-    parser.add_argument('--clean', action='store_true', help='clean folder')
+    parser.add_argument('--clean', action='store_true', help='clean output tmp folder')
+    parser.add_argument('--deep-clean', action='store_true', help='clean candidates folder, start with a fresh run')
     parser.add_argument('--mvfolder', action='store_true', help='move folder')
     parser.add_argument('--skip-sbids', type=str, nargs='+', default=[], help='Skip these sbids, example 54028')
     parser.add_argument('--saved-sbids-txt', type=str, default='uploaded_sbids.txt', help='Save uploaded SBIDs')
@@ -47,6 +49,7 @@ def _main():
     parser.add_argument("--webhook", type=str, default='', help='WEBHOOK URL to send message in slack')
     parser.add_argument('--force', action='store_true', help='force to process SBIDs even it doesnt have 36 beams')
     parser.add_argument('--assign', action='store_true', help='automatic assign people to classify candidates')
+    parser.add_argument('--select', action='store_true', help='select promissing candidates with defined filtering metrics')
     parser.add_argument('--metadata', action='store_true', help='read fits metadata')
     parser.add_argument('--update-sheet', action='store_true', help='automatic update info to google spreadsheet')
     parser.add_argument('--skip-projects', type=str, nargs='+', default=[], help='Skip project id example AS116; only works with --metadata')
@@ -57,6 +60,18 @@ def _main():
 
     make_verbose(args)
     logger.info(args)
+
+    filtering = (
+        'md_deep > 0.1'                # modulation index > 0.1
+        ' & '
+        '('
+            'deep_sep_arcsec < 2'      # with a crossmatch (remove sidelobes)
+            ' | '
+            'deep_sep_arcsec > 20'     # or isolated (no crossmatch)
+            ' | '
+            'deep_peak_flux < 0.002'   # or a faint source < 2mJy nearby 
+        ')'
+    )
 
     # ===============
     # main program 
@@ -76,7 +91,11 @@ def _main():
         for sbid in clean_sbids_list:
             args.sbid_dir = os.path.join(args.basedir, sbid)
             args.candidates_dir = os.path.join(args.sbid_dir, "candidates")
+            args.candidates_all_dir = os.path.join(args.sbid_dir, "candidates_all")
             args.sbid_dir_new = os.path.join(args.basedir, f"SB{sbid}")
+
+            if args.deep_clean:
+                deep_clean(args, sbid)
 
             if args.assign:
                 uids, last_sbids, unames = get_available_slack_user_ids(sheet_id, creds_path, sub_sheet_idx=0)
@@ -100,6 +119,9 @@ def _main():
             if args.mvfiles:
                 move_files(args, sbid)
 
+            ncands = len(glob.glob(os.path.join(args.candidates_dir, "*slices*gif")))
+            logger.info('Total number of candidates (before filtering): %s', ncands)
+
             if args.metadata:
                 fits_path = glob.glob(os.path.join(args.candidates_dir, f"SB{sbid}_beam*_std.fits"))[0]
                 logger.info('%s: Read metadata from fits %s', sbid, fits_path)
@@ -115,6 +137,11 @@ def _main():
                         f.write(f"{sbid}\n")
                     continue
 
+            if args.select:
+                ncands = select_cands(args, sbid, filtering)
+                logger.info('Filtering metrics: %s', filtering)
+                logger.info('Total candidates (after filtering): %s', ncands)
+
             if args.upload:
                 upload_files(args, sbid)
 
@@ -127,13 +154,13 @@ def _main():
                 uname = None
 
             if args.notify_slack:
-                notify_slack(args, sbid, userid=uid)
+                notify_slack(args, sbid, ncands, userid=uid)
 
             if uid is not None and args.update_sheet:
                 update_user_assignment(sheet_id, creds_path, uid, sbid, sub_sheet_idx=0)
 
             if args.update_sheet:
-                write_fits_metadata_to_google_sheet(args, sbid, metadata, sheet_id, creds_path, uname, sub_sheet_idx=1)
+                write_fits_metadata_to_google_sheet(args, sbid, metadata, sheet_id, creds_path, uname, ncands, sub_sheet_idx=1)
 
             if args.clean:
                 remove_output_folders(args, sbid)
@@ -229,7 +256,7 @@ def move_files(args, sbid):
 
     for subdir in os.listdir(sbid_dir):
         subdir_path = os.path.join(sbid_dir, subdir)
-        if os.path.isdir(subdir_path) and subdir != "candidates":
+        if os.path.isdir(subdir_path) and subdir.startswith("output"):
             for file in os.listdir(subdir_path):
                 file_path = os.path.join(subdir_path, file)
                 cmd = ["mv", file_path, candidates_dir]
@@ -238,9 +265,62 @@ def move_files(args, sbid):
                     subprocess.run(cmd, check=True)
 
 
+def select_cands(args, sbid, filtering):
+    """Copy *final.csv files from candidates_dir to candidates_all_dir, then filter in-place.
+
+    filtering : str
+        A pandas.DataFrame.query string, e.g., "SNR > 10 and chi2 < 3".
+    """
+    candidates_dir = args.candidates_dir
+    if not os.path.exists(candidates_dir):
+        logger.warning(f"select_cands: candidates_dir not found: {candidates_dir}")
+        return
+
+    candidates_all_dir = args.candidates_all_dir
+    os.makedirs(candidates_all_dir, exist_ok=True)
+
+    ncands = 0
+
+    final_csv_fnames = glob.glob(os.path.join(candidates_dir, "*final.csv"))
+    for src in final_csv_fnames:
+        dst = os.path.join(candidates_all_dir, os.path.basename(src))
+        if os.path.exists(dst):
+            logger.info(f"Skipping copy, already exists: {dst}")
+            continue
+        cmd = ["cp", src, dst]
+        logger.info(f"Executing: {' '.join(cmd)}")
+        if not args.dry_run:
+            subprocess.run(cmd, check=True)
+
+    for fpath in final_csv_fnames:
+        try:
+            df = pd.read_csv(fpath)
+        except Exception as e:
+            logger.error(f"Failed to read {fpath}: {e}")
+            continue
+
+        try:
+            filtered = df.query(filtering) 
+        except Exception as e:
+            logger.error(f"Bad filtering expression '{filtering}': {e}")
+            continue
+
+        logger.info(f"Filtering {fpath}: {len(df)} -> {len(filtered)} cands")
+        ncands += len(filtered)
+
+        if not args.dry_run:
+            try:
+                filtered.to_csv(fpath, index=False)
+            except Exception as e:
+                logger.error(f"Failed to write filtered CSV to {fpath}: {e}")
+
+    return ncands
+
+
 def upload_files(args, sbid):
     candidates_dir = args.candidates_dir
     if not os.path.exists(candidates_dir):
+        logger.warning(f"upload_files: candidates_dir not found: {candidates_dir}")
         return
     
     cmd = [
@@ -269,6 +349,17 @@ def remove_output_folders(args, sbid):
             if not args.dry_run:
                 subprocess.run(cmd, check=True)
 
+def deep_clean(args, sbid):
+    cmd = ["rm", "-r", args.candidates_dir]
+    logger.info(f"Executing: {' '.join(cmd)}")
+    if not args.dry_run:
+        subprocess.run(cmd, check=True)
+
+    cmd = ["rm", "-r", args.candidates_all_dir]
+    logger.info(f"Executing: {' '.join(cmd)}")
+    if not args.dry_run:
+        subprocess.run(cmd, check=True)
+
 
 def move_folder(args, sbid):
     sbid_dir = args.sbid_dir
@@ -279,10 +370,9 @@ def move_folder(args, sbid):
         subprocess.run(cmd, check=True)
 
 
-def notify_slack(args, sbid, userid=None):
+def notify_slack(args, sbid, ncands, userid=None):
     candidates_dir = args.candidates_dir
     nbeam = len(glob.glob(os.path.join(candidates_dir, "*peak.fits")))
-    ncand = len(glob.glob(os.path.join(candidates_dir, "*lightcurve*png")))
 
     if userid is not None:
         mention = f"<@{userid}>"  # ← put actual Slack user ID here
@@ -291,7 +381,7 @@ def notify_slack(args, sbid, userid=None):
 
     message = (
         f"----------------\n"
-        f"*** SB{sbid} FINISHED:    beams={nbeam}    cands={ncand} ***    {mention} \n"
+        f"*** SB{sbid} FINISHED:    beams={nbeam}    cands={ncands} ***    {mention} \n"
         f"----------------"
     )
 
@@ -421,8 +511,17 @@ def update_user_assignment(sheet_id, creds_path, user_id, sbid, sub_sheet_idx=0)
             new_sbids = f"{existing_sbids} {sbid}".strip()
             sheet.update_cell(row_num, col_idx("SBIDs"), new_sbids)
 
-            # Update Last SBID
-            sheet.update_cell(row_num, col_idx("Last SBID"), str(sbid))
+            # Update Last SBID if empty or sbid is newer
+            current_last_sbid = str(row.get("Last SBID", "")).strip()
+            if not current_last_sbid:
+                sheet.update_cell(row_num, col_idx("Last SBID"), str(sbid))
+            else:
+                try:
+                    if int(sbid) > int(current_last_sbid):
+                        sheet.update_cell(row_num, col_idx("Last SBID"), str(sbid))
+                except ValueError:
+                    # In case non-integer content exists in the cell
+                    logger.warning("Non-integer Last SBID found for %s, skipping update.", user_id)
 
             break
 
@@ -452,7 +551,7 @@ def read_fits_metadata(fits_path):
     return metadata
 
 
-def write_fits_metadata_to_google_sheet(args, sbid, meta_dict, sheet_id, creds_path, uname, sub_sheet_idx=1):
+def write_fits_metadata_to_google_sheet(args, sbid, meta_dict, sheet_id, creds_path, uname, ncands, sub_sheet_idx=1):
     scope = ['https://spreadsheets.google.com/feeds',
              'https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, scope)
@@ -461,7 +560,6 @@ def write_fits_metadata_to_google_sheet(args, sbid, meta_dict, sheet_id, creds_p
     sheet = client.open_by_key(sheet_id).get_worksheet(sub_sheet_idx)
 
     candidates_dir = args.candidates_dir
-    ncand = len(glob.glob(os.path.join(candidates_dir, "*lightcurve*png")))
 
     # Format values to write
     row = [
@@ -475,7 +573,7 @@ def write_fits_metadata_to_google_sheet(args, sbid, meta_dict, sheet_id, creds_p
         meta_dict.get("bmaj", ""),                   # arcsec
         meta_dict.get("bmin", ""),
         meta_dict.get("bpa", ""),
-        ncand, 
+        ncands, 
         uname, 
     ]
 
