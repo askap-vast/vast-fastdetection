@@ -127,6 +127,7 @@ def clean_data(args, sbid, affix, command):
     if 'FIXDATA' in args.steps:
         fnamelist += glob.glob(os.path.join(args.paths['path_data'], affix+".corrected"))
     if 'MODELING' in args.steps:
+        fnamelist += glob.glob(os.path.join(args.paths['path_data'], affix+".tmp"))
         fnamelist += glob.glob(os.path.join(args.paths['path_models'], affix))
     if 'IMGFAST' in args.steps:
         fnamelist += glob.glob(os.path.join(args.paths['path_images'], affix))
