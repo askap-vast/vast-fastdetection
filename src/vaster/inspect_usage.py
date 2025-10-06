@@ -56,12 +56,16 @@ def _main():
 
     # pd.options.display.max_columns = None
     for fname in fname_list:
-        tb = read_tb(fname)
-        tb = convert_mem_unit(tb, colnames)
-        tb = clean_tb(tb)
-        logger.info("=======")
-        logger.info(fname)
-        print(tb)
+        try:
+            tb = read_tb(fname)
+            tb = convert_mem_unit(tb, colnames)
+            tb = clean_tb(tb)
+            logger.info("=======")
+            logger.info(fname)
+            print(tb)
+        except:
+            logger.info("=======")
+            logger.error('** Cannot read %s **', fname)
 
 
 def make_verbose(args):
