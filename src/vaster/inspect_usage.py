@@ -47,6 +47,15 @@ def _main():
     beamlist = get_beamlist(args, num=36)
 
     if args.fname is None:
+
+        if args.sbids is None:
+            folderlist = glob.glob(os.path.join(args.dir, "SB*"))
+            logger.info(folderlist)
+            sbidlist = [ int(folder.split('SB')[-1]) for folder in folderlist]
+            sbidlist.sort()
+            logger.info('Found %s SBIDs: %s', len(folderlist), sbidlist)
+            args.sbids = sbidlist
+            
         logger.info('Total of %s SBIDs to inspect', len(args.sbids))
         fname_list = []
         for i, sbid in enumerate(args.sbids):
