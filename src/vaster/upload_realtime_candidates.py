@@ -77,9 +77,11 @@ def _main():
     # main program 
     # ===============
 
+    loop_count = 0
+
     while True:
         logger.info("")
-        logger.info("=======================================================")
+        logger.info("===================== Loop %s =========================", loop_count)
         logger.info("================ %s ==================", time.strftime("%Y-%m-%d %H:%M:%S"))
         sbids = gather_sbids(args)
         clean_sbids_list = clean_sbids(args, sbids)
@@ -87,6 +89,10 @@ def _main():
         sheet_id = '1xd1h4k9GtlAEH4TkUEDBQ6uYGvGNaDhEeB4Xf8WAiIw'
         creds_path='/fred/oz330/realtime/vaster-471803-f266a065caa2.json'
 
+        if loop_count % 50 == 0:
+            heartbeat_slack(args)
+
+        loop_count += 1
         
         for sbid in clean_sbids_list:
             args.sbid_dir = os.path.join(args.basedir, sbid)
@@ -171,7 +177,7 @@ def _main():
             logger.info(f"{sbid}: Sleeping for {args.sleep} seconds...")
             time.sleep(args.sleep)
                     
-        logger.info(f"{sbid}: Sleeping for {args.sleep} seconds...")
+        logger.info(f"Sleeping for {args.sleep} seconds...")
         time.sleep(args.sleep)
 
     end_time = time.time()
@@ -193,6 +199,9 @@ def clean_sbids(args, sbids):
         with open(args.saved_sbids_txt, "r") as f:
             uploaded_sbids = list(set(f.read().splitlines()))
             uploaded_sbids.sort()
+
+        args.uploaded_sbids = uploaded_sbids
+
     else:
         uploaded_sbids = list(set())
 
@@ -394,6 +403,25 @@ def notify_slack(args, sbid, ncands, userid=None):
             logger.info("Message sent to Slack: %s", message)
     else:
         logger.info("Dry run: skip posting message %s", message)
+
+
+def heartbeat_slack(args):
+    """
+    Send a Slack heartbeat message at specified times to confirm the system is running.
+    """
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    msg = f"{timestamp} - System is running normally. Total of {len(args.uploaded_sbids)} observations have been processed. "
+
+    payload = {"text": msg}
+
+    if not args.dry_run:
+        response = requests.post(args.webhook, json=payload)
+        if response.status_code != 200:
+            logger.warning(f"Error posting heartbeat to Slack: {response.status_code} {response.text}")
+        else:
+            logger.info(f"Heartbeat sent to Slack: {msg}")
+    else:
+        logger.info(f"Dry run: skip posting heartbeat {msg}")
 
 
 def get_available_slack_user_ids(sheet_id, creds_path, sub_sheet_idx=0):
