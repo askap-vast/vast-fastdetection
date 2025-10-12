@@ -112,6 +112,7 @@ def run(args, paths, sbid, beam):
             clean_data(args, paths, sbid, affix=f"*{beam}*.ms", command="rm -r")
             clean_data(args, paths, sbid, affix=f"*{beam}*.ms.corrected", command="rm -r")
             clean_data(args, paths, sbid, affix=f"*{beam}*.ms.corrected.flagversions", command="rm -r")
+            clean_data(args, paths, sbid, affix=f"*{beam}*.tmp", command="rm")
 
         download_visbility(args, paths, beam)
         if args.untar:
