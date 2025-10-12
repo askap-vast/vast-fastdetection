@@ -37,7 +37,7 @@ def _main():
     parser.add_argument('--rename-pattern', type=str, default='output_', )
     parser.add_argument('--mvfiles', action='store_true', help='move files')
     parser.add_argument('--upload', action='store_true', help='Upload cadidates files to web app')
-    parser.add_argument('--notify-slack', action='store_true', help='Send a slack message when finish uploading')
+    parser.add_argument('--notify-slack', action='store_true', help='Allow sending slack notifications')
     parser.add_argument('--clean', action='store_true', help='clean output tmp folder')
     parser.add_argument('--deep-clean', action='store_true', help='clean candidates folder, start with a fresh run')
     parser.add_argument('--mvfolder', action='store_true', help='move folder')
@@ -46,7 +46,8 @@ def _main():
     parser.add_argument('--skipped-sbids-txt', type=str, default='skipped_sbids.txt', help='Skipped SBIDs')
     parser.add_argument("--sleep", type=int, default=600, help="Sleep time in seconds between checks")
     parser.add_argument("--token", type=str, default='', help='token to upload candidate files')
-    parser.add_argument("--webhook", type=str, default='', help='WEBHOOK URL to send message in slack')
+    parser.add_argument("--webhook-alerts", type=str, default='', help='WEBHOOK URL to send candidates alerts in slack - to processing alerts channel')
+    parser.add_argument("--webhook-logs", type=str, default='', help='WEBHOOK URL to send operation logs in slack - to operation logs channel')
     parser.add_argument('--force', action='store_true', help='force to process SBIDs even it doesnt have 36 beams')
     parser.add_argument('--assign', action='store_true', help='automatic assign people to classify candidates')
     parser.add_argument('--select', action='store_true', help='select promissing candidates with defined filtering metrics')
@@ -89,8 +90,8 @@ def _main():
         sheet_id = '1xd1h4k9GtlAEH4TkUEDBQ6uYGvGNaDhEeB4Xf8WAiIw'
         creds_path='/fred/oz330/realtime/vaster-471803-f266a065caa2.json'
 
-        if loop_count % 50 == 0:
-            heartbeat_slack(args)
+        if loop_count % 20 == 0 and args.notify_slack:
+            heartbeat_slack(args, clean_sbids_list)
 
         loop_count += 1
         
@@ -160,7 +161,7 @@ def _main():
                 uname = None
 
             if args.notify_slack:
-                notify_slack(args, sbid, ncands, userid=uid)
+                cands_alert_slack(args, sbid, ncands, userid=uid)
 
             if uid is not None and args.update_sheet:
                 update_user_assignment(sheet_id, creds_path, uid, sbid, sub_sheet_idx=0)
@@ -379,7 +380,7 @@ def move_folder(args, sbid):
         subprocess.run(cmd, check=True)
 
 
-def notify_slack(args, sbid, ncands, userid=None):
+def cands_alert_slack(args, sbid, ncands, userid=None):
     candidates_dir = args.candidates_dir
     nbeam = len(glob.glob(os.path.join(candidates_dir, "*peak.fits")))
 
@@ -396,7 +397,7 @@ def notify_slack(args, sbid, ncands, userid=None):
 
     payload = {"text": message}
     if not args.dry_run:
-        response = requests.post(args.webhook, json=payload)
+        response = requests.post(args.webhook_alerts, json=payload)
         if response.status_code != 200:
             logger.warning("Error posting to Slack:", response.status_code, response.text)
         else:
@@ -405,17 +406,22 @@ def notify_slack(args, sbid, ncands, userid=None):
         logger.info("Dry run: skip posting message %s", message)
 
 
-def heartbeat_slack(args):
+def heartbeat_slack(args, sbids):
     """
     Send a Slack heartbeat message at specified times to confirm the system is running.
     """
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    msg = f"{timestamp} - System is running normally. Total of {len(args.uploaded_sbids)} observations have been processed. "
+    msg = (
+        "```\n"
+        "- System is running normally. \n"
+        f"- Total of {len(args.uploaded_sbids)} observations have been processed. \n"
+        f"- Waiting SBIDs to finish: {sbids}\n"
+        "```"
+    )
 
     payload = {"text": msg}
 
     if not args.dry_run:
-        response = requests.post(args.webhook, json=payload)
+        response = requests.post(args.webhook_logs, json=payload)
         if response.status_code != 200:
             logger.warning(f"Error posting heartbeat to Slack: {response.status_code} {response.text}")
         else:
@@ -588,6 +594,7 @@ def write_fits_metadata_to_google_sheet(args, sbid, meta_dict, sheet_id, creds_p
     sheet = client.open_by_key(sheet_id).get_worksheet(sub_sheet_idx)
 
     candidates_dir = args.candidates_dir
+    upload_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
     # Format values to write
     row = [
@@ -603,6 +610,7 @@ def write_fits_metadata_to_google_sheet(args, sbid, meta_dict, sheet_id, creds_p
         meta_dict.get("bpa", ""),
         ncands, 
         uname, 
+        upload_time, 
     ]
 
     # Append row
