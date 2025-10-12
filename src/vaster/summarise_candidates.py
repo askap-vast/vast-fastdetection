@@ -168,7 +168,7 @@ def crossmatch_onebeam(args, cands, beamid, catname, catsrc, base_url, dyspec_ur
     new_cols = []
     
     for cand in cands:
-        
+        '''
         # check the priority 
         if cand['bright_sep_arcmin'] <= 5 or cand['deep_num'] >= 2:
             priority = 'low'
@@ -181,6 +181,22 @@ def crossmatch_onebeam(args, cands, beamid, catname, catsrc, base_url, dyspec_ur
 
         if cand['deep_sep_arcsec'] <= 2:
             priority = 'high'        
+        '''
+
+        # new priority metrics
+        if cand['md_deep'] <= 0.1:
+             priority = 'low'
+        elif cand['bright_sep_arcmin'] <= 5:
+            priority = 'mid'
+        elif cand['deep_sep_arcsec'] < 2:
+            priority = 'high'
+        elif cand['deep_sep_arcsec'] > 20:
+            priority = 'high'
+        elif cand['deep_peak_flux'] < 0.002:
+            priority = 'high'
+        else:
+            priority = 'mid'
+            
         
         if priority == 'high':
             logger.info('High priority candidates: SB%s %s %s', sbid, beam, cand['name'])
