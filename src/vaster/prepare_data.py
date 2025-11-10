@@ -66,6 +66,10 @@ def _main():
         else:
             download_selavy(args, paths)
 
+        if args.mosaic:
+            logger.info("SB%s: download mosaic images", sbid)
+            download_mosaic(args, paths)
+
         for beam in beamlist:
             while len(active_threads) >= num_threads:
                 for thread in active_threads:
@@ -129,6 +133,11 @@ def get_beamlist(args, num=36):
 
 def download_selavy(args, paths):
     fname = os.path.join(paths['path_scripts'], "download_selavy.sh")
+    txt = 'bash ' + fname
+    process_txt(args, txt)
+
+def download_mosaic(args, paths):
+    fname = os.path.join(paths['path_scripts'], "download_mosaic_images.sh")
     txt = 'bash ' + fname
     process_txt(args, txt)
 
