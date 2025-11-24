@@ -8,7 +8,7 @@ SOURCE_FINDER: aegean       # Source finder: aegean (run aegean per-beam source 
 ########################### environment setup ###########################
 VIRTUAL_ENV: True
 VIRTUAL_ENV_ENABLE: [
-  'source /fred/oz330/software/.activate_conda', 
+  'source ~/.activate_conda', 
   'conda activate vaster'
   ]
 VIRTUAL_ENV_DISABLE: 'conda deactivate'
@@ -24,28 +24,28 @@ WSCLEAN_PATH: /fred/oz330/software/wsclean.sif # container path for wsclean; onl
 WSCLEAN:
   MODELCLEAN:
     LOG_TIME: True
-    ABS_MEM: 10
+    ABS_MEM: 20
     PARALLEL_REORDERING: 8
     DATA_COLUMN: DATA
-    SIZE: 6144 6144
+    SIZE: 10240 10240
     SCALE: 2.5asec
     GRIDDER: wgridder 
     WEIGHT: 'briggs 0.5'
-    PARALLEL_DECONVOLUTION: 512
+    PARALLEL_DECONVOLUTION: 2048
     NITER: 80000
-    GAIN: 0.15
-    MGAIN: 0.9
-    CHANNELS_OUT: 2
-    FIT_SPECTRAL_POL: 1
+    GAIN: 0.05
+    MGAIN: 0.85
+    CHANNELS_OUT: 8
+    FIT_SPECTRAL_POL: 2
     JOIN_CHANNELS: True
-    AUTO_THRESHOLD: 1
-    AUTO_MASK: 4
+    AUTO_THRESHOLD: 2
+    AUTO_MASK: 3
     LOCAL_RMS: False
     MINUVW_M: 200
     MULTISCALE: True
     MULTISCALE_GAIN: 0.1
     MULTISCALE_SCALE_BIAS: 0.6
-    MULTISCALE_SCALES: 0,10,30
+    MULTISCALE_SCALES: 0,3,10,30
   SHORTIMAGE:
     MAKE_PSF: True
     NO_UPDATE_MODEL_REQUIRED: True
@@ -90,11 +90,13 @@ CASA:
     SAVEMODEL: 'modelcolumn'
     TIMERANGE: ''
     STOKES: I 
+  
   CAL: True                   # run self cal or not 
   SELFCAL:
     UVRANGE: '>200m'
     SOLINT: 1min              # int or 1min
     CALMODE: p                # p for phase, a for amplitude 
+
   SHORTIMAGE:
     IMSIZE: 2880
     CELL: ['2.5arcsec']
@@ -123,23 +125,21 @@ CASA:
 CANDIDATES:
   KTYPE: ['chisquare', 'peak', 'std'] 
   MAP: ['chisquare', 'peak']
-  CHUNK: 'all'          # number of image chunks for SELCAND, 'all' for using all images (no split chunk)
-                        # recommend "40" for 10s fast survey and "all" for 10min slow survey 
+  CHUNK: 'all'           # number of image chunks for SELCAND, 'all' for using all images (no split chunk)
   THRESHOLD_SIGMA:
-    CHISQUARE: 6        # recommend "8" for 10s fast survey and "5" for 10min slow survey 
-    PEAK: 6             # recommend "6" for 10s fast survey and "5" for 10min slow survey 
-    GAUSSIAN: 6
+    CHISQUARE: 5
+    PEAK: 5
+    GAUSSIAN: 5
   LOG_THRESHOLD_SIGMA:
-    CHISQUARE: 6        # recommend "8" for 10s fast survey and "5" for 10min slow survey 
-    PEAK: 6             # recommend "6" for 10s fast survey and "5" for 10min slow survey 
-    GAUSSIAN: 6
-
-  MIN_DISTANCE: 30      # pixel number of the minimal distance of two neighbours blobs
-  EXT_LIMIT: 1.5        # select compact sources with int / peak flux ratio < 1.5
-  MD_LIMIT: 0.05        # modulation index limit - select sources with md > MD_LIMIT 
-  SEP_DEEP: 30          # radius search for deep countparts, unit of arcsec 
-  SEP_BEAM: 1.2         # select sources within 1.2 primary beam 
-  BRIGHT_LIMIT: 0.1     # minimum flux density for classifying bright sources, unit of Jy 
+    CHISQUARE: 5
+    PEAK: 5
+    GAUSSIAN: 5
+  MIN_DISTANCE: 30    # pixel number of the minimal distance of two neighbours blobs
+  EXT_LIMIT: 1.5      # select compact sources with int / peak flux ratio < 1.5
+  MD_LIMIT: 0.05      # modulation index limit - select sources with md > MD_LIMIT 
+  SEP_DEEP: 30        # radius search for deep countparts, unit of arcsec 
+  SEP_BEAM: 1.2       # select sources within 1.2 primary beam 
+  BRIGHT_LIMIT: 0.1    # minimum flux density for classifying bright sources, unit of Jy 
   BRIGHT_SEP: 5         # select candidates without bright sources nearby < BRIGHT_SEP, unit of arcmin
   SAVEVOT: False
   GAUSSIAN_WIDTH: 4
@@ -153,26 +153,31 @@ OZSTAR:
     TIME: '1:00:00'
     NODES: 1
     NTASKS: 1
+    CPUS: 1
     MEM: 4gb  # VAST 0GB max  
   MODELING:
     TIME: '10:00:00'
     NODES: 1
     NTASKS: 1
-    MEM: 12gb  # VAST 11GB max 
+    CPUS: 4
+    MEM: 48gb  # VAST 11GB max 
   IMGFAST:
     TIME: '5:00:00'
     NODES: 1
     NTASKS: 1
+    CPUS: 1
     MEM: 4gb  # VAST 1.2GB max
   SELCAND:
     TIME: '5:00:00'
     NODES: 1
     NTASKS: 1
-    MEM: 24gb  # VAST/EMU/10s survey 16GB max
+    CPUS: 1
+    MEM: 48gb  # VAST 16GB max (70 images)
   CLNDATA:
     TIME: '1:00:00'
     NODES: 1
     NTASKS: 1
+    CPUS: 1
     MEM: 200mb  # VAST 0GB max
 #########################################################################
 
