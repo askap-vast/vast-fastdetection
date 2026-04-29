@@ -661,8 +661,8 @@ if __name__ == "__main__":
         except Exception as e:
             restart_count += 1
             logger.error(f"Program crashed with error: {e}")
-            logger.info(f"Restarting in 10 seconds... (attempt {restart_count}/{max_restarts})")
-            time.sleep(10)
+            logger.info(f"Restarting in 10 minutes... (attempt {restart_count}/{max_restarts})")
+            time.sleep(600)
 
     if restart_count >= max_restarts:
         logger.error("Maximum number of restarts reached. Exiting.")
